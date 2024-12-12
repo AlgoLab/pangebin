@@ -26,7 +26,7 @@
    out_dir="test/data/SAMN16357463/out"
    thr=1
 
-   python3 src/pangebin preprocess ${sample_id} ${unicycler} ${skesa} --outdir ${out_dir} --thr ${thr}
+   pangebin preprocess ${sample_id} ${unicycler} ${skesa} --outdir ${out_dir} --thr ${thr}
 
    mixed_fasta="test/data/SAMN16357463/out/SAMN16357463.1.mix.fasta"`
    ```
@@ -48,5 +48,5 @@
    sample_id="SAMN16357463"
    out_dir="test/data/SAMN16357463/out/"
 
-   python3 src/pangebin panassembly $pangenome $skesa $unicycler ${sample_id} ${out_dir}
+   pangebin panassembly $pangenome $skesa $unicycler ${sample_id} ${out_dir}
    ```
