@@ -243,7 +243,9 @@ def add_gfa_to_pangenome(gfa, pangenome):
                 match.set_datatype("dp", "f")
                 match.dp = float(dp)
             else:
-                raise typeerror("unknow assemler type: ", str(_type))
+                _err_msg = f"unknow assemler type: {_type}"
+                raise TypeError(_err_msg)
+
     for edge in gfa.dovetails:
         from_contig = edge.from_segment
         to_contig = edge.to_segment
@@ -347,8 +349,11 @@ def compute_scores(pangenome):
     for seg in pangenome.segments:
         seg.set_datatype("cv", "f")
         coverage_list = []
+
         if seg.cl is None:
-            raise valueerror(f"segment {seg} has no paths associated")
+            _err_msg = f"segment {seg} has no paths associated"
+            raise ValueError(_err_msg)
+
         for contig in seg.cl.split(","):
             path = pangenome.line(contig)
             assert path is not None
@@ -360,7 +365,9 @@ def compute_scores(pangenome):
                     sys.exit(1)
                 coverage_list.append(path.cv)
             else:
-                raise keyerror(f"path {contig} not found in pangenome")
+                _err_msg = f"segment {seg} has no paths associated"
+                raise KeyError(_err_msg)
+
         coverage_mean = sum([i for i in coverage_list]) / len(coverage_list)
         assert coverage_mean is not None
         seg.cv = float(coverage_mean)

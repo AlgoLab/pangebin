@@ -219,7 +219,7 @@ def mod_bins(
             candidates = set()
             for c in contigs:
                 path = gfa.line(str(c))
-                if path != None:
+                if path is not None:
                     segs = path.segment_names
                     for seg in segs:
                         candidates.add(str(seg.name))
