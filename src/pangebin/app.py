@@ -140,6 +140,7 @@ def panassembly(
     outdir: Annotated[Path, PanassemblyArgs.ARG_OUTPUT_DIR],
 ):
     """Make a pangenome assembly (panassembly) from the set of original assemblers plus the pangenome."""
+    outdir.mkdir(parents=True, exist_ok=True)
     gfa = gfapy.Gfa.from_file(pangenome)
     cl_pangenome = clean_pangenome(gfa)
     assemblers = [skesa_assembly, unicycler_assembly]
@@ -170,6 +171,7 @@ def mod_bins(
         else:
             bin_set[row["plasmid"]].append(row["contig"])
 
+    # REFACTOR StrEnum for binning_mode
     if modtype == "NVE":
         new_bins = set()
         for bin in bin_set:
