@@ -100,9 +100,9 @@ def extract_node(edge, orient, name):
 def rename_contigs(
     gfa,
     prefix,
-) -> gfapy.gfa:
+) -> gfapy.Gfa:
     graph = gfa
-    # graph = gfapy.gfa.Gfa.from_file(gfa, vlevel=0)
+    # graph = gfapy.Gfa.Gfa.from_file(gfa, vlevel=0)
     graph.validate()
     graph.vlevel = 3
     counter = 1
@@ -125,7 +125,7 @@ def rename_contigs(
 
 def convert_kc_to_dp(
     gfa,
-) -> gfapy.gfa:
+) -> gfapy.Gfa:
     graph = gfa
     graph.validate()
     total_coverage = 0
@@ -207,20 +207,20 @@ def mix_fasta(fasta_list, output):
     subprocess.call(command, shell=True)
 
 
-def get_path_by_name(gfa: gfapy.gfa, name):
+def get_path_by_name(gfa: gfapy.Gfa, name):
     if gfa.line(str(name)) is not None:
         return gfa.line(str(name))
     print("path", name, "not found!!!!", type(name))
     return None
 
 
-def get_segment_by_name(gfa: gfapy.gfa, name):
+def get_segment_by_name(gfa: gfapy.Gfa, name):
     if gfa.segment(name) is not None:
         return gfa.segment(name)
     return None
 
 
-def get_edge_by_def(gfa: gfapy.gfa, def_: list):
+def get_edge_by_def(gfa: gfapy.Gfa, def_: list):
     for edge in gfa.dovetails:
         if def_[0] == edge.from_segment.name and def_[2] == edge.to_segment.name:
             if edge.from_orient == def_[1] and edge.to_orient == def_[3]:
@@ -228,7 +228,7 @@ def get_edge_by_def(gfa: gfapy.gfa, def_: list):
     return None
 
 
-def add_gfa_to_pangenome(gfa, pangenome):
+def add_gfa_to_pangenome(gfa: gfapy.Gfa, pangenome: gfapy.Gfa):
     _type = gfa.segments[0].name[0]
 
     for seg in gfa.segments:
@@ -450,6 +450,7 @@ def extract_gfagz(gfagz) -> gfapy.Gfa:
     command = f"bgzip -dkf {gfagz}"
 
     subprocess.call(command, shell=True)
+    # REFACTOR use tmp file
     filename = str(gfagz)[:-3]
     gfa = gfapy.Gfa.from_file(filename, vlevel=0)
     gfa.validate()

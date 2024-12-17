@@ -10,6 +10,7 @@ import gfapy
 import pandas as pd
 import typer
 
+import pangebin.plasbin.app as plasbin_app
 from pangebin.graph_utils import (
     add_gfa_to_pangenome,
     clean_pangenome,
@@ -22,7 +23,9 @@ from pangebin.graph_utils import (
     rename_contigs,
 )
 
-APP = typer.Typer()
+APP = typer.Typer(rich_markup_mode="rich")
+
+APP.command(help="Execute PlasBin-Flow.")(plasbin_app.plasbin)
 
 
 @dataclass
@@ -102,7 +105,7 @@ def preprocess(
     sgfa: Annotated[Path, PreprocessArgs.ARG_INPUT_SKE_GFA],
     threshold: Annotated[int, PreprocessArgs.OPT_THRESHOLD],
 ):
-    """Preprocess GFA Gfa Assembly files."""
+    """Preprocess GFA Assembly files."""
     typer.echo("Preprocessing GFA files")
     outdir.mkdir(parents=True, exist_ok=True)
 
@@ -155,7 +158,7 @@ def mod_bins(
     output: Annotated[Path, ModArgs.ARG_OUTPUT],
     modtype: Annotated[str, ModArgs.ARG_MODTYPE],
 ):
-    """Modify bins."""
+    """Modify the bins."""
     bins = pd.read_csv(bin_file, sep="\t")
     gfa = gfapy.Gfa.from_file(pangenome_graph)
 
