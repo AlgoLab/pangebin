@@ -17,18 +17,18 @@
 
 ## Usage
 
+Example with the sample `SAMN16357463`:
+
+```sh
+dataset_dir="test/SAMN16357463"
+```
+
 1. preprocess input files
 
    ```sh
-   sample_id="SAMN16357463"
-   unicycler="test/data/SAMN16357463/unicycler.gfa.gz"
-   skesa="test/data/SAMN16357463/skesa.gfa.gz"
-   out_dir="test/data/SAMN16357463/out"
-   thr=1
-
-   pangebin preprocess ${sample_id} ${unicycler} ${skesa} --outdir ${out_dir} --thr ${thr}
-
-   mixed_fasta="test/data/SAMN16357463/out/SAMN16357463.1.mix.fasta"`
+   ./test/preprocess.sh run $dataset_dir
+   # to clean:
+   # ./test/preprocess.sh clean $dataset_dir
    ```
 
 2. make pangenome graph using `${mixed_fasta}`
@@ -42,11 +42,15 @@
 3. make pan-assembly graph
 
    ```sh
-   pangenome="test/data/SAMN16357463/out/SAMN16357463.1.pan.gfa"
-   skesa="test/data/SAMN16357463/out/SAMN16357463.1.s.gfa"
-   unicycler="test/data/SAMN16357463/out/SAMN16357463.1.u.gfa"
-   sample_id="SAMN16357463"
-   out_dir="test/data/SAMN16357463/out/"
+   ./test/panassembly.sh run $dataset_dir
+   # to clean:
+   # ./test/panassembly.sh clean $dataset_dir
+   ```
 
-   pangebin panassembly $pangenome $skesa $unicycler ${sample_id} ${out_dir}
+4. Execute pangebin
+
+   ```sh
+   ./test/pangebin.sh run $dataset_dir
+   # to clean:
+   # ./test/pangebin.sh clean $dataset_dir
    ```
