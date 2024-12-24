@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------------ #
 # USAGE
 #
-# ./test/preprocess.sh {run|clean} test/<dataset>
+# ./test/preprocess.sh {run|clean} test/<dataset> [--debug]
 # ------------------------------------------------------------------------------------ #
 
 command=$1
@@ -11,19 +11,24 @@ dataset_dir=$2
 
 out_dir="$dataset_dir/result/preprocess"
 
+debug=""
+if [ "$3" == "--debug" ]; then
+    debug="--debug"
+fi
+
 run() {
     local datadir="$dataset_dir/data"
     local assembly_datadir="$datadir/assembly"
 
-    local sample_id=$(basename $dataset_dir) # REFACTOR why need the sample ID?
     local unicycler_gfa="$assembly_datadir/unicycler.gfa.gz"
     local skesa_gfa="$assembly_datadir/skesa.gfa.gz"
 
-    local thr=1
+    local min_contig_length=1
 
-    pangebin preprocess $sample_id $unicycler_gfa $skesa_gfa \
+    pangebin preprocess $unicycler_gfa $skesa_gfa \
+        --min-contig-length $min_contig_length \
         --outdir $out_dir \
-        --thr $thr
+        $debug
 }
 
 case $command in
