@@ -1,59 +1,47 @@
 """Pangebin preprocess module."""
 
+# Due to typer usage:
+# ruff: noqa: TC001, TC003, UP007, FBT001, FBT002, PLR0913
+
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
 
-import gfapy
+import gfapy  # type: ignore[import-untyped]
 import pandas as pd
 import typer
 
+import pangebin.gfa.app as gfa_app
 import pangebin.plasbin.app as plasbin_app
+import pangebin.preprocess.app as preprocess_app
 from pangebin.graph_utils import (
     add_gfa_to_pangenome,
     clean_pangenome,
     compute_scores,
-    convert_kc_to_dp,
-    extract_gfagz,
-    gfa_to_fasta,
-    mix_fasta,
-    remove_nodes,
-    rename_contigs,
 )
+
+
+class _TyperRichHelpPanel(StrEnum):
+    """Typer rich help panel categories."""
+
+    MAIN = "Main commands"
+    UTILS = "Utility commands"
+
 
 APP = typer.Typer(rich_markup_mode="rich")
 
-APP.command(help="Execute PlasBin-Flow.")(plasbin_app.plasbin)
+APP.add_typer(
+    gfa_app.APP,
+    name="gfa",
+    help="GFA operations.",
+    rich_help_panel=_TyperRichHelpPanel.UTILS,
+)
 
-
-@dataclass
-class PreprocessArgs:
-    """GFAUtils arguments."""
-
-    ARG_SAMPLE_NAME = typer.Argument(
-        help="Sample ID",
-    )
-
-    ARG_INPUT_UNI_GFA = typer.Argument(
-        help="Unicler GFA assembly graph file",
-    )
-
-    ARG_INPUT_SKE_GFA = typer.Argument(
-        help="Unicler GFA assembly graph file",
-    )
-
-    ARG_OUTPUT_DIR = typer.Option(
-        "--outdir",
-        # DOCU: here we will place unicycler.gfa skesa.gfa, unicycler.fasta, skesa.fasta, mixed.fasta.gz
-        help="Output folder",
-    )
-
-    OPT_THRESHOLD = typer.Option(
-        "--thr",
-        help="Threshold length for removing nodes",
-    )
+APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(plasbin_app.plasbin)
+APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(preprocess_app.preprocess)
 
 
 @dataclass
@@ -70,6 +58,10 @@ class PanassemblyArgs:
 
     ARG_SKE_PREPROCESSED = typer.Argument(
         help="Skesa GFA Preprocessed graph",
+    )
+
+    ARG_SAMPLE_NAME = typer.Argument(
+        help="Sample ID",
     )
 
     ARG_OUTPUT_DIR = typer.Argument(
@@ -97,46 +89,12 @@ class ModArgs:
     )
 
 
-@APP.command()
-def preprocess(
-    outdir: Annotated[Path, PreprocessArgs.ARG_OUTPUT_DIR],
-    sample: Annotated[str, PreprocessArgs.ARG_SAMPLE_NAME],
-    ugfa: Annotated[Path, PreprocessArgs.ARG_INPUT_UNI_GFA],
-    sgfa: Annotated[Path, PreprocessArgs.ARG_INPUT_SKE_GFA],
-    threshold: Annotated[int, PreprocessArgs.OPT_THRESHOLD],
-):
-    """Preprocess GFA Assembly files."""
-    typer.echo("Preprocessing GFA files")
-    outdir.mkdir(parents=True, exist_ok=True)
-
-    ext_u_gfa = extract_gfagz(ugfa)
-    ext_s_gfa = extract_gfagz(sgfa)
-
-    r_u_gfa = rename_contigs(ext_u_gfa, "uni")
-    r_s_gfa = convert_kc_to_dp(rename_contigs(ext_s_gfa, "ske"))
-
-    rnode_u_gfa = remove_nodes(
-        r_u_gfa,
-        threshold,
-        f"{outdir}/{sample}.{threshold}.u.gfa",
-    )
-    rnode_s_gfa = remove_nodes(
-        r_s_gfa,
-        threshold,
-        f"{outdir}/{sample}.{threshold}.s.gfa",
-    )
-
-    u_fasta = gfa_to_fasta(rnode_u_gfa, f"{outdir}/{sample}.{threshold}.u.fasta")
-    s_fasta = gfa_to_fasta(rnode_s_gfa, f"{outdir}/{sample}.{threshold}.s.fasta")
-    mix_fasta([u_fasta, s_fasta], f"{outdir}/{sample}.{threshold}.mix.fasta")
-
-
-@APP.command()
+@APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)
 def panassembly(
     pangenome: Annotated[Path, PanassemblyArgs.ARG_PANGENOME],
     skesa_assembly: Annotated[Path, PanassemblyArgs.ARG_SKE_PREPROCESSED],
     unicycler_assembly: Annotated[Path, PanassemblyArgs.ARG_UNI_PREPROCESSED],
-    sample: Annotated[str, PreprocessArgs.ARG_SAMPLE_NAME],
+    sample: Annotated[str, PanassemblyArgs.ARG_SAMPLE_NAME],
     outdir: Annotated[Path, PanassemblyArgs.ARG_OUTPUT_DIR],
 ):
     """Make a pangenome assembly (panassembly) from the set of original assemblers plus the pangenome."""
@@ -152,7 +110,7 @@ def panassembly(
     cl_pangenome.to_file(f"{filename}")
 
 
-@APP.command()
+@APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)
 def mod_bins(
     pangenome_graph: Annotated[Path, ModArgs.ARG_PANGENOME],
     bin_file: Annotated[Path, ModArgs.ARG_BIN_FILE],

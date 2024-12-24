@@ -1,16 +1,16 @@
 """Utilities to manipulate assemblis and pangenomes in GFA format."""
 
-import contextlib
-import subprocess
+from __future__ import annotations
+
 import sys
-from itertools import product
-from pathlib import Path
 
-import gfapy
-from Bio import SeqIO as Seq
+import gfapy  # type: ignore[import-untyped]
+from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
+
+from pangebin.assembler import ContigPrefix
 
 
-def invert(sign):
+def invert(sign: str):
     if sign == "+":
         return "-"
     if sign == "-":
@@ -98,38 +98,58 @@ def extract_node(edge, orient, name):
 
 
 def rename_contigs(
-    gfa,
-    prefix,
-) -> gfapy.Gfa:
-    graph = gfa
-    # graph = gfapy.Gfa.Gfa.from_file(gfa, vlevel=0)
-    graph.validate()
+    graph: gfapy.Gfa,
+    segment_name_prefix: ContigPrefix,
+) -> None:
+    """Rename contigs in a GFA graph.
+
+    Parameters
+    ----------
+    graph : gfapy.Gfa
+        GFA graph
+    segment_name_prefix : ContigPrefix
+        Prefix for contig names
+
+    Warnings
+    --------
+    This function mutates the GFA graph
+
+    """
+    graph.validate()  # REFACTOR GFA validation here
     graph.vlevel = 3
-    counter = 1
-    for seg in graph.segments:
+    seg: GfaSegment
+    for counter, seg in enumerate(graph.segments):
         if seg.LN is not None:
             if seg.LN == 0:
                 seg.sequence = "*"
                 seg.LN = 0
-                graph.validate()
         elif len(seg.sequence) == 0:
             seg.sequence = "*"
             seg.LN = 0
             graph.validate()
-        seg.name = f"{prefix}{counter}"
-        counter += 1
+        seg.name = f"{segment_name_prefix}{counter + 1}"
     graph.validate()
-    # graph.to_file(gfa)
-    return graph
 
 
 def convert_kc_to_dp(
-    gfa,
-) -> gfapy.Gfa:
-    graph = gfa
-    graph.validate()
+    graph: gfapy.Gfa,
+) -> None:
+    """Convert k-mer coverage to normalized coverage.
+
+    Parameters
+    ----------
+    graph : gfapy.Gfa
+        GFA graph
+
+    Warnings
+    --------
+    This function mutates the GFA graph
+
+    """
     total_coverage = 0
     total_length = 0
+
+    seg: GfaSegment
     for seg in graph.segments:
         total_coverage += seg.KC
         if seg.LN is None:
@@ -141,70 +161,8 @@ def convert_kc_to_dp(
         seg.set_datatype("dp", "f")
         seg.dp = float((seg.KC * total_length) / (seg.LN * total_coverage))
         seg.KC = None
+
     graph.validate()
-    return graph
-
-
-def remove_nodes_fasta(fasta, threshold, output):
-    fasta_input = fasta
-    fasta_dict = dict()
-    with Path.open(fasta_input) as spe:
-        for record in Seq.parse(spe, "fasta"):
-            if len(record) >= threshold:
-                fasta_dict[record.id] = record.seq
-    with Path.open(output, "w") as out:
-        for x, rec in fasta_dict.items():
-            out.write(f">{x}\n")
-            out.write(f"{rec!s}\n")
-
-
-def remove_nodes(gfa, threshold, output):
-    for seg in gfa.segments:
-        if (seg.LN is not None and threshold >= seg.LN) or (
-            len(seg.sequence) <= threshold
-        ):
-            pass
-        else:
-            continue
-        right_edges = list(seg.dovetails_R)
-        left_edges = list(seg.dovetails_L)
-        right_nodes = set()  # edge(node, orient, 'r')
-        left_nodes = set()
-
-        for e in right_edges:
-            n = extract_node(e, "r", seg.name)
-            if n is not None:
-                right_nodes.add(n)
-                gfa.rm(e)
-        for e in left_edges:
-            n = extract_node(e, "l", seg.name)
-            if n is not None:
-                left_nodes.add(n)
-                gfa.rm(e)
-
-        gfa.rm(seg)
-        pairs = list(product(left_nodes, right_nodes))
-        gfa.validate()
-        for edge in pairs:
-            new_edge = etos(edge)
-            with contextlib.suppress(gfapy.error.NotUniqueError):
-                gfa.add_line(new_edge)
-        gfa.validate()
-    gfa.to_file(output)
-    return output
-
-
-def gfa_to_fasta(gfa, fasta):
-    command = f'awk \'/^S/\u007bprint ">"$2; print ""$3\u007d\' {gfa} > {fasta}'
-    subprocess.call(command, shell=True)
-    return fasta
-
-
-def mix_fasta(fasta_list, output):
-    fasta1 = fasta_list[0]
-    fasta2 = fasta_list[1]
-    command = f"cat {fasta1} {fasta2} > {output}"
-    subprocess.call(command, shell=True)
 
 
 def get_path_by_name(gfa: gfapy.Gfa, name):
@@ -306,7 +264,7 @@ def add_gfa_to_pangenome(gfa: gfapy.Gfa, pangenome: gfapy.Gfa):
             pass
 
 
-def compute_scores(pangenome):
+def compute_scores(pangenome: gfapy.Gfa):
     for edge in pangenome.dovetails:
         if pangenome.segment(edge.from_segment.name).name == "1":
             print(pangenome.segment(edge.from_segment.name))
@@ -346,6 +304,7 @@ def compute_scores(pangenome):
             sys.exit(1)
 
     # annotate mean coverage to fragments, based on paths (contigs) coverage
+    seg: GfaSegment
     for seg in pangenome.segments:
         seg.set_datatype("cv", "f")
         coverage_list = []
@@ -373,6 +332,7 @@ def compute_scores(pangenome):
         seg.cv = float(coverage_mean)
 
     ## annotate assembly penalty to segments
+
     for seg in pangenome.segments:
         seg.set_datatype("ap", "f")
         if seg.aa in ("u", "s"):
@@ -383,9 +343,9 @@ def compute_scores(pangenome):
             seg.ap = 0
 
 
-def clean_pangenome(gfa):
-    gfa.validate()
-
+def clean_pangenome(gfa: gfapy.Gfa):
+    gfa.validate()  # REFACTOR GFA validation here
+    seg: GfaSegment
     for seg in gfa.segments:
         seg.set_datatype("OC", "i")  # occurences in paths
         seg.OC = 0
@@ -442,16 +402,5 @@ def clean_pangenome(gfa):
             elif sorted_clist[0] != "":
                 seg.aa = sorted_clist[0][0]
 
-    gfa.validate()
-    return gfa
-
-
-def extract_gfagz(gfagz) -> gfapy.Gfa:
-    command = f"bgzip -dkf {gfagz}"
-
-    subprocess.call(command, shell=True)
-    # REFACTOR use tmp file
-    filename = str(gfagz)[:-3]
-    gfa = gfapy.Gfa.from_file(filename, vlevel=0)
     gfa.validate()
     return gfa
