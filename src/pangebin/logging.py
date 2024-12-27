@@ -32,9 +32,10 @@ def format_logger(
 
 
 def init_logger(
+    logger: logging.Logger,
     first_info_message: str,
     debug: bool,  # noqa: FBT001
 ) -> None:
     """Initialize logger."""
     format_logger(debug)
-    _LOGGER.info(first_info_message)
+    logger.info(first_info_message)
