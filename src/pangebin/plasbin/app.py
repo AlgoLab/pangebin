@@ -1,5 +1,9 @@
 """PlasBin-Flow application module."""
 
+
+# Due to typer usage:
+# ruff: noqa: TC001, TC003, UP007, FBT001, FBT002, PLR0913
+
 from __future__ import annotations
 
 import logging
@@ -178,7 +182,7 @@ class PlasBinFlowArgs:
 
 
 @APP.command()
-def plasbin(  # noqa: PLR0913
+def plasbin(
     # Input
     asm_graph: Annotated[Path, PlasBinFlowArgs.ARG_ASM_GRAPH_FILE],
     gc_prob: Annotated[Path, PlasBinFlowArgs.ARG_GC_PROB_FILE],
