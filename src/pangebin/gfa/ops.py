@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import logging
 from typing import TYPE_CHECKING
 
@@ -40,9 +41,45 @@ def is_skesa_gfa_fixed(gfa_path: Path) -> bool:
 
 def fix_skesa_gfa(
     in_gfa_path: Path,
-    out_gfa_path: Path,
+    out_gfa_path: Path | None = None,
 ) -> None:
-    """Fix a Skeza GFA file."""
+    """Fix a Skeza GFA file.
+
+    Parameters
+    ----------
+    in_gfa_path : Path
+        Path to input GFA file
+    out_gfa_path : Path | None, optional
+        Path to output GFA file, must be different from input if used, by default None
+
+
+    Warnings
+    --------
+    This function modifies the input GFA file if out_gfa_path is None.
+
+    Raises
+    ------
+    ValueError
+        If input and output files are the same
+
+    """
+    replace_file = out_gfa_path is None
+    if replace_file:
+        _LOGGER.debug("Fixing Skeza GFA file %s", in_gfa_path)
+    else:
+        _LOGGER.debug("Fixing Skeza GFA file %s to %s.", in_gfa_path, out_gfa_path)
+
+    if out_gfa_path is None:
+        out_gfa_path = in_gfa_path.parent / (
+            f"{datetime.datetime.now(tz=datetime.UTC).isoformat()}"
+            f"_{in_gfa_path.name}"
+        )
+        _LOGGER.debug("Temporary output file: %s", out_gfa_path)
+    elif in_gfa_path == out_gfa_path:
+        _err_msg = f"Input and output files are the same: {in_gfa_path}"
+        _LOGGER.error(_err_msg)
+        raise ValueError(_err_msg)
+
     yes_fix_tag = (
         f"{SKESA_FIX_HEADER_TAG}"
         f":{SKESA_FIX_HEADER_TAG_TYPE}"
@@ -70,4 +107,7 @@ def fix_skesa_gfa(
                 f_out.write("\n")
             else:
                 f_out.write(line)
-                f_out.write("\n")
+
+    if replace_file:
+        in_gfa_path.unlink()
+        out_gfa_path.replace(in_gfa_path)

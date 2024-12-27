@@ -45,7 +45,7 @@ class FixSkesaGFAArgs:
     )
 
     ARG_OUT_GFA = typer.Argument(
-        help="Output GFA file",
+        help="Output GFA file, must be different from input if provided",
     )
 
     OPT_DEBUG = typer.Option(
@@ -59,7 +59,7 @@ def check_skesa(
     debug: Annotated[bool, CheckSkesaGFAArgs.OPT_DEBUG] = False,
 ) -> bool:
     """Check a Skeza GFA file."""
-    common_log.init_logger("Checking Skeza GFA file.", debug)
+    common_log.init_logger(_LOGGER, "Checking Skeza GFA file.", debug)
 
     if not in_gfa.exists():
         _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
@@ -75,11 +75,11 @@ def check_skesa(
 @APP.command()
 def fix_skesa(
     in_gfa: Annotated[Path, FixSkesaGFAArgs.ARG_IN_GFA],
-    out_gfa: Annotated[Path, FixSkesaGFAArgs.ARG_OUT_GFA],
+    out_gfa: Annotated[Path | None, FixSkesaGFAArgs.ARG_OUT_GFA] = None,
     debug: Annotated[bool, CheckSkesaGFAArgs.OPT_DEBUG] = False,
 ) -> None:
     """Fix a Skeza GFA file."""
-    common_log.init_logger("Fixing Skeza GFA file.", debug)
+    common_log.init_logger(_LOGGER, "Fixing Skeza GFA file.", debug)
 
     if not in_gfa.exists():
         _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
@@ -88,8 +88,12 @@ def fix_skesa(
     if gfa_ops.is_skesa_gfa_fixed(in_gfa):
         _LOGGER.info("Skesa GFA file is already fixed.")
         return
-    gfa_ops.fix_skesa_gfa(in_gfa, out_gfa)
-    _LOGGER.info("Fixed Skeza GFA file: %s", out_gfa)
+    try:
+        gfa_ops.fix_skesa_gfa(in_gfa, out_gfa_path=out_gfa)
+    except ValueError as e:
+        raise typer.Exit(1) from e
+
+    _LOGGER.info("Fixed Skeza GFA file: %s", out_gfa if out_gfa is not None else in_gfa)
 
 
 @dataclass
@@ -111,7 +115,7 @@ def to_fasta(
     debug: Annotated[bool, ToFASTAArgs.OPT_DEBUG] = False,
 ) -> None:
     """Convert GFA to FASTA."""
-    common_log.init_logger("Converting GFA to FASTA.", debug)
+    common_log.init_logger(_LOGGER, "Converting GFA to FASTA.", debug)
 
     if not gfa_path.exists():
         _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
