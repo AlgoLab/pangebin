@@ -5,9 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
 
 import gzip
+import io
+from contextlib import contextmanager
 from typing import IO
 
 
@@ -31,7 +34,8 @@ def is_gz_file(filepath: Path) -> bool:
         return test_f.read(2) == b"\x1f\x8b"
 
 
-def open_file_read(filepath: Path) -> IO[str]:
+@contextmanager
+def open_file_read(filepath: Path) -> Generator[IO[str], None, None]:
     """Open a file for reading.
 
     Parameters
@@ -39,18 +43,28 @@ def open_file_read(filepath: Path) -> IO[str]:
     filepath : Path
         Path of file to read.
 
-    Returns
-    -------
+    Yields
+    ------
     file object
         File to read.
 
     """
     if is_gz_file(filepath):
-        return gzip.open(filepath, "rt")
-    return filepath.open()
+        with (
+            filepath.open("rb") as f_in,
+            gzip.GzipFile(fileobj=f_in, mode="rb") as g_in,
+        ):
+            text_in = io.TextIOWrapper(g_in, encoding="utf-8")
+            yield text_in
+            text_in.close()
+    else:
+        text_in = filepath.open()
+        yield text_in
+        text_in.close()
 
 
-def open_file_write(filepath: Path) -> IO[str]:
+@contextmanager
+def open_file_write(filepath: Path) -> Generator[IO[str], None, None]:
     """Open a file for writing.
 
     Parameters
@@ -58,12 +72,21 @@ def open_file_write(filepath: Path) -> IO[str]:
     filepath : Path
         Path of file to write to.
 
-    Returns
-    -------
+    Yields
+    ------
     file object
         File to write to.
 
     """
     if is_gz_file(filepath):
-        return gzip.open(filepath, "wt")
-    return filepath.open("w")
+        with (
+            filepath.open("wb") as f_out,
+            gzip.GzipFile(fileobj=f_out, mode="wb") as g_out,
+        ):
+            text_out = io.TextIOWrapper(g_out, encoding="utf-8")
+            yield text_out
+            text_out.close()
+    else:
+        text_out = filepath.open("w")
+        yield text_out
+        text_out.close()
