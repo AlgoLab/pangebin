@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import gzip
-import os
 import shutil
 from collections import defaultdict
 from collections.abc import Iterable
@@ -50,12 +49,12 @@ class AssemblerTag(StrEnum):
 # ==================================================================================== #
 #                                GENERIC FILE FUNCTIONS                                #
 # ==================================================================================== #
-def __open_file_read(filepath: str | os.PathLike) -> IO[str]:
+def __open_file_read(filepath: Path) -> IO[str]:
     """Open a file for reading.
 
     Parameters
     ----------
-    filepath : str | os.PathLike
+    filepath : Path
         Path of file to read.
 
     Returns
@@ -63,19 +62,19 @@ def __open_file_read(filepath: str | os.PathLike) -> IO[str]:
     file object
         File to read.
 
-    """
+    """  # REFACTOR use instead main_io
     filepath = Path(filepath)
     if main_io.is_gz_file(filepath):
         return gzip.open(filepath, "rt")
     return filepath.open()
 
 
-def __open_file_write(filepath: str | os.PathLike) -> IO[str]:
+def __open_file_write(filepath: Path) -> IO[str]:
     """Open a file for writing.
 
     Parameters
     ----------
-    filepath : str | os.PathLike
+    filepath : Path
         Path of file to write to.
 
     Returns
@@ -83,7 +82,7 @@ def __open_file_write(filepath: str | os.PathLike) -> IO[str]:
     file object
         File to write to.
 
-    """
+    """  # REFACTOR use instead main_io
     filepath = Path(filepath)
     if main_io.is_gz_file(filepath):
         return gzip.open(filepath, "wt")
@@ -94,8 +93,8 @@ def __open_file_write(filepath: str | os.PathLike) -> IO[str]:
 
 
 def gunzip_fasta(
-    input_fasta_gz: str | os.PathLike,
-    output_fasta_gunzip: str | os.PathLike,
+    input_fasta_gz: Path,
+    output_fasta_gunzip: Path,
 ) -> None:
     """Gunzip a FASTA file.
 
@@ -137,7 +136,7 @@ def read_fasta_contigs(in_file_path, record_fun, id_fun=lambda x: x):
     return ctgs_dict
 
 
-def read_fasta_id(in_file_path: str | os.PathLike, id_fun=lambda x: x):
+def read_fasta_id(in_file_path: Path, id_fun=lambda x: x):
     """Compute the list of sequences id in a FASTA file.
 
     Args:
@@ -292,6 +291,8 @@ def __write_attributes(attributes_dict, keys_to_remove=[], sep=" "):
             if x not in keys_to_remove and y is not None
         ],
     )
+    # REFACTOR rename __write_attributes to gfa_segment_attribute_to_string
+    # REFACTOR __write_attributes should be moved
 
 
 def __assert_attributes_list(attributes_list):
@@ -352,14 +353,14 @@ def read_gfa_ctgs(
 
 
 def read_gfa_id(
-    gfa_filepath: str | os.PathLike,
+    gfa_filepath: Path,
     id_fun: Callable[[str], str] = lambda x: x,
 ) -> list[str]:
     """Compute the list of segments (contigs) id in a GFA file.
 
     Parameters
     ----------
-    gfa_filepath : str | os.PathLike
+    gfa_filepath : Path
         Path of GFA file to read.
     id_fun : function, optional
         Function that process a contig id, by default lambda x: x
@@ -383,7 +384,7 @@ def read_gfa_id(
 
 
 def read_gfa_attribute(
-    gfa_filepath: str | os.PathLike,
+    gfa_filepath: Path,
     att_key: str,
     id_fun=lambda x: x,
 ):  # TODO new description probably?
@@ -409,7 +410,7 @@ def read_gfa_attribute(
     }
 
 
-def read_gfa_len(gfa_filepath: str | os.PathLike, id_fun=lambda x: x):
+def read_gfa_len(gfa_filepath: Path, id_fun=lambda x: x):
     """Compute the length of segments (contigs) in a GFA file.
 
     Args:
@@ -427,7 +428,7 @@ def read_gfa_len(gfa_filepath: str | os.PathLike, id_fun=lambda x: x):
     )
 
 
-def read_gfa_seq(gfa_filepath: str | os.PathLike, id_fun=lambda x: x):
+def read_gfa_seq(gfa_filepath: Path, id_fun=lambda x: x):
     """Compute segments (contigs) sequences in a GFA file.
 
     Args:
@@ -498,7 +499,7 @@ def read_gfa_ass_penalty(in_file_path, id_fun=lambda x: x):
 
 
 def read_gfa_normalized_coverage(
-    filepath: str | os.PathLike,
+    filepath: Path,
     assembler: Assembler,
     id_fun=lambda x: x,
 ):
@@ -581,8 +582,8 @@ def read_GFA_links(filepath):
 
 
 def write_gfa_to_fasta(
-    in_gfa_filepath: str | os.PathLike,
-    out_fasta_filepath: str | os.PathLike,
+    in_gfa_filepath: Path,
+    out_fasta_filepath: Path,
     sep=" ",
 ):
     """Create a FASTA file from a GFA file.
@@ -609,7 +610,8 @@ def write_gfa_to_fasta(
             description=f"{x}.GFA {__write_attributes(y, keys_to_remove=[GFA_SEQ_KEY])}",  # noqa: E501
         )
         for x, y in gfa_ctg_seqs.items()
-    ]
+    ]  # OPTIMIZE write while iterate
+    # REFACTOR iter_gfa_to_fasta function
     try:
         with __open_file_write(out_fasta_filepath) as out_file:
             SeqIO.write(ctg_records, out_file, "fasta")

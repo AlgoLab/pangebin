@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from collections import defaultdict
 from enum import StrEnum
 
@@ -94,8 +93,8 @@ def read_pls_score_file(in_pls_score_file):
 
 
 def read_ctgs_data(
-    gfa_filepath: str | os.PathLike,
-    plasmid_score_filepath: str | os.PathLike,
+    gfa_filepath: Path,
+    plasmid_score_filepath: Path,
     assembler: Assembler,
     default_pls_score: float = DEFAULT_PLS_SCORE,
     min_ctg_len: int = DEFAULT_MIN_CTG_LEN,
@@ -225,7 +224,7 @@ def read_gc_data(gc_probabilities_file, gc_intervals_file, gfa_ctgs_list):
     return gc_probs_dict, gc_pens_dict
 
 
-def read_links_data(in_gfa_file: str | os.PathLike):
+def read_links_data(in_gfa_file: Path):
     """Read a GFA file to extract edges and compute their capacity.
 
     Args:
