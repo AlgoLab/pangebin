@@ -88,7 +88,7 @@ def preprocess(
     debug: Annotated[bool, PreprocessArgs.OPT_DEBUG] = False,
 ) -> None:
     """Preprocess GFA Assembly files."""
-    common_log.init_logger("Preprocessing GFA Assembly files.", debug)
+    common_log.init_logger(_LOGGER, "Preprocessing GFA Assembly files.", debug)
     outdir.mkdir(parents=True, exist_ok=True)
 
     config = (
@@ -104,8 +104,10 @@ def preprocess(
     )
 
     unicyler_gfa = gfa_io.from_file(unicycler_gfa_path)
+
     if not gfa_ops.is_skesa_gfa_fixed(skesa_gfa_path):
-        gfa_ops.fix_skesa_gfa(skesa_gfa_path, skesa_gfa_path)
+        gfa_ops.fix_skesa_gfa(skesa_gfa_path)
+
     skesa_gfa = gfa_io.from_file(skesa_gfa_path)
 
     rename_contigs(unicyler_gfa, ContigPrefix.UNICYCLER)
