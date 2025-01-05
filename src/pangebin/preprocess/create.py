@@ -5,14 +5,14 @@ from itertools import product
 
 import gfapy  # type: ignore[import-untyped]
 
-from pangebin.graph_utils import etos, extract_node
+from pangebin.gfa.items import Link, OrientedFragment
 
 
-def remove_nodes(
+def transform_small_contigs_into_links(
     gfa: gfapy.Gfa,
     min_contig_length: int,
 ) -> None:
-    """Remove nodes that are smaller than min_contig_length.
+    """Remove small contigs and transform them into links.
 
     Parameters
     ----------
@@ -30,29 +30,34 @@ def remove_nodes(
         if (seg.LN is not None and min_contig_length >= seg.LN) or (
             len(seg.sequence) <= min_contig_length
         ):
-            pass
-        else:
-            continue
-        right_edges = list(seg.dovetails_R)
-        left_edges = list(seg.dovetails_L)
-        right_nodes = set()  # edge(node, orient, 'r')
-        left_nodes = set()
+            left_edge_lines = list(seg.dovetails_L)
+            right_edge_lines = list(seg.dovetails_R)
+            predecessors: list[OrientedFragment] = []
+            successors: list[OrientedFragment] = []
 
-        for e in right_edges:
-            n = extract_node(e, "r", seg.name)
-            if n is not None:
-                right_nodes.add(n)
-                gfa.rm(e)
-        for e in left_edges:
-            n = extract_node(e, "l", seg.name)
-            if n is not None:
-                left_nodes.add(n)
-                gfa.rm(e)
+            for left_link_line in left_edge_lines:
+                pred = OrientedFragment.from_left_dovetail_line(
+                    left_link_line,
+                    seg.name,
+                )
+                if pred.identifier() != seg.name:
+                    predecessors.append(pred)
+                    gfa.rm(left_link_line)
 
-        gfa.rm(seg)
-        gfa.validate()
-        for edge in product(left_nodes, right_nodes):
-            new_edge = etos(edge)
-            with contextlib.suppress(gfapy.NotUniqueError):
-                gfa.add_line(new_edge)
-        gfa.validate()
+            for right_link_line in right_edge_lines:
+                succ = OrientedFragment.from_right_dovetail_line(
+                    right_link_line,
+                    seg.name,
+                )
+                if succ.identifier() != seg.name:
+                    successors.append(succ)
+                    gfa.rm(right_link_line)
+
+            gfa.rm(seg)
+            gfa.validate()
+            for link in (
+                Link(pred, succ) for pred, succ in product(predecessors, successors)
+            ):
+                with contextlib.suppress(gfapy.NotUniqueError):
+                    gfa.add_line(link.to_gfa_link_line())
+            gfa.validate()
