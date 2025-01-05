@@ -7,174 +7,11 @@ import sys
 import gfapy  # type: ignore[import-untyped]
 from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
-from pangebin.assembler import ContigPrefix
-
-
-def invert(sign: str):
-    if sign == "+":
-        return "-"
-    if sign == "-":
-        return "+"
-    if sign == "l":
-        return "r"
-    if sign == "r":
-        return "l"
-    return "?"
-
-
-def edge_exists(edge, collection):
-    for e in collection:
-        if edge_compare(edge, e) or edge_compare(edge_reverse(edge), e):
-            return True
-    return True
-
-
-def edge_compare(edge1, edge2):
-    return bool(
-        str(edge1[0][0]) == str(edge2[0][0])
-        and str(edge1[1][0]) == str(edge2[1][0])
-        and str(edge1[0][1]) == str(edge2[0][1])
-        and str(edge1[1][1]) == str(edge2[1][1]),
-    )
-
-
-def edge_reverse(edge):
-    assert edge[0][2] == "l", "edge[0][2] should be left, 'l'"
-    assert edge[1][2] == "r", "edge[1][2] should be right, 'r'"
-
-    return (
-        (edge[1][0], invert(edge[1][1]), "l"),
-        (edge[0][0], invert(edge[0][1]), "r"),
-    )
-
-
-def stoe(string):
-    estr = str(string).split("\t")
-    return ((estr[1], estr[2], "l"), (estr[3], estr[4], "r"))
-
-
-def etos(edge):
-    l_orient = "?"
-    r_orient = "?"
-
-    if edge[0][2] == "r":
-        l_orient = invert(edge[0][1])
-    elif edge[0][2] == "l":
-        l_orient = edge[0][1]
-
-    if edge[1][2] == "l":
-        r_orient = invert(edge[1][1])
-    elif edge[1][2] == "r":
-        r_orient = edge[1][1]
-
-    return gfapy.Line(f"L\t{edge[0][0]}\t{l_orient}\t{edge[1][0]}\t{r_orient}\t0M")
-
-
-def extract_node(edge, orient, name):
-    node = stoe(edge)
-
-    if orient == "r":
-        if node[0][0] == name and node[1][0] == name:
-            return None
-        if node[1][1] == "-" and node[1][0] == name:
-            node = edge_reverse(node)
-        elif node[0][1] == "+" and node[0][0] == name:
-            assert node[0][0] == name
-        else:
-            assert False
-        return (node[1][0], node[1][1], orient)
-
-    if orient == "l":
-        if node[0][0] == name and node[1][0] == name:
-            return None
-        if node[1][1] == "+" and node[1][0] == name:
-            pass
-        elif node[0][1] == "-" and node[0][0] == name:
-            node = edge_reverse(node)
-        else:
-            assert False
-        return (node[0][0], node[0][1], orient)
-    return None
-
-
-def rename_contigs(
-    graph: gfapy.Gfa,
-    segment_name_prefix: ContigPrefix,
-) -> None:
-    """Rename contigs in a GFA graph.
-
-    Parameters
-    ----------
-    graph : gfapy.Gfa
-        GFA graph
-    segment_name_prefix : ContigPrefix
-        Prefix for contig names
-
-    Warnings
-    --------
-    This function mutates the GFA graph
-
-    """
-    graph.validate()  # REFACTOR GFA validation here
-    graph.vlevel = 3
-    seg: GfaSegment
-    for counter, seg in enumerate(graph.segments):
-        if seg.LN is not None:
-            if seg.LN == 0:
-                seg.sequence = "*"
-                seg.LN = 0
-        elif len(seg.sequence) == 0:
-            seg.sequence = "*"
-            seg.LN = 0
-            graph.validate()
-        seg.name = f"{segment_name_prefix}{counter + 1}"
-    graph.validate()
-
-
-def convert_kc_to_dp(
-    graph: gfapy.Gfa,
-) -> None:
-    """Convert k-mer coverage to normalized coverage.
-
-    Parameters
-    ----------
-    graph : gfapy.Gfa
-        GFA graph
-
-    Warnings
-    --------
-    This function mutates the GFA graph
-
-    """
-    total_coverage = 0
-    total_length = 0
-
-    seg: GfaSegment
-    for seg in graph.segments:
-        total_coverage += seg.KC
-        if seg.LN is None:
-            seg.set_datatype("LN", "i")
-            seg.LN = len(seg.sequence)
-        total_length += seg.LN
-
-    for seg in graph.segments:
-        seg.set_datatype("dp", "f")
-        seg.dp = float((seg.KC * total_length) / (seg.LN * total_coverage))
-        seg.KC = None
-
-    graph.validate()
-
 
 def get_path_by_name(gfa: gfapy.Gfa, name):
     if gfa.line(str(name)) is not None:
         return gfa.line(str(name))
     print("path", name, "not found!!!!", type(name))
-    return None
-
-
-def get_segment_by_name(gfa: gfapy.Gfa, name):
-    if gfa.segment(name) is not None:
-        return gfa.segment(name)
     return None
 
 
@@ -223,7 +60,7 @@ def add_gfa_to_pangenome(gfa: gfapy.Gfa, pangenome: gfapy.Gfa):
         if (from_orient == "+") and (to_orient == "+"):
             left_frag = [x.name for x in path_from_contig.segment_names][-1]
             left_orient = "+"
-            right_frag = [x.name for x in path_to_contig.segment_names][0]
+            right_frag = next(x.name for x in path_to_contig.segment_names)
             right_orient = "+"
 
         elif (from_orient == "+") and (to_orient == "-"):
@@ -233,16 +70,16 @@ def add_gfa_to_pangenome(gfa: gfapy.Gfa, pangenome: gfapy.Gfa):
             right_orient = "-"
 
         elif (from_orient == "-") and (to_orient == "+"):
-            left_frag = [x.name for x in path_from_contig.segment_names][0]
+            left_frag = next(x.name for x in path_from_contig.segment_names)
             left_orient = "-"
-            right_frag = [x.name for x in path_to_contig.segment_names][0]
+            right_frag = next(x.name for x in path_to_contig.segment_names)
             right_orient = "+"
 
         elif (from_orient == "-") and (to_orient == "-"):
             # swapping left-right and using + +
             left_frag = [x.name for x in path_to_contig.segment_names][-1]
             left_orient = "+"
-            right_frag = [x.name for x in path_from_contig.segment_names][0]
+            right_frag = next(x.name for x in path_from_contig.segment_names)
             right_orient = "+"
 
         new_edge = gfapy.Line(
@@ -327,7 +164,7 @@ def compute_scores(pangenome: gfapy.Gfa):
                 _err_msg = f"segment {seg} has no paths associated"
                 raise KeyError(_err_msg)
 
-        coverage_mean = sum([i for i in coverage_list]) / len(coverage_list)
+        coverage_mean = sum(coverage_list) / len(coverage_list)
         assert coverage_mean is not None
         seg.cv = float(coverage_mean)
 
