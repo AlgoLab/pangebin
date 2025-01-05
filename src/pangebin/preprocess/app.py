@@ -17,12 +17,8 @@ import pangebin.gfa.ops as gfa_ops
 import pangebin.logging as common_log
 from pangebin import fasta
 from pangebin.assembler import ContigPrefix
-from pangebin.graph_utils import (
-    convert_kc_to_dp,
-    rename_contigs,
-)
 from pangebin.preprocess.config import Config
-from pangebin.preprocess.create import remove_nodes
+from pangebin.preprocess.create import transform_small_contigs_into_links
 from pangebin.preprocess.input_output import PreprocessIOConfig, PreprocessIOManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,12 +106,12 @@ def preprocess(
 
     skesa_gfa = gfa_io.from_file(skesa_gfa_path)
 
-    rename_contigs(unicyler_gfa, ContigPrefix.UNICYCLER)
-    rename_contigs(skesa_gfa, ContigPrefix.SKESA)
-    convert_kc_to_dp(skesa_gfa)
+    gfa_ops.rename_contigs(unicyler_gfa, ContigPrefix.UNICYCLER)
+    gfa_ops.rename_contigs(skesa_gfa, ContigPrefix.SKESA)
+    gfa_ops.convert_kc_to_dp(skesa_gfa)
 
-    remove_nodes(unicyler_gfa, config.min_contig_length())
-    remove_nodes(skesa_gfa, config.min_contig_length())
+    transform_small_contigs_into_links(unicyler_gfa, config.min_contig_length())
+    transform_small_contigs_into_links(skesa_gfa, config.min_contig_length())
 
     unicyler_gfa.to_file(preprocess_io_manager.unicycler_gfa_path())
     skesa_gfa.to_file(preprocess_io_manager.skesa_gfa_path())
