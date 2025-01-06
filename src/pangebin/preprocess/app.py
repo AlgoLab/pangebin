@@ -18,8 +18,8 @@ import pangebin.logging as common_log
 from pangebin import fasta
 from pangebin.assembler import ContigPrefix
 from pangebin.preprocess.config import Config
-from pangebin.preprocess.create import transform_small_contigs_into_links
 from pangebin.preprocess.input_output import PreprocessIOConfig, PreprocessIOManager
+from pangebin.preprocess.ops import transform_small_contigs_into_links
 
 _LOGGER = logging.getLogger(__name__)
 
