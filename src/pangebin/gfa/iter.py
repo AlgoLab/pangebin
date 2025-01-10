@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-from pangebin.gfa.items import Orientation, OrientedFragment
+from pangebin.gfa.segment import Orientation, OrientedFragment
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
