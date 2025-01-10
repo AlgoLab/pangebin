@@ -5,7 +5,9 @@ from itertools import product
 
 import gfapy  # type: ignore[import-untyped]
 
-from pangebin.gfa.items import Link, OrientedFragment
+import pangebin.gfa.segment as gfa_segment
+from pangebin.gfa.link import Link
+from pangebin.gfa.segment import OrientedFragment
 
 
 def transform_small_contigs_into_links(
@@ -26,34 +28,32 @@ def transform_small_contigs_into_links(
     This function mutates the GFA graph
 
     """
-    for seg in gfa.segments:
-        if (seg.LN is not None and min_contig_length >= seg.LN) or (
-            len(seg.sequence) <= min_contig_length
-        ):
-            left_edge_lines = list(seg.dovetails_L)
-            right_edge_lines = list(seg.dovetails_R)
+    for segment in gfa.segments:
+        if gfa_segment.length(segment) <= min_contig_length:
+            left_edge_lines = list(segment.dovetails_L)
+            right_edge_lines = list(segment.dovetails_R)
             predecessors: list[OrientedFragment] = []
             successors: list[OrientedFragment] = []
 
             for left_link_line in left_edge_lines:
                 pred = OrientedFragment.from_left_dovetail_line(
                     left_link_line,
-                    seg.name,
+                    segment.name,
                 )
-                if pred.identifier() != seg.name:
+                if pred.identifier() != segment.name:
                     predecessors.append(pred)
                     gfa.rm(left_link_line)
 
             for right_link_line in right_edge_lines:
                 succ = OrientedFragment.from_right_dovetail_line(
                     right_link_line,
-                    seg.name,
+                    segment.name,
                 )
-                if succ.identifier() != seg.name:
+                if succ.identifier() != segment.name:
                     successors.append(succ)
                     gfa.rm(right_link_line)
 
-            gfa.rm(seg)
+            gfa.rm(segment)
             gfa.validate()
             for link in (
                 Link(pred, succ) for pred, succ in product(predecessors, successors)

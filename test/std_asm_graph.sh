@@ -3,13 +3,13 @@
 # ------------------------------------------------------------------------------------ #
 # USAGE
 #
-# ./test/preprocess.sh {run|clean} test/<dataset> [--debug]
+# ./test/std_asm_graph.sh {run|clean} test/<dataset> [--debug]
 # ------------------------------------------------------------------------------------ #
 
 command=$1
 dataset_dir=$2
 
-out_dir="$dataset_dir/result/preprocess"
+out_dir="$dataset_dir/result/std_asm_graph"
 
 debug=""
 if [ "$3" == "--debug" ]; then
@@ -25,7 +25,7 @@ run() {
 
     local min_contig_length=1
 
-    pangebin preprocess $unicycler_gfa $skesa_gfa \
+    pangebin std-asm-graph $unicycler_gfa $skesa_gfa \
         --min-contig-length $min_contig_length \
         --outdir $out_dir \
         $debug

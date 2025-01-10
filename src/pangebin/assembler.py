@@ -3,7 +3,7 @@
 from enum import StrEnum
 
 
-class Assembler(StrEnum):
+class Item(StrEnum):
     """Assemblers."""
 
     UNICYCLER = "unicycler"
@@ -11,9 +11,8 @@ class Assembler(StrEnum):
     PANGENOME = "pangenome"
 
 
-class ContigPrefix(StrEnum):
+class Prefix(StrEnum):
     """Contig prefixes."""
 
     UNICYCLER = "uni"
     SKESA = "ske"
-    PANGENOME = "pan"

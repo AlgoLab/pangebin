@@ -13,17 +13,17 @@ except ImportError:
     from yaml import Dumper
 
 
-class PreprocessIOManager:
+class Manager:
     """Preprocess input/output manager."""
 
-    UNICYCLER_GFA_FILENAME = Path("preprocess_unicycler.gfa")
-    SKESA_GFA_FILENAME = Path("preprocess_skesa.gfa")
+    UNICYCLER_GFA_FILENAME = Path("unicycler.gfa")
+    SKESA_GFA_FILENAME = Path("skesa.gfa")
 
-    UNICYCLER_FASTA_FILENAME = Path("preprocess_unicycler.fasta")
-    SKESA_FASTA_FILENAME = Path("preprocess_skesa.fasta")
-    MIXED_FASTA_FILENAME = Path("preprocess_mixed.fasta")
+    UNICYCLER_FASTA_FILENAME = Path("unicycler.fasta")
+    SKESA_FASTA_FILENAME = Path("skesa.fasta")
+    MIXED_FASTA_FILENAME = Path("mixed.fasta")
 
-    def __init__(self, config: PreprocessIOConfig) -> None:
+    def __init__(self, config: Config) -> None:
         """Initialize object."""
         self.__config = config
 
@@ -47,29 +47,29 @@ class PreprocessIOManager:
         """Get mixed FASTA path."""
         return self.__config.output_directory() / self.MIXED_FASTA_FILENAME
 
-    def config(self) -> PreprocessIOConfig:
+    def config(self) -> Config:
         """Get config."""
         return self.__config
 
 
-class PreprocessIOConfig:
+class Config:
     """Preprocess config class."""
 
-    DEFAULT_DIR = Path("./")
+    DEFAULT_DIR = Path("./preprocess")
 
     KEY_OUTPUT_DIR = "output_directory"
 
     NAME = "Preprocess IO config"
 
     @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> PreprocessIOConfig:
+    def from_yaml(cls, yaml_filepath: Path) -> Config:
         """Create config instance from a YAML file."""
         with Path(yaml_filepath).open("r") as file:
             config_data = yaml.safe_load(file)
         return cls.from_dict(config_data)
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> PreprocessIOConfig:
+    def from_dict(cls, config_dict: dict[str, Any]) -> Config:
         """Convert dict to object."""
         return cls(
             config_dict.get(cls.KEY_OUTPUT_DIR, cls.DEFAULT_DIR),

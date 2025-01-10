@@ -15,13 +15,9 @@ import pandas as pd
 import typer
 
 import pangebin.gfa.app as gfa_app
+import pangebin.panassembly.app as panassembly_app
 import pangebin.plasbin.app as plasbin_app
-import pangebin.preprocess.app as preprocess_app
-from pangebin.graph_utils import (
-    add_gfa_to_pangenome,
-    clean_pangenome,
-    compute_scores,
-)
+import pangebin.std_asm_graph.app as std_asm_graph_app
 
 
 class _TyperRichHelpPanel(StrEnum):
@@ -40,33 +36,9 @@ APP.add_typer(
     rich_help_panel=_TyperRichHelpPanel.UTILS,
 )
 
+APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(std_asm_graph_app.std_asm_graph)
+APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(panassembly_app.panassembly)
 APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(plasbin_app.plasbin)
-APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(preprocess_app.preprocess)
-
-
-@dataclass
-class PanassemblyArgs:
-    """Pangenome assembly arguments."""
-
-    ARG_PANGENOME = typer.Argument(
-        help="Pangenome GFA file",
-    )
-
-    ARG_UNI_PREPROCESSED = typer.Argument(
-        help="Unicycler GFA Preprocessed graph",
-    )
-
-    ARG_SKE_PREPROCESSED = typer.Argument(
-        help="Skesa GFA Preprocessed graph",
-    )
-
-    ARG_SAMPLE_NAME = typer.Argument(
-        help="Sample ID",
-    )
-
-    ARG_OUTPUT_DIR = typer.Argument(
-        help="Output folder",
-    )
 
 
 @dataclass
@@ -87,27 +59,6 @@ class ModArgs:
     ARG_PANGENOME = typer.Argument(
         help="Pangenome GFA file",
     )
-
-
-@APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)
-def panassembly(
-    pangenome: Annotated[Path, PanassemblyArgs.ARG_PANGENOME],
-    skesa_assembly: Annotated[Path, PanassemblyArgs.ARG_SKE_PREPROCESSED],
-    unicycler_assembly: Annotated[Path, PanassemblyArgs.ARG_UNI_PREPROCESSED],
-    sample: Annotated[str, PanassemblyArgs.ARG_SAMPLE_NAME],
-    outdir: Annotated[Path, PanassemblyArgs.ARG_OUTPUT_DIR],
-):
-    """Make a pangenome assembly (panassembly) from the set of original assemblers plus the pangenome."""
-    outdir.mkdir(parents=True, exist_ok=True)
-    gfa = gfapy.Gfa.from_file(pangenome)
-    cl_pangenome = clean_pangenome(gfa)
-    assemblers = [skesa_assembly, unicycler_assembly]
-    for a in assemblers:
-        gfa = gfapy.Gfa.from_file(f"{a}")
-        add_gfa_to_pangenome(gfa, cl_pangenome)
-    compute_scores(cl_pangenome)
-    filename = f"{outdir}/{sample}.panasm.gfa"
-    cl_pangenome.to_file(f"{filename}")
 
 
 @APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)
