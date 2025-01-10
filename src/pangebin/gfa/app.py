@@ -31,32 +31,11 @@ class CheckSkesaGFAArgs:
         help="Input GFA file",
     )
 
-    OPT_DEBUG = typer.Option(
-        help="Debug mode",
-    )
-
-
-@dataclass
-class FixSkesaGFAArgs:
-    """Fix Skeza GFA arguments."""
-
-    ARG_IN_GFA = typer.Argument(
-        help="Input GFA file",
-    )
-
-    ARG_OUT_GFA = typer.Argument(
-        help="Output GFA file, must be different from input if provided",
-    )
-
-    OPT_DEBUG = typer.Option(
-        help="Debug mode",
-    )
-
 
 @APP.command()
 def check_skesa(
     in_gfa: Annotated[Path, CheckSkesaGFAArgs.ARG_IN_GFA],
-    debug: Annotated[bool, CheckSkesaGFAArgs.OPT_DEBUG] = False,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> bool:
     """Check a Skeza GFA file."""
     common_log.init_logger(_LOGGER, "Checking Skeza GFA file.", debug)
@@ -72,11 +51,24 @@ def check_skesa(
     return False
 
 
+@dataclass
+class FixSkesaGFAArgs:
+    """Fix Skeza GFA arguments."""
+
+    ARG_IN_GFA = typer.Argument(
+        help="Input GFA file",
+    )
+
+    ARG_OUT_GFA = typer.Argument(
+        help="Output GFA file, must be different from input if provided",
+    )
+
+
 @APP.command()
 def fix_skesa(
     in_gfa: Annotated[Path, FixSkesaGFAArgs.ARG_IN_GFA],
     out_gfa: Annotated[Path | None, FixSkesaGFAArgs.ARG_OUT_GFA] = None,
-    debug: Annotated[bool, CheckSkesaGFAArgs.OPT_DEBUG] = False,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """Fix a Skeza GFA file."""
     common_log.init_logger(_LOGGER, "Fixing Skeza GFA file.", debug)
@@ -104,15 +96,11 @@ class ToFASTAArgs:
         help="Input GFA file",
     )
 
-    OPT_DEBUG = typer.Option(
-        help="Debug mode",
-    )
-
 
 @APP.command()
 def to_fasta(
     gfa_path: Annotated[Path, ToFASTAArgs.ARG_IN_GFA],
-    debug: Annotated[bool, ToFASTAArgs.OPT_DEBUG] = False,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """Convert GFA to FASTA."""
     common_log.init_logger(_LOGGER, "Converting GFA to FASTA.", debug)
