@@ -221,7 +221,7 @@ def set_preprocessed_header_tag(gfa: gfapy.Gfa) -> None:
     gfa.header.add(gfa_header.Tag.STANDARDIZED, gfa_header.PreprocessedTagValue.YES)
 
 
-def is_preprocessed(gfa: gfapy.Gfa) -> bool:
+def is_standardized(gfa: gfapy.Gfa) -> bool:
     """Check if a GFA graph has already been preprocessed."""
     return (
         gfa.header.get(gfa_header.Tag.STANDARDIZED)

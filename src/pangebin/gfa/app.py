@@ -14,6 +14,7 @@ from typing import Annotated
 import gfapy  # type: ignore[import-untyped]
 import typer
 
+import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.logging as common_log
 from pangebin.gfa import iter as gfa_iter
@@ -113,3 +114,32 @@ def to_fasta(
 
     for seq_record in gfa_iter.iter_gfa_to_fasta(gfa):
         sys.stdout.write(seq_record.format("fasta"))
+
+
+@dataclass
+class ISGFAStandardizeArgs:
+    """Argument for checking if a GFA is standardized."""
+
+    ARG_IN_GFA = typer.Argument(
+        help="Input GFA file",
+    )
+
+
+@APP.command()
+def is_standardized(
+    gfa_path: Annotated[Path, ISGFAStandardizeArgs.ARG_IN_GFA],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Check if a GFA is standardized."""
+    common_log.init_logger(_LOGGER, "Checking if GFA is standardized.", debug)
+
+    if not gfa_path.exists():
+        _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
+        raise typer.Exit(1)
+
+    gfa = gfa_io.from_file(gfa_path)
+
+    if gfa_ops.is_standardized(gfa):
+        _LOGGER.info("GFA is standardized.")
+    else:
+        _LOGGER.info("GFA is not standardized.")
