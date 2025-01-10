@@ -5,10 +5,16 @@ from __future__ import annotations
 import logging
 import sys
 
+import typer
+
 __ROOT_APP_NAME = "pangebin"
 
 _LOGGER = logging.getLogger(__ROOT_APP_NAME)
 _LOGGER.setLevel(logging.DEBUG)
+
+OPT_DEBUG = typer.Option(
+    help="Debug mode",
+)
 
 
 def format_logger(
