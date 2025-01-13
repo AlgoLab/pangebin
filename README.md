@@ -17,18 +17,18 @@
 
 ## Usage
 
-Example with the sample `SAMN16357463`:
+Example with the dataset `SAMN16357463`:
 
 ```sh
 dataset_dir="test/SAMN16357463"
 ```
 
-1. preprocess input files
+1. standardize GFA assembly graphs
 
    ```sh
-   ./test/preprocess.sh run $dataset_dir
+   ./test/std_asm_graph.sh run $dataset_dir
    # to clean:
-   # ./test/preprocess.sh clean $dataset_dir
+   # ./test/std_asm_graph.sh clean $dataset_dir
    ```
 
 2. make pangenome graph using `${mixed_fasta}`
@@ -47,10 +47,14 @@ dataset_dir="test/SAMN16357463"
    # ./test/panassembly.sh clean $dataset_dir
    ```
 
-4. Execute pangebin
+4. Execute PlasBin-Flow modified for pan-assembly
 
    ```sh
-   ./test/pangebin.sh run $dataset_dir
+   ./test/plasbin.sh run $dataset_dir
    # to clean:
-   # ./test/pangebin.sh clean $dataset_dir
+   # ./test/plasbin.sh clean $dataset_dir
    ```
+
+## Going further into the details
+
+Understanding GFA tags system [`doc/gfa_tags.md`](doc/gfa_tags.md)
