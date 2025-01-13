@@ -1,50 +1,17 @@
-# GFA tags
+# Pan-assembly graph (with Skesa and Unicycler contigs)
 
-## Standardized assembly graphs
+## Header
 
-Standardize the tags of Skesa and Unicycler assembly graphs.
+### Tags
 
-### Header
+| ID   | Type         | Values                     | Description      |
+| ---- | ------------ | -------------------------- | ---------------- |
+| `VN` | `Z` (string) | `M.m`                      | GFA version      |
+| `PA` | `Z` (string) | `panassembly_with_contigs` | Panassembly type |
 
-| ID   | Type       | Values | Description                     |
-| ---- | ---------- | ------ | ------------------------------- |
-| `Sd` | `A` (char) | `Y\|N` | The graph is (not) standardized |
+## Segments
 
-### Segments
-
-#### Names
-
-* `ske_<k>` for Skesa
-* `uni_<k>` for Unicycler
-
-For $k \in \{1...|S|\}$, with $S$ the set of segments.
-
-#### Tags
-
-| ID   | Type        | Values            | Description                  |
-| ---- | ----------- | ----------------- | ---------------------------- |
-| `LN` | `i` (int)   | $\mathbb{N}_{>0}$ | Length of the sequence       |
-| `dp` | `f` (float) | $\mathbb{R}_{>0}$ | Normalized sequence coverage |
-
-### Links
-
-#### Overlap match
-
-`0M`
-
-## Pan-assembly graph
-
-### Header
-
-#### Tags
-
-| ID   | Type         | Values | Description |
-| ---- | ------------ | ------ | ----------- |
-| `VN` | `Z` (string) | `M.m`  | GFA version |
-
-### Segments
-
-#### Names
+### Names
 
 For pangenome segments:
 
@@ -57,17 +24,17 @@ For whole contigs:
 * `ske_<k>` for Skesa (with $k \in \{1...|S|\}$, with $S$ the set of Skesa whole contigs)
 * `uni_<k>` for Unicycler (with $k \in \{1...|S|\}$, with $S$ the set of Unicycler whole contigs)
 
-#### Tags
+### Tags
 
-| ID   | Type              | Values                    | Description                                        |
+| ID   | Type              |          Values           | Description                                        |
 | ---- | ----------------- | :-----------------------: | -------------------------------------------------- |
-| `LN` | `i` (int)         | $\mathbb{N}_{>0}$         | Length of the sequence                             |
-| `dp` | `f` (float)       | $\mathbb{R}_{>0}$         | Normalized sequence coverage                       |
-| `OC` | `i` (int)         | $\mathbb{N}_{>0}$         | From how many assemblies comes from the sequence   |
-| `cl` | `Z` (string)      | `name1,name2,...`         | Contigs from which the sequence comes from         |
+| `LN` | `i` (int)         |     $\mathbb{N}_{>0}$     | Length of the sequence                             |
+| `dp` | `f` (float)       |     $\mathbb{R}_{>0}$     | Normalized sequence coverage                       |
+| `OC` | `i` (int)         |     $\mathbb{N}_{>0}$     | From how many assemblies comes from the sequence   |
+| `cl` | `Z` (string)      |     `name1,name2,...`     | Contigs from which the sequence comes from         |
 | `cp` | `B` (float array) | list of $\mathbb{R}_{>0}$ | Part of the contig in the order of the contig list |
-| `ns` | `A` (char)        | $\{S, U, s, u, b\}$       | Nature of the segment, see below                   |
-| `ap` | `f` (float)       | $\mathbb{R}_{>=0}$        | Pangenome penalty, see below                       |
+| `ns` | `A` (char)        |    $\{S, U, s, u, b\}$    | Nature of the segment, see below                   |
+| `ap` | `f` (float)       |    $\mathbb{R}_{>=0}$     | Pangenome penalty, see below                       |
 
 <!-- REFACTOR change ll by cp -->
 <!-- REFACTOR always use dp, remove the use of cv -->
@@ -88,13 +55,13 @@ For whole contigs:
 
 The idea here is to favour the subcontig shared by the two assemblers by penalizing the others.
 
-### Links
+## Links
 
-#### Overlap match
+### Overlap match
 
 `0M`
 
-#### Tags
+### Tags
 
 | ID   | Type         | Values        | Description                   |
 | ---- | ------------ | ------------- | ----------------------------- |
@@ -138,11 +105,11 @@ Redundant combinations (and their reverse order):
 * `sU` corresponds to `bU`
 * `uS` corresponds to `bS`
 
-### Paths
+## Paths
 
 <!-- DOCU path tags -->
 
-#### Names
+### Names
 
 * `ske_<k>` for Skesa (with $k \in \{1...|S|\}$, with $S$ the set of Skesa whole contigs)
 * `uni_<k>` for Unicycler (with $k \in \{1...|S|\}$, with $S$ the set of Unicycler whole contigs)

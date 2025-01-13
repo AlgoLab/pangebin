@@ -1,0 +1,101 @@
+# Pan-assembly graph
+
+## Header
+
+### Tags
+
+| ID   | Type         | Values        | Description      |
+| ---- | ------------ | ------------- | ---------------- |
+| `VN` | `Z` (string) | `M.m`         | GFA version      |
+| `PA` | `Z` (string) | `panassembly` | Panassembly type |
+
+## Segments
+
+### Names
+
+For pangenome segments:
+
+* `panske_<k>` for Skesa subcontigs (with $k \in \{1...|S_{ps}|\}$ where $S_{ps}$ is the set of pangenome segments corresponding to Skesa subcontigs)
+* `panuni_<k>` for Unicycler subcontigs (with $k \in \{1...|S_{pu}|\}$ where $S_{pu}$ is the set of pangenome segments corresponding to Unicycler subcontigs)
+* `panboth_<k>` for Skesa-Unicycler subcontigs (with $k \in \{1...|S_{pb}|\}$ where $S_{pb}$ is the set of pangenome segments corresponding to Skesa-Unicycler subcontigs)
+
+### Tags
+
+| ID   | Type              |          Values           | Description                                        |
+| ---- | ----------------- | :-----------------------: | -------------------------------------------------- |
+| `LN` | `i` (int)         |     $\mathbb{N}_{>0}$     | Length of the sequence                             |
+| `dp` | `f` (float)       |     $\mathbb{R}_{>0}$     | Normalized sequence coverage                       |
+| `OC` | `i` (int)         |     $\mathbb{N}_{>0}$     | From how many assemblies comes from the sequence   |
+| `cl` | `Z` (string)      |     `name1,name2,...`     | Contigs from which the sequence comes from         |
+| `cp` | `B` (float array) | list of $\mathbb{R}_{>0}$ | Part of the contig in the order of the contig list |
+| `sn` | `A` (char)        |       $\{s, u, b\}$       | Nature of the segment, see below                   |
+| `ap` | `f` (float)       |    $\mathbb{R}_{>=0}$     | Pangenome penalty, see below                       |
+
+<!-- REFACTOR always use dp, remove the use of cv -->
+<!-- REFACTOR change aa by sn -->
+
+**Nature of the segment (`ns` tag):**
+
+* `s` Skesa subcontig (from pangenome Skesa-Unicycler)
+* `u` Unicycler subcontig (from pangenome Skesa-Unicycler)
+* `b` Skesa and Unicycler subcontig (from pangenome Skesa-Unicycler)
+
+**Pangenome penalty (`ap` tag):**
+
+* If `aa:A:b`: the penalty equals $0$
+* Otherwise: the penalty equals $max(1, length/1000)$
+
+The idea here is to favour the subcontig shared by the two assemblers by penalizing the others.
+
+## Links
+
+### Overlap match
+
+`0M`
+
+### Tags
+
+| ID   | Type         | Values        | Description                   |
+| ---- | ------------ | ------------- | ----------------------------- |
+| `lo` | `A` (char)   | $\{p, s, u\}$ | Origin of the link, see below |
+| `lt` | `Z` (string) | `<x><y>`      | Link type, see below          |
+
+<!-- REFACTOR change aa by lo -->
+
+**Origin of the link (`lo` tag):**
+
+* `p` pangenome link (between a subcontig from Skesa or Unicycler, and a subcontig from both Skesa and Unicycler)
+* `s` Skesa link
+* `u` Unicycler link
+
+**Link type (`lt` tag):**
+
+Between subcontigs:
+
+* `su` Skesa subcontig to Unicycler subcontig
+* `bs` Skesa-Unicycler subcontig to Skesa subcontig
+* `bu` Skesa-Unicycler subcontig to Unicycler subcontig
+* `bb` Skesa-Unicycler subcontig to Skesa-Unicycler subcontig
+
+Redundant combinations (and their reverse order):
+
+* `ss` corresponds to `bs` or `sb`
+* `uu` corresponds to `bu` or `ub`
+
+## Paths
+
+<!-- DOCU path tags -->
+
+### Names
+
+* `ske_<k>` for Skesa (with $k \in \{1...|S|\}$, with $S$ the set of Skesa whole contigs)
+* `uni_<k>` for Unicycler (with $k \in \{1...|S|\}$, with $S$ the set of Unicycler whole contigs)
+
+### Tags
+
+| ID   | Type        |      Values       | Description                  |
+| ---- | ----------- | :---------------: | ---------------------------- |
+| `LN` | `i` (int)   | $\mathbb{N}_{>0}$ | Length of the sequence       |
+| `dp` | `f` (float) | $\mathbb{R}_{>0}$ | Normalized sequence coverage |
+
+<!-- REFACTOR tags for panassembly without assembler contigs as segments -->
