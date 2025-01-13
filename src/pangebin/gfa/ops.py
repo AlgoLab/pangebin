@@ -14,14 +14,12 @@ import pangebin.gfa.line as gfa_line
 import pangebin.gfa.tag as gfa_tag
 import pangebin.input_output as io
 from pangebin.gfa import segment as gfa_segment
-from pangebin.gfa.format import format_segment_name
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
-    from pangebin import assembler
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -142,6 +140,7 @@ def set_segment_length_tags(graph: gfapy.Gfa) -> None:
     This function mutates the GFA graph
 
     """
+    _LOGGER.info("Setting segment length tags.")
     segment: GfaSegment
     for segment in graph.segments:
         segment.set_datatype(
@@ -155,27 +154,28 @@ def set_segment_length_tags(graph: gfapy.Gfa) -> None:
             gfa_segment.set_length(segment)
 
 
-def rename_contigs(
+def rename_segments(
     graph: gfapy.Gfa,
-    segment_name_prefix: assembler.Prefix,
+    segment_prefix_name: str,
 ) -> None:
-    """Rename contigs in a GFA graph.
+    """Rename segments in a GFA graph.
 
     Parameters
     ----------
     graph : gfapy.Gfa
         GFA graph
-    segment_name_prefix : assembler.Prefix
-        Prefix for contig names
+    segment_prefix_name : str
+        Prefix for segment names
 
     Warnings
     --------
     This function mutates the GFA graph
 
     """
-    seg: GfaSegment
-    for counter, seg in enumerate(graph.segments):
-        seg.name = format_segment_name(segment_name_prefix, counter + 1)
+    _LOGGER.info("Renaming segments.")
+    segment: GfaSegment
+    for counter, segment in enumerate(graph.segments):
+        segment.name = gfa_segment.format_name(segment_prefix_name, counter + 1)
 
 
 def convert_kmer_coverage_to_normalized_coverage(
@@ -193,6 +193,7 @@ def convert_kmer_coverage_to_normalized_coverage(
     This function mutates the GFA graph
 
     """
+    _LOGGER.info("Converting k-mer coverage to normalized coverage.")
     total_coverage = sum(gfa_segment.kmer_coverage(seg) for seg in graph.segments)
     total_length = sum(gfa_segment.length(seg) for seg in graph.segments)
 
@@ -212,18 +213,19 @@ def convert_kmer_coverage_to_normalized_coverage(
         seg.delete(gfa_segment.Tag.KMER_COVERAGE)
 
 
-def set_preprocessed_header_tag(gfa: gfapy.Gfa) -> None:
-    """Set the preprocessed header tag in the GFA graph."""
+def set_standardized_header_tag(gfa: gfapy.Gfa) -> None:
+    """Set the standardized header tag in the GFA graph."""
+    _LOGGER.info("Setting standardized header tag.")
     gfa.header.set_datatype(
         gfa_header.Tag.STANDARDIZED,
-        gfa_header.TagType.PREPROCESSED,
+        gfa_header.TagType.STANDARDIZED,
     )
-    gfa.header.add(gfa_header.Tag.STANDARDIZED, gfa_header.PreprocessedTagValue.YES)
+    gfa.header.add(gfa_header.Tag.STANDARDIZED, gfa_header.StandardizedTagValue.YES)
 
 
 def is_standardized(gfa: gfapy.Gfa) -> bool:
-    """Check if a GFA graph has already been preprocessed."""
+    """Check if a GFA graph is standardized."""
     return (
         gfa.header.get(gfa_header.Tag.STANDARDIZED)
-        == gfa_header.PreprocessedTagValue.YES
+        == gfa_header.StandardizedTagValue.YES
     )

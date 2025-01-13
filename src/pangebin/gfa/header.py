@@ -1,5 +1,7 @@
 """GFA header API wrapper."""
 
+from __future__ import annotations
+
 from enum import StrEnum
 
 from pangebin.gfa.tag import FieldType
@@ -16,7 +18,12 @@ class TagType(StrEnum):
     """GFA header tag types."""
 
     SKESA_FIX = FieldType.CHAR
-    PREPROCESSED = FieldType.CHAR
+    STANDARDIZED = FieldType.CHAR
+
+    @classmethod
+    def from_tag(cls, tag: Tag) -> TagType:
+        """Get field type from tag."""
+        return cls(tag.name)
 
 
 class SkesaFixTagValue(StrEnum):
@@ -26,8 +33,8 @@ class SkesaFixTagValue(StrEnum):
     NO = "N"
 
 
-class PreprocessedTagValue(StrEnum):
-    """Preprocessed header tag values."""
+class StandardizedTagValue(StrEnum):
+    """Standardized header tag values."""
 
     YES = "Y"
     NO = "N"

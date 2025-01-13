@@ -20,12 +20,12 @@ run() {
     local datadir="$dataset_dir/data"
     local assembly_datadir="$datadir/assembly"
 
-    local unicycler_gfa="$assembly_datadir/unicycler.gfa.gz"
     local skesa_gfa="$assembly_datadir/skesa.gfa.gz"
+    local unicycler_gfa="$assembly_datadir/unicycler.gfa.gz"
 
     local min_contig_length=1
 
-    pangebin std-asm-graph $unicycler_gfa $skesa_gfa \
+    pangebin std-asm-graph $skesa_gfa $unicycler_gfa \
         --min-contig-length $min_contig_length \
         --outdir $out_dir \
         $debug

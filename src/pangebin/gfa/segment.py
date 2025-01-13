@@ -5,156 +5,11 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-import gfapy  # type: ignore[import-untyped]
-
-from pangebin import assembler
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
     from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
     from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
-
-
-class Tag(StrEnum):
-    """Segment tags."""
-
-    LENGTH = "LN"
-    KMER_COVERAGE = "KC"
-    NORMALIZED_COVERAGE = "dp"
-    OCCURENCE_IN_PATHS = "OC"
-    FROM_CONTIGS = "cl"
-    CONTIG_PERCENTAGES = "ll"
-    FROM_ASSEMBLER = "aa"
-
-
-class TagType(StrEnum):
-    """Segment tag types."""
-
-    LENGTH = FieldType.SIGNED_INT
-    KMER_COVERAGE = FieldType.SIGNED_INT
-    NORMALIZED_COVERAGE = FieldType.FLOAT
-    OCCURENCE_IN_PATH = FieldType.SIGNED_INT
-    FROM_CONTIGS = FieldType.STRING
-    CONTIG_PERCENTAGES = FieldType.INT_OR_FLOAT_ARRAY
-    FROM_ASSEMBLER = FieldType.CHAR
-
-
-class FromAssemblerTagValue(StrEnum):
-    """From assembler tag values.
-
-    The string representation is only one letter.
-    """
-
-    SUB_UNICYCLER_AND_SKESA_CONTIGS = "b"
-    SUB_UNICYCLER_CONTIG = "u"
-    SUB_SKESA_CONTIG = "s"
-    WHOLE_UNICYCLER_CONTIG = "U"
-    WHOLE_SKESA_CONTIG = "S"
-
-    @classmethod
-    def from_panassembly(
-        cls,
-        panassembly_assembler: assembler.Item,
-    ) -> FromAssemblerTagValue:
-        """Get from panassembly assembler tag value."""
-        # FIXME not really this, you can also have UU or SS
-        match panassembly_assembler:
-            case assembler.Item.PANGENOME:
-                return cls.SUB_UNICYCLER_AND_SKESA_CONTIGS
-            case assembler.Item.SKESA:
-                return cls.SUB_SKESA_CONTIG
-            case assembler.Item.UNICYCLER:
-                return cls.SUB_UNICYCLER_CONTIG
-
-
-def length(segment: GfaSegment) -> int:
-    """Get segment length."""
-    return segment.get(Tag.LENGTH)
-
-
-def set_length(segment: GfaSegment, length: int | None = None) -> None:
-    """Set segment length."""
-    if length is None:
-        length = len(segment.sequence)
-    segment.set(Tag.LENGTH, length)
-
-
-def kmer_coverage(segment: GfaSegment) -> int:
-    """Get kmer coverage."""
-    return segment.get(Tag.KMER_COVERAGE)
-
-
-def set_kmer_coverage(segment: GfaSegment, coverage: int) -> None:
-    """Set kmer coverage."""
-    segment.set(Tag.KMER_COVERAGE, coverage)
-
-
-def normalized_coverage(segment: GfaSegment) -> float:
-    """Get normalized coverage."""
-    return segment.get(Tag.NORMALIZED_COVERAGE)
-
-
-def set_normalized_coverage(segment: GfaSegment, coverage: float) -> None:
-    """Set normalized coverage."""
-    segment.set(Tag.NORMALIZED_COVERAGE, coverage)
-
-
-def occurence_in_paths(segment: GfaSegment) -> int:
-    """Get occurence in paths."""
-    return segment.get(Tag.OCCURENCE_IN_PATHS)
-
-
-def set_occurence_in_paths(segment: GfaSegment, occurence: int) -> None:
-    """Set occurence in paths."""
-    segment.set(Tag.OCCURENCE_IN_PATHS, occurence)
-
-
-def from_contigs(segment: GfaSegment) -> list[str]:
-    """Get from contigs."""
-    return segment.get(Tag.FROM_CONTIGS).split(",")
-
-
-def set_from_contigs(segment: GfaSegment, contig_names: list[str]) -> None:
-    """Set from contigs."""
-    segment.set(Tag.FROM_CONTIGS, ",".join(contig_names))
-
-
-def append_from_contigs(segment: GfaSegment, contig_name: str) -> None:
-    """Append from contigs."""
-    segment.set(
-        Tag.FROM_CONTIGS,
-        segment.get(Tag.FROM_CONTIGS) + "," + contig_name,
-    )
-
-
-def contig_percentages(segment: GfaSegment) -> gfapy.NumericArray:
-    """Get contig percentages."""
-    return segment.get(Tag.CONTIG_PERCENTAGES)
-
-
-def set_contig_percentages(
-    segment: GfaSegment,
-    contig_percentages: list[float],
-) -> gfapy.NumericArray:
-    """Set contig percentages."""
-    numeric_array = gfapy.NumericArray(contig_percentages)
-    segment.set(Tag.CONTIG_PERCENTAGES, numeric_array)
-    return numeric_array
-
-
-def append_contig_percentage(segment: GfaSegment, contig_percentage: float) -> None:
-    """Append contig percentage."""
-    contig_percentages(segment).append(contig_percentage)
-
-
-def from_assembler(segment: GfaSegment) -> FromAssemblerTagValue:
-    """Get from assembler tag value."""
-    return FromAssemblerTagValue(segment.get(Tag.FROM_ASSEMBLER))
-
-
-def set_from_assembler(segment: GfaSegment, value: FromAssemblerTagValue) -> None:
-    """Set from assembler tag value."""
-    segment.set(Tag.FROM_ASSEMBLER, value)
 
 
 class Orientation(StrEnum):
@@ -243,3 +98,74 @@ class OrientedFragment:
     def __str__(self) -> str:
         """Get string representation."""
         return f"{self.__identifier}\t{self.__orientation}"
+
+
+class Tag(StrEnum):
+    """Segment tags."""
+
+    LENGTH = "LN"
+    KMER_COVERAGE = "KC"
+    NORMALIZED_COVERAGE = "dp"
+
+
+class TagType(StrEnum):
+    """Segment tag types."""
+
+    LENGTH = FieldType.SIGNED_INT
+    KMER_COVERAGE = FieldType.SIGNED_INT
+    NORMALIZED_COVERAGE = FieldType.FLOAT
+
+    @classmethod
+    def from_tag(cls, tag: Tag) -> TagType:
+        """Get field type from tag."""
+        return cls(tag.name)
+
+
+def length(segment: GfaSegment) -> int:
+    """Get segment length."""
+    return segment.get(Tag.LENGTH)
+
+
+def set_length(segment: GfaSegment, length: int | None = None) -> None:
+    """Set segment length."""
+    if length is None:
+        length = len(segment.sequence)
+    segment.set(Tag.LENGTH, length)
+
+
+def kmer_coverage(segment: GfaSegment) -> int:
+    """Get kmer coverage."""
+    return segment.get(Tag.KMER_COVERAGE)
+
+
+def set_kmer_coverage(segment: GfaSegment, coverage: int) -> None:
+    """Set kmer coverage."""
+    segment.set(Tag.KMER_COVERAGE, coverage)
+
+
+def normalized_coverage(segment: GfaSegment) -> float:
+    """Get normalized coverage."""
+    return segment.get(Tag.NORMALIZED_COVERAGE)
+
+
+def set_normalized_coverage(segment: GfaSegment, coverage: float) -> None:
+    """Set normalized coverage."""
+    segment.set(Tag.NORMALIZED_COVERAGE, coverage)
+
+
+__SEP = "_"
+
+
+def format_name(segment_prefix: str, integer: int) -> str:
+    """Format segment name."""
+    return f"{segment_prefix}{__SEP}{integer}"
+
+
+def name_to_prefix(segment_name: str) -> str:
+    """Get assembler prefix from segment name."""
+    return segment_name.split(__SEP)[0]
+
+
+def name_to_integer(segment_name: str) -> int:
+    """Get integer from segment name."""
+    return int(segment_name.split(__SEP)[1])

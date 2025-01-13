@@ -1,13 +1,58 @@
 """Create preprocessed files."""
 
 import contextlib
+import logging
 from itertools import product
 
 import gfapy  # type: ignore[import-untyped]
 
+import pangebin.gfa.ops as gfa_ops
 import pangebin.gfa.segment as gfa_segment
+from pangebin import assembler
+from pangebin.gfa.assembler import segment as gfa_asm_segment
 from pangebin.gfa.link import Link
 from pangebin.gfa.segment import OrientedFragment
+from pangebin.std_asm_graph.config import Config
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def standardize_assembly_graph(
+    graph: gfapy.Gfa,
+    assembler_id: assembler.Item,
+    config: Config,
+) -> None:
+    """Standardize assembly graph.
+
+    Parameters
+    ----------
+    graph : gfapy.Gfa
+        GFA graph
+    assembler_id : assembler.Item
+        Assembler
+    config : Config
+        Configuration
+
+    Warnings
+    --------
+    This function mutates the GFA graph
+
+    """
+    _LOGGER.info("Standardizing assembly graph: %s", assembler_id)
+
+    gfa_ops.set_segment_length_tags(graph)
+
+    gfa_ops.rename_segments(
+        graph,
+        gfa_asm_segment.NamePrefix.from_assembler(assembler_id),
+    )
+
+    if assembler_id == assembler.Item.SKESA:
+        gfa_ops.convert_kmer_coverage_to_normalized_coverage(graph)
+
+    transform_small_contigs_into_links(graph, config.min_contig_length())
+
+    gfa_ops.set_standardized_header_tag(graph)
 
 
 def transform_small_contigs_into_links(
@@ -59,5 +104,6 @@ def transform_small_contigs_into_links(
                 Link(pred, succ) for pred, succ in product(predecessors, successors)
             ):
                 with contextlib.suppress(gfapy.NotUniqueError):
+                    # XXX the exception should not happen
                     gfa.add_line(link.to_gfa_link_line())
             gfa.validate()

@@ -68,7 +68,7 @@ def iter_gfa_to_fasta(
             id=seg.name,
             name=seg.name,
             description=f"{seg.name}.GFA {__gfa_segment_attribute_to_string(seg, sep=sep)}",  # noqa: E501
-        )
+        )  # FIXME why {seg.name}.GFA?
 
 
 def left_dovetails(
