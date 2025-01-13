@@ -1,4 +1,4 @@
-"""Create preprocessed files."""
+"""Create standardized files."""
 
 import contextlib
 import logging

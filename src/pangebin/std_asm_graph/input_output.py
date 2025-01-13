@@ -1,4 +1,4 @@
-"""Preprocess IO module."""
+"""Standardize IO module."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ except ImportError:
 
 
 class Manager:
-    """Preprocess input/output manager."""
+    """Standardize input/output manager."""
 
     UNICYCLER_GFA_FILENAME = Path("unicycler.gfa")
     SKESA_GFA_FILENAME = Path("skesa.gfa")
@@ -53,13 +53,13 @@ class Manager:
 
 
 class Config:
-    """Preprocess config class."""
+    """Standardize config class."""
 
-    DEFAULT_DIR = Path("./preprocess")
+    DEFAULT_DIR = Path("./standardize")
 
     KEY_OUTPUT_DIR = "output_directory"
 
-    NAME = "Preprocess IO config"
+    NAME = "Standardize IO config"
 
     @classmethod
     def from_yaml(cls, yaml_filepath: Path) -> Config:

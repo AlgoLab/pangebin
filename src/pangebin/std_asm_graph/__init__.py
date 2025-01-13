@@ -1,1 +1,1 @@
-"""Pangebin preprocess."""
+"""Pangebin standardize."""

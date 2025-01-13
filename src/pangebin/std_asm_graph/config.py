@@ -1,4 +1,4 @@
-"""Preprocess config module."""
+"""Standardize config module."""
 
 from __future__ import annotations
 
@@ -14,15 +14,15 @@ except ImportError:
 
 
 class Config:
-    """Preprocess config class."""
+    """Standardize config class."""
 
     DEFAULT_MIN_CONTIG_LENGTH = 1
 
     KEY_MIN_CONTIG_LENGTH = "min_contig_length"
 
-    DEFAULT_YAML_FILE = Path("preprocess_config.yaml")
+    DEFAULT_YAML_FILE = Path("standardize_config.yaml")
 
-    NAME = "Preprocess config"
+    NAME = "Standardize config"
 
     @classmethod
     def from_yaml(cls, yaml_filepath: Path) -> Config:

@@ -1,4 +1,4 @@
-"""Preprocess application module."""
+"""Standardize application module."""
 
 # Due to typer usage:
 # ruff: noqa: TC001, TC003, UP007, FBT001, FBT002, PLR0913
@@ -15,7 +15,7 @@ import typer
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.logging as common_log
-import pangebin.std_asm_graph.input_output as preprocess_io
+import pangebin.std_asm_graph.input_output as standardize_io
 from pangebin import assembler, fasta
 from pangebin.std_asm_graph.config import Config
 from pangebin.std_asm_graph.ops import (
@@ -29,7 +29,7 @@ APP = typer.Typer(rich_markup_mode="rich")
 
 @dataclass
 class Arguments:
-    """Preprocess arguments."""
+    """Standardize arguments."""
 
     INPUT_UNICYCLER_GFA = typer.Argument(
         help="Unicycler GFA assembly graph file",
@@ -80,7 +80,7 @@ def std_asm_graph(
         ConfigOpts.MIN_CONTIG_LENGTH,
     ] = Config.DEFAULT_MIN_CONTIG_LENGTH,
     config_file: Annotated[Path | None, ConfigOpts.CONFIG_FILE] = None,
-    outdir: Annotated[Path, IOOpts.OUTPUT_DIR] = preprocess_io.Config.DEFAULT_DIR,
+    outdir: Annotated[Path, IOOpts.OUTPUT_DIR] = standardize_io.Config.DEFAULT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """Standardize GFA assembly graphs."""
@@ -96,8 +96,8 @@ def std_asm_graph(
         )
     )
 
-    io_manager = preprocess_io.Manager(
-        preprocess_io.Config(output_directory=outdir),
+    io_manager = standardize_io.Manager(
+        standardize_io.Config(output_directory=outdir),
     )
 
     if not gfa_ops.is_skesa_gfa_fixed(skesa_gfa_path):
