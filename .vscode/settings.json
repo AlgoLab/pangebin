@@ -26,6 +26,9 @@
         ".pytest_cache": true
     },
     "ltex.checkFrequency": "manual",
+    "markdownlint.config": {
+        "MD024": false
+    },
     "mypy-type-checker.args": [
         "--config-file=${workspaceFolder}/mypy.ini",
         "--exclude=${workspaceFolder}/tests"
