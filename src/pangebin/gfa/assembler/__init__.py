@@ -1,0 +1,1 @@
+"""GFA assembler API wrapper."""
