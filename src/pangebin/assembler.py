@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import StrEnum
 
 
-class Item(StrEnum):
+class Identifier(StrEnum):
     """Assemblers."""
 
     UNICYCLER = "Unicycler"

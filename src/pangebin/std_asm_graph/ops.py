@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def standardize_assembly_graph(
     graph: gfapy.Gfa,
-    assembler_id: assembler.Item,
+    assembler_id: assembler.Identifier,
     config: Config,
 ) -> None:
     """Standardize assembly graph.
@@ -28,7 +28,7 @@ def standardize_assembly_graph(
     ----------
     graph : gfapy.Gfa
         GFA graph
-    assembler_id : assembler.Item
+    assembler_id : assembler.Identifier
         Assembler
     config : Config
         Configuration
@@ -47,7 +47,7 @@ def standardize_assembly_graph(
         gfa_asm_segment.NamePrefix.from_assembler(assembler_id),
     )
 
-    if assembler_id == assembler.Item.SKESA:
+    if assembler_id == assembler.Identifier.SKESA:
         gfa_ops.convert_kmer_coverage_to_normalized_coverage(graph)
 
     transform_small_contigs_into_links(graph, config.min_contig_length())

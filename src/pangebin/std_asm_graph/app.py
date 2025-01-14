@@ -106,8 +106,8 @@ def std_asm_graph(
     skesa_gfa = gfa_io.from_file(skesa_gfa_path)
     unicyler_gfa = gfa_io.from_file(unicycler_gfa_path)
 
-    standardize_assembly_graph(skesa_gfa, assembler.Item.SKESA, config)
-    standardize_assembly_graph(unicyler_gfa, assembler.Item.UNICYCLER, config)
+    standardize_assembly_graph(skesa_gfa, assembler.Identifier.SKESA, config)
+    standardize_assembly_graph(unicyler_gfa, assembler.Identifier.UNICYCLER, config)
 
     skesa_gfa.to_file(io_manager.skesa_gfa_path())
     unicyler_gfa.to_file(io_manager.unicycler_gfa_path())

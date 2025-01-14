@@ -14,10 +14,10 @@ class NamePrefix(StrEnum):
     SKESA = "ske"
 
     @classmethod
-    def from_assembler(cls, assembler_id: assembler.Item) -> NamePrefix:
+    def from_assembler(cls, assembler_id: assembler.Identifier) -> NamePrefix:
         """Get prefix from assembler."""
         match assembler_id:
-            case assembler.Item.UNICYCLER:
+            case assembler.Identifier.UNICYCLER:
                 return cls.UNICYCLER
-            case assembler.Item.SKESA:
+            case assembler.Identifier.SKESA:
                 return cls.SKESA
