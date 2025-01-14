@@ -12,15 +12,11 @@ def remove_small_sequences(
     out_fasta_path: Path,
 ) -> None:
     """Remove small sequences from a FASTA file."""
-    fasta_dict = {}
-    with Path(in_fasta_path).open() as spe:
+    with Path(in_fasta_path).open() as spe, Path(out_fasta_path).open("w") as out:
         for record in SeqIO.parse(spe, "fasta"):
             if len(record) >= min_contig_length:
-                fasta_dict[record.id] = record.seq
-    with Path(out_fasta_path).open("w") as out:
-        for x, rec in fasta_dict.items():
-            out.write(f">{x}\n")
-            out.write(f"{rec!s}\n")
+                out.write(f">{record.id}\n")
+                out.write(f"{record.seq!s}\n")
 
 
 def merge_two_fastas(
