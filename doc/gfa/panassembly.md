@@ -4,10 +4,10 @@
 
 ### Tags
 
-| ID   | Type         | Values        | Description      |
-| ---- | ------------ | ------------- | ---------------- |
-| `VN` | `Z` (string) | `M.m`         | GFA version      |
-| `PA` | `Z` (string) | `panassembly` | Panassembly type |
+| ID   | Type         | Values        | Description       |
+| ---- | ------------ | ------------- | ----------------- |
+| `VN` | `Z` (string) | `M.m`         | GFA version       |
+| `PA` | `Z` (string) | `panassembly` | Pan-assembly type |
 
 ## Segments
 
@@ -29,10 +29,7 @@ For pangenome segments:
 | `cl` | `Z` (string)      |     `name1,name2,...`     | Contigs from which the sequence comes from         |
 | `cp` | `B` (float array) | list of $\mathbb{R}_{>0}$ | Part of the contig in the order of the contig list |
 | `sn` | `A` (char)        |       $\{s, u, b\}$       | Nature of the segment, see below                   |
-| `ap` | `f` (float)       |    $\mathbb{R}_{>=0}$     | Pangenome penalty, see below                       |
-
-<!-- REFACTOR always use dp, remove the use of cv -->
-<!-- REFACTOR change aa by sn -->
+| `pp` | `f` (float)       |    $\mathbb{R}_{>=0}$     | Pangenome penalty, see below                       |
 
 **Nature of the segment (`ns` tag):**
 
@@ -43,7 +40,7 @@ For pangenome segments:
 **Pangenome penalty (`ap` tag):**
 
 * If `aa:A:b`: the penalty equals $0$
-* Otherwise: the penalty equals $max(1, length/1000)$
+* Otherwise: the penalty equals $min(1, length/1000)$
 
 The idea here is to favour the subcontig shared by the two assemblers by penalizing the others.
 
@@ -59,8 +56,6 @@ The idea here is to favour the subcontig shared by the two assemblers by penaliz
 | ---- | ------------ | ------------- | ----------------------------- |
 | `lo` | `A` (char)   | $\{p, s, u\}$ | Origin of the link, see below |
 | `lt` | `Z` (string) | `<x><y>`      | Link type, see below          |
-
-<!-- REFACTOR change aa by lo -->
 
 **Origin of the link (`lo` tag):**
 
@@ -84,8 +79,6 @@ Redundant combinations (and their reverse order):
 
 ## Paths
 
-<!-- DOCU path tags -->
-
 ### Names
 
 * `ske_<k>` for Skesa (with $k \in \{1...|S|\}$, with $S$ the set of Skesa whole contigs)
@@ -97,5 +90,3 @@ Redundant combinations (and their reverse order):
 | ---- | ----------- | :---------------: | ---------------------------- |
 | `LN` | `i` (int)   | $\mathbb{N}_{>0}$ | Length of the sequence       |
 | `dp` | `f` (float) | $\mathbb{R}_{>0}$ | Normalized sequence coverage |
-
-<!-- REFACTOR tags for panassembly without assembler contigs as segments -->
