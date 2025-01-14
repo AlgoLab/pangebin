@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Generator
     from pathlib import Path
-
-import gzip
+import gzip  # OPTIMIZE use instead bgzip
 import io
+import logging
+import shutil
 from contextlib import contextmanager
 from typing import IO
 
+import bgzip  # type: ignore[import-untyped]
+
+_LOGGER = logging.getLogger(__name__)
+
 
 def is_gz_file(filepath: Path) -> bool:
-    """Check if a file is gzipped.
+    """Check if a file is gzipped or bgzipped.
 
     Parameters
     ----------
@@ -90,3 +96,89 @@ def open_file_write(filepath: Path) -> Generator[IO[str], None, None]:
         text_out = filepath.open("w")
         yield text_out
         text_out.close()
+
+
+@contextmanager
+def possible_tmp_file(
+    in_filepath: Path,
+    out_filepath: Path | None = None,
+) -> Generator[tuple[Path, Path], None, None]:
+    """Possibly rename input file to replace it after.
+
+    Parameters
+    ----------
+    in_filepath : Path
+        Path of input file
+    out_filepath : Path | None, optional
+        Path of output file, by default None
+
+    Yields
+    ------
+    Path
+        Path of the input temporary file
+    Path
+        Path of the output file
+
+    """
+    replace_file = out_filepath is None
+
+    if out_filepath is None:
+        out_filepath = in_filepath
+        in_filepath = in_filepath.rename(
+            in_filepath.parent
+            / (f"{datetime.datetime.now(tz=datetime.UTC).isoformat()}.gfa"),
+        )
+        _LOGGER.debug("Temporary input file: %s", in_filepath)
+    elif in_filepath == out_filepath:
+        _err_msg = f"Input and output files are the same: {in_filepath}"
+        _LOGGER.error(_err_msg)
+        raise ValueError(_err_msg)
+
+    yield in_filepath, out_filepath
+
+    if replace_file:
+        _LOGGER.debug("Remove temporary input file: %s", in_filepath)
+        in_filepath.unlink()
+
+
+def bgzip_file(input_filepath: Path, compressed_filepath: Path | None = None) -> Path:
+    """Compress a file using bgzip.
+
+    Parameters
+    ----------
+    input_filepath : Path
+        Path of file to compress.
+    compressed_filepath : Path
+        Path of compressed file.
+
+    Returns
+    -------
+    Path
+        Path of compressed file
+
+    """
+    if compressed_filepath is None:
+        _LOGGER.info("Compressing file: %s", input_filepath)
+    else:
+        _LOGGER.info("Compressing file: %s to %s.", input_filepath, compressed_filepath)
+
+    with (
+        possible_tmp_file(
+            input_filepath,
+            compressed_filepath,
+        ) as (use_in_filepath, use_out_filepath),
+        use_in_filepath.open("rb") as raw_in,
+    ):
+        if not is_gz_file(use_out_filepath):
+            use_compressed_out_filepath = (
+                use_out_filepath.parent / f"{use_out_filepath.name}.gz"
+            )
+        else:
+            use_compressed_out_filepath = use_out_filepath
+        with (
+            use_compressed_out_filepath.open("wb") as raw_out,
+            bgzip.BGZipWriter(raw_out) as f_out,
+        ):
+            shutil.copyfileobj(raw_in, f_out)
+
+    return use_compressed_out_filepath
