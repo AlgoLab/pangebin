@@ -31,12 +31,12 @@ dataset_dir="test/SAMN16357463"
    # ./test/std_asm_graph.sh clean $dataset_dir
    ```
 
-2. make pangenome graph using `${mixed_fasta}`
+2. make pangenome graph with nextflow (make sur you have installed the command for the nextflow profile)
 
    ```sh
-   # DOCU pggb ...
-   pangenome="test/data/SAMN16357463/out/SAMN16357463.1.pan.gfa"
-   cp ${pggb_out} ${pangenome}
+   ./test/pangenome.sh run $dataset_dir
+   # to clean:
+   # ./test/pangenome.sh clean $dataset_dir
    ```
 
 3. make pan-assembly graph
