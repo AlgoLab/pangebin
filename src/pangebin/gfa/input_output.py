@@ -44,7 +44,7 @@ def gfa_to_fasta_file(graph: gfapy.Gfa, fasta_path: Path) -> None:
 
     """
     with fasta_path.open("w") as f_out:
-        for seq_record in gfa_iter.iter_gfa_to_fasta(graph):
+        for seq_record in gfa_iter.iter_gfa_to_seqrecord(graph):
             f_out.write(seq_record.format("fasta"))
 
 

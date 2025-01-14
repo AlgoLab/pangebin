@@ -37,7 +37,7 @@ def __gfa_segment_attribute_to_string(segment: GfaSegment, sep: str = " ") -> st
     )
 
 
-def iter_gfa_to_fasta(
+def iter_gfa_to_seqrecord(
     graph: gfapy.Gfa,
     sep: str = " ",
 ) -> Iterator[SeqRecord]:
@@ -53,12 +53,7 @@ def iter_gfa_to_fasta(
     Yields
     ------
     SeqRecord
-        FASTA record
-
-    Notes
-    -----
-    The FASTA header format is:
-    <contig name> <contig name>.GFA <attributes string=sep.join(key:value)>
+        Sequence record
 
     """
     seg: GfaSegment
@@ -67,8 +62,8 @@ def iter_gfa_to_fasta(
             Seq(seg.sequence),
             id=seg.name,
             name=seg.name,
-            description=f"{seg.name}.GFA {__gfa_segment_attribute_to_string(seg, sep=sep)}",  # noqa: E501
-        )  # FIXME why {seg.name}.GFA?
+            description=f"{__gfa_segment_attribute_to_string(seg, sep=sep)}",
+        )
 
 
 def left_dovetails(
