@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import datetime
 import logging
-import shutil
 from typing import TYPE_CHECKING
 
 import gfapy  # type: ignore[import-untyped]
@@ -47,7 +45,7 @@ def is_skesa_gfa_fixed(gfa_path: Path) -> bool:
 def fix_skesa_gfa(
     in_gfa_path: Path,
     out_gfa_path: Path | None = None,
-) -> None:
+) -> Path:
     """Fix a Skeza GFA file.
 
     Parameters
@@ -57,6 +55,10 @@ def fix_skesa_gfa(
     out_gfa_path : Path | None, optional
         Path to output GFA file, must be different from input if used, by default None
 
+    Returns
+    -------
+    Path
+        Path to output GFA file
 
     Warnings
     --------
@@ -68,21 +70,10 @@ def fix_skesa_gfa(
         If input and output files are the same
 
     """
-    replace_file = out_gfa_path is None
-    if replace_file:
+    if out_gfa_path is None:
         _LOGGER.debug("Fixing Skeza GFA file %s", in_gfa_path)
     else:
         _LOGGER.debug("Fixing Skeza GFA file %s to %s.", in_gfa_path, out_gfa_path)
-
-    if out_gfa_path is None:
-        out_gfa_path = in_gfa_path.parent / (
-            f"{datetime.datetime.now(tz=datetime.UTC).isoformat()}.gfa"
-        )
-        _LOGGER.debug("Temporary output file: %s", out_gfa_path)
-    elif in_gfa_path == out_gfa_path:
-        _err_msg = f"Input and output files are the same: {in_gfa_path}"
-        _LOGGER.error(_err_msg)
-        raise ValueError(_err_msg)
 
     yes_fix_tag = (
         f"{gfa_header.Tag.SKESA_FIX}"
@@ -90,8 +81,9 @@ def fix_skesa_gfa(
         f":{gfa_header.SkesaFixTagValue.YES}"
     )
     with (
-        io.open_file_read(in_gfa_path) as f_in,
-        io.open_file_write(out_gfa_path) as f_out,
+        io.possible_tmp_file(in_gfa_path, out_gfa_path) as (use_in_path, use_out_path),
+        io.open_file_read(use_in_path) as f_in,
+        io.open_file_write(use_out_path) as f_out,
     ):
         f_out.write(f"{gfa_line.Type.HEADER}\t{yes_fix_tag}\n")
         for line in f_in:
@@ -112,19 +104,7 @@ def fix_skesa_gfa(
             else:
                 f_out.write(line)
 
-    if replace_file:
-        _LOGGER.debug(
-            "Replacing temporary output file %s with input file %s.",
-            out_gfa_path,
-            in_gfa_path,
-        )
-        in_gfa_path.unlink()
-        with (
-            io.open_file_read(out_gfa_path) as f_in,
-            io.open_file_write(in_gfa_path) as f_out,
-        ):
-            shutil.copyfileobj(f_in, f_out)
-        out_gfa_path.unlink()
+    return use_out_path
 
 
 def set_segment_length_tags(graph: gfapy.Gfa) -> None:
@@ -220,12 +200,4 @@ def set_standardized_header_tag(gfa: gfapy.Gfa) -> None:
         gfa_header.Tag.STANDARDIZED,
         gfa_header.TagType.STANDARDIZED,
     )
-    gfa.header.add(gfa_header.Tag.STANDARDIZED, gfa_header.StandardizedTagValue.YES)
-
-
-def is_standardized(gfa: gfapy.Gfa) -> bool:
-    """Check if a GFA graph is standardized."""
-    return (
-        gfa.header.get(gfa_header.Tag.STANDARDIZED)
-        == gfa_header.StandardizedTagValue.YES
-    )
+    gfa_header.set_standardized_header_tag(gfa, is_standardized=True)

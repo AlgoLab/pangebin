@@ -14,6 +14,7 @@ from typing import Annotated
 import gfapy  # type: ignore[import-untyped]
 import typer
 
+import pangebin.gfa.header as gfa_header
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.logging as common_log
@@ -82,11 +83,11 @@ def fix_skesa(
         _LOGGER.info("Skesa GFA file is already fixed.")
         return
     try:
-        gfa_ops.fix_skesa_gfa(in_gfa, out_gfa_path=out_gfa)
+        out_gfa = gfa_ops.fix_skesa_gfa(in_gfa, out_gfa_path=out_gfa)
     except ValueError as e:
         raise typer.Exit(1) from e
 
-    _LOGGER.info("Fixed Skeza GFA file: %s", out_gfa if out_gfa is not None else in_gfa)
+    _LOGGER.info("Fixed Skeza GFA file: %s", out_gfa)
 
 
 @dataclass
@@ -139,7 +140,7 @@ def is_standardized(
 
     gfa = gfa_io.from_file(gfa_path)
 
-    if gfa_ops.is_standardized(gfa):
+    if gfa_header.is_standardized(gfa):
         _LOGGER.info("GFA is standardized.")
     else:
         _LOGGER.info("GFA is not standardized.")
