@@ -53,7 +53,7 @@ class Manager:
 
 
 class Config:
-    """Standardize config class."""
+    """Standardize IO config class."""
 
     DEFAULT_DIR = Path("./standardize")
 

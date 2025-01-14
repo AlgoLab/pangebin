@@ -101,7 +101,7 @@ def std_asm_graph(
     )
 
     if not gfa_ops.is_skesa_gfa_fixed(skesa_gfa_path):
-        gfa_ops.fix_skesa_gfa(skesa_gfa_path)
+        skesa_gfa_path = gfa_ops.fix_skesa_gfa(skesa_gfa_path)
 
     skesa_gfa = gfa_io.from_file(skesa_gfa_path)
     unicyler_gfa = gfa_io.from_file(unicycler_gfa_path)
