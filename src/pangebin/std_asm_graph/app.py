@@ -15,8 +15,9 @@ import typer
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.logging as common_log
+import pangebin.std_asm_graph.fasta as standardize_fasta
 import pangebin.std_asm_graph.input_output as standardize_io
-from pangebin import assembler, fasta
+from pangebin import assembler
 from pangebin.std_asm_graph.config import Config
 from pangebin.std_asm_graph.ops import (
     standardize_assembly_graph,
@@ -115,7 +116,7 @@ def std_asm_graph(
     gfa_io.gfa_to_fasta_file(skesa_gfa, io_manager.skesa_fasta_path())
     gfa_io.gfa_to_fasta_file(unicyler_gfa, io_manager.unicycler_fasta_path())
 
-    fasta.merge_two_fastas(
+    standardize_fasta.fastas_to_pansn_mixed_fasta(
         io_manager.skesa_fasta_path(),
         io_manager.unicycler_fasta_path(),
         io_manager.mixed_fasta_path(),

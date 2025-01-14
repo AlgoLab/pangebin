@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 
 class Identifier(StrEnum):
     """Assemblers."""
 
-    UNICYCLER = "Unicycler"
     SKESA = "Skesa"
+    UNICYCLER = "Unicycler"
 
-    # FIXME check the removal of PANGENOME item
+
+class HaplotypeID(IntEnum):
+    """Haplotype IDs."""
+
+    SKESA = 1
+    UNICYCLER = 2
