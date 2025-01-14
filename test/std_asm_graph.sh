@@ -36,6 +36,7 @@ run)
     run
     ;;
 clean)
+    echo "Cleaning $out_dir"
     rm -rf "$out_dir"
     ;;
 *)
