@@ -16,6 +16,7 @@ import typer
 
 import pangebin.gfa.app as gfa_app
 import pangebin.panassembly.app as panassembly_app
+import pangebin.pangenome.app as pangenome_app
 import pangebin.plasbin.app as plasbin_app
 import pangebin.std_asm_graph.app as std_asm_graph_app
 
@@ -37,6 +38,7 @@ APP.add_typer(
 )
 
 APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(std_asm_graph_app.std_asm_graph)
+APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(pangenome_app.pangenome)
 APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(panassembly_app.panassembly)
 APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(plasbin_app.plasbin)
 

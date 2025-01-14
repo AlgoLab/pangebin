@@ -99,6 +99,35 @@ def open_file_write(filepath: Path) -> Generator[IO[str], None, None]:
 
 
 @contextmanager
+def open_file_append(filepath: Path) -> Generator[IO[str], None, None]:
+    """Open a file for appending.
+
+    Parameters
+    ----------
+    filepath : Path
+        Path of file to append to.
+
+    Yields
+    ------
+    file object
+        File to append to.
+
+    """
+    if is_gz_file(filepath):
+        with (
+            filepath.open("ab") as f_out,
+            gzip.GzipFile(fileobj=f_out, mode="ab") as g_out,
+        ):
+            text_out = io.TextIOWrapper(g_out, encoding="utf-8")
+            yield text_out
+            text_out.close()
+    else:
+        text_out = filepath.open("a")
+        yield text_out
+        text_out.close()
+
+
+@contextmanager
 def possible_tmp_file(
     in_filepath: Path,
     out_filepath: Path | None = None,
@@ -160,7 +189,7 @@ def bgzip_file(input_filepath: Path, compressed_filepath: Path | None = None) ->
     if compressed_filepath is None:
         _LOGGER.info("Compressing file: %s", input_filepath)
     else:
-        _LOGGER.info("Compressing file: %s to %s.", input_filepath, compressed_filepath)
+        _LOGGER.info("Compressing file: %s to %s", input_filepath, compressed_filepath)
 
     with (
         possible_tmp_file(
@@ -175,6 +204,7 @@ def bgzip_file(input_filepath: Path, compressed_filepath: Path | None = None) ->
             )
         else:
             use_compressed_out_filepath = use_out_filepath
+        _LOGGER.debug("Output file: %s", use_compressed_out_filepath)
         with (
             use_compressed_out_filepath.open("wb") as raw_out,
             bgzip.BGZipWriter(raw_out) as f_out,

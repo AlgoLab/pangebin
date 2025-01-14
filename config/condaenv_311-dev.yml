@@ -2,8 +2,9 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - samtools
+  - bioconda::samtools
   - python=3.11.*
+  - bioconda::nextflow
   - pip
   - pip:
     - -e ../.
