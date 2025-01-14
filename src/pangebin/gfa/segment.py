@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+import pangebin.gfa.line as gfa_line
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
+    import gfapy  # type: ignore[import-untyped]
     from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
     from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
+
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Orientation(StrEnum):
@@ -98,6 +104,35 @@ class OrientedFragment:
     def __str__(self) -> str:
         """Get string representation."""
         return f"{self.__identifier}\t{self.__orientation}"
+
+
+def get_segment_line_by_name(gfa: gfapy.Gfa, name: str) -> GfaSegment:
+    """Get segment by name.
+
+    Parameters
+    ----------
+    gfa : gfapy.Gfa
+        GFA graph
+    name : str
+        Segment name
+
+    Returns
+    -------
+    GfaSegment
+        GFA segment line
+
+    Raises
+    ------
+    ValueError
+        Invalid segment name
+
+    """
+    line: gfapy.Line | None = gfa.line(str(name))
+    if line is None or line.record_type != gfa_line.Type.SEGMENT:
+        _err_msg = f"Invalid segment name: {name}, line is {line}"
+        _LOGGER.error(_err_msg)
+        raise ValueError(_err_msg)
+    return line
 
 
 class Tag(StrEnum):

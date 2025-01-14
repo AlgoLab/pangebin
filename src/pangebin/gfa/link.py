@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
 
 from pangebin.gfa import line as gfa_line
-from pangebin.gfa.segment import Orientation, OrientedFragment
+from pangebin.gfa.segment import Orientation, OrientedFragment, get_segment_line_by_name
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -22,8 +22,14 @@ class Link:
     def from_link_line(cls, link_line: GfaLink) -> Link:
         """Get link from link line."""
         return cls(
-            OrientedFragment(link_line.from_segment.name, link_line.from_orient),
-            OrientedFragment(link_line.to_segment.name, link_line.to_orient),
+            OrientedFragment(
+                link_line.from_segment.name,
+                Orientation(link_line.from_orient),
+            ),
+            OrientedFragment(
+                link_line.to_segment.name,
+                Orientation(link_line.to_orient),
+            ),
             link_line.overlap,
         )
 
@@ -105,7 +111,7 @@ def link_or_its_reversed_exists(
     if pred.is_forward():
         succ = link.successor()
         r_link_line_iter: Iterator[GfaLink] = iter(
-            gfa.segments[pred.identifier()].dovetails_R,
+            get_segment_line_by_name(gfa, pred.identifier()).dovetails_R,
         )
         link_line = next(r_link_line_iter, None)
         while link_line is not None:
@@ -118,7 +124,7 @@ def link_or_its_reversed_exists(
     else:
         succ_rev = link.successor().to_reverse()
         l_link_line_iter: Iterator[GfaLink] = iter(
-            gfa.segments[pred.identifier()].dovetails_L,
+            get_segment_line_by_name(gfa, pred.identifier()).dovetails_L,
         )
         link_line = next(l_link_line_iter, None)
         while link_line is not None:
