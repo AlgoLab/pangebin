@@ -89,7 +89,7 @@ class NFCorePangenomeCommandFailedError(Exception):
 
 def add_false_sequence(mixed_fasta_gz_path: Path) -> None:
     """Add false sequence."""
-    # XXX because of a bug in vsdeconstruct
+    # XXX tmp fix of https://github.com/nf-core/pangenome/issues/215#issuecomment-2593269805
     with common_io.open_file_append(mixed_fasta_gz_path) as f:
         f.write(">none\n")
         f.write("*\n")
