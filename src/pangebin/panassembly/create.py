@@ -150,7 +150,10 @@ def set_path_normalized_coverages(
                     asm_segment_line.name,
                 )
             except ValueError as err:
-                _LOGGER.info("Should disconnect the segment?")
+                _LOGGER.exception(
+                    "Could not find path for segment %s",
+                    asm_segment_line.name,
+                )
                 raise err from err
             gfa_pan_path.set_normalized_coverage(
                 pan_path_line,
@@ -314,13 +317,13 @@ def set_segment_natures(pangenome_gfa: gfapy.Gfa) -> None:
             gfa_pan_segment.Tag.SEGMENT_NATURE,
             gfa_pan_segment.TagType.SEGMENT_NATURE,
         )
-        distinct_from_assembler_tag_values: set[gfa_pan_segment.NatureTagValue] = {
+        distinct_nature_tag_values: set[gfa_pan_segment.NatureTagValue] = {
             gfa_pan_segment.NatureTagValue.from_contig_name(contig_name)
             for contig_name in gfa_pan_segment.contig_list(segment_line)
         }
 
-        if distinct_from_assembler_tag_values:
-            if distinct_from_assembler_tag_values == {
+        if distinct_nature_tag_values:
+            if distinct_nature_tag_values == {
                 gfa_pan_segment.NatureTagValue.SUB_SKESA_CONTIG,
                 gfa_pan_segment.NatureTagValue.SUB_UNICYCLER_CONTIG,
             }:
@@ -328,25 +331,30 @@ def set_segment_natures(pangenome_gfa: gfapy.Gfa) -> None:
                     segment_line,
                     gfa_pan_segment.NatureTagValue.SUB_SKESA_AND_UNICYCLER_CONTIGS,
                 )
-            elif len(distinct_from_assembler_tag_values) == 1:
+            elif len(distinct_nature_tag_values) == 1:
+                # XXX tmp condition to check there is no share between only contigs from the same assembler # noqa: E501
+                if gfa_pan_segment.occurence_in_paths(segment_line) > 1:
+                    _LOGGER.exception(
+                        "Segment is shared between contigs only from the assembler: %s",
+                        segment_line,
+                    )
+                    raise ValueError
                 gfa_pan_segment.set_segment_nature(
                     segment_line,
-                    distinct_from_assembler_tag_values.pop(),
+                    distinct_nature_tag_values.pop(),
                 )
             else:
-                _err_msg = (
-                    "Unexpected distinct from assembler tag values"
-                    f" {distinct_from_assembler_tag_values}"
+                _LOGGER.exception(
+                    "Unexpected distinct from assembler tag values: %s",
+                    distinct_nature_tag_values,
                 )
-                _LOGGER.error(_err_msg)
-                raise ValueError(_err_msg)
+                raise ValueError
         else:
-            _err_msg = (
-                "Unexpected empty distinct from assembler tag values"
-                f" for segment {segment_line.name}"
+            _LOGGER.exception(
+                "Unexpected empty distinct from assembler tag values for segment: %s",
+                segment_line,
             )
-            _LOGGER.error(_err_msg)
-            raise ValueError(_err_msg)
+            raise ValueError
 
 
 def rename_segments(pangenome_gfa: gfapy.Gfa) -> None:
@@ -456,7 +464,7 @@ def add_assembly_links_to_pangenome(
                 assembler_link.successor().identifier(),
             )
         except ValueError as err:
-            _LOGGER.info("Should continue the loop?")
+            _LOGGER.exception("Should continue the loop?")
             raise err from err
 
         if assembler_link.predecessor().is_forward():
@@ -482,32 +490,40 @@ def add_assembly_links_to_pangenome(
             )
 
         new_panassembly_link = gfa_link.Link(pred_frag, succ_frag)
-        if (
-            gfa_link.link_or_its_reversed_exists(pangenome_gfa, new_panassembly_link)
-            is not None
-        ):
-            # XXX because of https://github.com/ggonnella/gfapy/issues/35
-            _err_msg = (
-                "Link already exists in the panassembly graph in building:"
-                f" {new_panassembly_link}.\n"
-                "Note: may the assembler GFA contains both a link and its reverse,"
-                " while it must not be the case."
+        new_panassembly_link_origin = gfa_pan_link.LinkOriginTagValue.from_assembler(
+            assembler_id,
+        )
+        add_new_panassembly_link = True
+        #
+        # Convert multi-edges to single edge
+        #
+        # XXX See also unexpected multi-edges in GFA issue https://github.com/ggonnella/gfapy/issues/35
+        _existing_link_with_orient = gfa_link.link_or_its_reversed_exists(
+            pangenome_gfa,
+            new_panassembly_link,
+        )
+        if _existing_link_with_orient is not None:
+            if (
+                new_panassembly_link_origin
+                != gfa_pan_link.LinkOriginTagValue.PANGENOME_LINK
+            ):
+                _LOGGER.debug("Previous multi-edge: %s", _existing_link_with_orient[0])
+                _existing_link_with_orient[0].disconnect()
+            else:
+                _LOGGER.debug("New multi-edge: %s", new_panassembly_link)
+                add_new_panassembly_link = False
+
+        if add_new_panassembly_link:
+            new_panassembly_link_line = new_panassembly_link.to_gfa_link_line()
+            new_panassembly_link_line.set_datatype(
+                gfa_pan_link.Tag.LINK_ORIGIN,
+                gfa_pan_link.TagType.LINK_ORIGIN,
             )
-            _LOGGER.error(_err_msg)
-            raise ValueError(_err_msg)
-
-        new_panassembly_link_line = new_panassembly_link.to_gfa_link_line()
-
-        new_panassembly_link_line.set_datatype(
-            gfa_pan_link.Tag.LINK_ORIGIN,
-            gfa_pan_link.TagType.LINK_ORIGIN,
-        )
-        gfa_pan_link.set_link_origin(
-            new_panassembly_link_line,
-            gfa_pan_link.LinkOriginTagValue.from_assembler(assembler_id),
-        )
-
-        pangenome_gfa.add_line(new_panassembly_link_line)
+            gfa_pan_link.set_link_origin(
+                new_panassembly_link_line,
+                new_panassembly_link_origin,
+            )
+            pangenome_gfa.add_line(new_panassembly_link_line)
 
 
 def set_link_types(pangenome_gfa: gfapy.Gfa) -> None:
