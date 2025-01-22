@@ -59,6 +59,7 @@ The idea here is to favour the subcontig shared by the two assemblers by penaliz
 
 **Origin of the link (`lo` tag):**
 
+<!-- FIXME p lo value description is not correct, because of multiedges... see example of bb lt -->
 * `p` pangenome link (between a subcontig from Skesa or Unicycler, and a subcontig from both Skesa and Unicycler)
 * `s` Skesa link
 * `u` Unicycler link
