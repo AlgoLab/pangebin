@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -25,7 +24,6 @@ _LOGGER = logging.getLogger(__name__)
 APP = typer.Typer(rich_markup_mode="rich")
 
 
-@dataclass
 class Arguments:
     """Pangenome assembly arguments."""
 

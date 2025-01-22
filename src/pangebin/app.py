@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated
@@ -43,7 +42,6 @@ APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(panassembly_app.panassembl
 APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(plasbin_app.plasbin)
 
 
-@dataclass
 class ModArgs:
     """ModifyBins arguments."""
 

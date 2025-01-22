@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -25,7 +24,6 @@ APP = typer.Typer(rich_markup_mode="rich")
 _LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
 class CheckSkesaGFAArgs:
     """Check Skeza GFA arguments."""
 
@@ -53,7 +51,6 @@ def check_skesa(
     return False
 
 
-@dataclass
 class FixSkesaGFAArgs:
     """Fix Skeza GFA arguments."""
 
@@ -90,7 +87,6 @@ def fix_skesa(
     _LOGGER.info("Fixed Skeza GFA file: %s", out_gfa)
 
 
-@dataclass
 class ToFASTAArgs:
     """GFA to FASTA arguments."""
 
@@ -117,7 +113,6 @@ def to_fasta(
         sys.stdout.write(seq_record.format("fasta"))
 
 
-@dataclass
 class ISGFAStandardizeArgs:
     """Argument for checking if a GFA is standardized."""
 
