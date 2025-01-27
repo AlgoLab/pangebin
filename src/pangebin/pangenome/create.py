@@ -65,26 +65,12 @@ def nfcore_pangenome(
             check=True,
         )
     except subprocess.CalledProcessError as exc:
-        _nfcore_pan_cmd_err = NFCorePangenomeCommandFailedError(exc)
+        _nfcore_pan_cmd_err = subprocess_lib.CommandFailedError(
+            "nf-core/pangenome",
+            exc,
+        )
         _LOGGER.critical(str(_nfcore_pan_cmd_err))
         raise _nfcore_pan_cmd_err from exc
-
-
-class NFCorePangenomeCommandFailedError(Exception):
-    """nf-core/pangenome command failed error."""
-
-    def __init__(self, called_proc_exc: subprocess.CalledProcessError) -> None:
-        """Initialize."""
-        super().__init__()
-        self.__called_proc_exc = called_proc_exc
-
-    def called_proc_exc(self) -> subprocess.CalledProcessError:
-        """Return the command."""
-        return self.__called_proc_exc
-
-    def __str__(self) -> str:
-        """Return the error message."""
-        return f"nf-core/pangenome command failed: {self.__called_proc_exc.stderr}"
 
 
 def add_false_sequence(mixed_fasta_gz_path: Path) -> None:
