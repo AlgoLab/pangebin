@@ -26,6 +26,19 @@ def command_path(command_str: str | Path) -> Path:
     return Path(cmd_path)
 
 
+def run_cmd(cli_line: list[object], cmd_str: str) -> None:
+    """Run external command."""
+    try:
+        subprocess.run(  # noqa: S603
+            [str(x) for x in cli_line],
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        _cmd_err = CommandFailedError(cmd_str, exc)
+        _LOGGER.critical(str(_cmd_err))
+        raise _cmd_err from exc
+
+
 class CommandNotFoundError(Exception):
     """Command not found error."""
 

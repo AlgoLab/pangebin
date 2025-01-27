@@ -1,7 +1,6 @@
 """Pangenome creation."""
 
 import logging
-import subprocess
 from pathlib import Path
 
 import gfapy  # type: ignore[import-untyped]
@@ -59,18 +58,8 @@ def nfcore_pangenome(
     ]
     if config.supp_nfcore_pangenome_config_path() is not None:
         cli_line.extend(("-params-file", config.supp_nfcore_pangenome_config_path()))
-    try:
-        subprocess.run(  # noqa: S603
-            [str(x) for x in cli_line],
-            check=True,
-        )
-    except subprocess.CalledProcessError as exc:
-        _nfcore_pan_cmd_err = subprocess_lib.CommandFailedError(
-            "nf-core/pangenome",
-            exc,
-        )
-        _LOGGER.critical(str(_nfcore_pan_cmd_err))
-        raise _nfcore_pan_cmd_err from exc
+
+    subprocess_lib.run_cmd(cli_line, NEXTFLOW_CMD_STR)
 
 
 def add_false_sequence(mixed_fasta_gz_path: Path) -> None:
