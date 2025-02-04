@@ -5,6 +5,7 @@ dependencies:
   - bioconda::samtools
   - python=3.11.*
   - bioconda::nextflow
+  - bioconda::blast
   - pip
   - pip:
     - -e ../.
