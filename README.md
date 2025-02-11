@@ -23,38 +23,59 @@ Example with the dataset `SAMN16357463`:
 dataset_dir="test/SAMN16357463"
 ```
 
+> **Note:** each script has a command `clean`
+>
+> ```sh
+> ./script.sh clean $dataset_dir
+> ```
+
 1. standardize GFA assembly graphs
 
    ```sh
    ./test/std_asm_graph.sh run $dataset_dir
-   # to clean:
-   # ./test/std_asm_graph.sh clean $dataset_dir
    ```
 
 2. make pangenome graph with nextflow (make sur you have installed the command for the nextflow profile)
 
    ```sh
    ./test/pangenome.sh run $dataset_dir
-   # to clean:
-   # ./test/pangenome.sh clean $dataset_dir
    ```
 
 3. make pan-assembly graph
 
    ```sh
    ./test/panassembly.sh run $dataset_dir
-   # to clean:
-   # ./test/panassembly.sh clean $dataset_dir
    ```
 
-4. Execute PlasBin-Flow modified for pan-assembly
+4. Obtain the GC probability scores of the fragments
+
+   ```sh
+   ./test/gc_prob_scores.sh run $dataset_dir
+   ```
+
+5. Obtain gene density on the fragments
+
+   1. Map the gene on the contigs from the two assemblers
+
+      ```sh
+      ./test/gene_mapping.sh blast $dataset_dir
+      ```
+
+   2. Filter the gene mappings
+
+      ```sh
+      ./test/gene_mapping.sh filter $dataset_dir
+      ```
+
+6. Execute PlasBin-Flow modified for pan-assembly
 
    ```sh
    ./test/plasbin.sh run $dataset_dir
-   # to clean:
-   # ./test/plasbin.sh clean $dataset_dir
    ```
 
 ## Going further into the details
 
-Understanding GFA tags system [`doc/gfa_tags.md`](doc/gfa_tags.md)
+Understanding GFA tags system:
+
+* [doc/gfa/standardized.md](doc/gfa/standardized.md)
+* [doc/gfa/panassembly.md](doc/gfa/panassembly.md)

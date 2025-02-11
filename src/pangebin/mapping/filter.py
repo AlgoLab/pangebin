@@ -15,8 +15,34 @@ try:
 except ImportError:
     from yaml import Dumper
 
+import logging
 
-def filter_mappings(
+_LOGGER = logging.getLogger(__name__)
+
+
+def accept_mapping(
+    mapping: items.Mapping,
+    config: Config,
+    q_len_dict: dict[str, int] | None = None,
+    s_len_dict: dict[str, int] | None = None,
+) -> bool:
+    """Return True if mapping passes the thresholds."""
+    length_ok = mapping.length() >= config.min_length()
+    pident_ok = mapping.pident() >= config.min_pident()
+
+    q_len = abs(mapping.qend() - mapping.qstart()) + 1
+    q_cov_ok = q_len_dict is None or (
+        q_len / q_len_dict[mapping.qseqid()] >= config.min_q_cov()
+    )
+
+    s_len = abs(mapping.send() - mapping.sstart()) + 1
+    s_cov_ok = s_len_dict is None or (
+        s_len / s_len_dict[mapping.sseqid()] >= config.min_s_cov()
+    )
+    return length_ok and pident_ok and q_cov_ok and s_cov_ok
+
+
+def filter_mapping_dataframe(
     mappings_df: pd.DataFrame,
     q_len_dict: dict[str, int] | None = None,
     s_len_dict: dict[str, int] | None = None,
@@ -44,38 +70,32 @@ def filter_mappings(
     if config is None:
         config = Config()
     filtered_mappings_df = pd.DataFrame(columns=mappings_df.columns)
-    for _, mapping in mappings_df.iterrows():
-        length_ok = mapping[items.BlastColumns.LENGTH] >= config.min_length()
-        pident_ok = mapping[items.BlastColumns.PIDENT] >= config.min_pident()
-
-        q_len = (
-            abs(
-                mapping[items.BlastColumns.QEND] - mapping[items.BlastColumns.QSTART],
-            )
-            + 1
-        )
-        q_cov_ok = q_len_dict is None or (
-            q_len / q_len_dict[mapping[items.BlastColumns.QSEQID]] >= config.min_q_cov()
-        )
-
-        s_len = (
-            abs(
-                mapping[items.BlastColumns.SEND] - mapping[items.BlastColumns.SSTART],
-            )
-            + 1
-        )
-        s_cov_ok = s_len_dict is None or (
-            s_len / s_len_dict[mapping[items.BlastColumns.SSEQID]] >= config.min_s_cov()
-        )
-
-        if length_ok and pident_ok and q_cov_ok and s_cov_ok:
-            filtered_mappings_df.loc[len(filtered_mappings_df)] = mapping
+    for _, mapping_row in mappings_df.iterrows():
+        if accept_mapping(
+            items.Mapping.from_dataframe_row(mapping_row),
+            config,
+            q_len_dict,
+            s_len_dict,
+        ):
+            filtered_mappings_df.loc[len(filtered_mappings_df)] = mapping_row
 
     return filtered_mappings_df
 
 
 class Config:
-    """Standardize config class."""
+    """Standardize config class.
+
+    Attributes
+    ----------
+    min_length : int
+        Minimum length
+    min_pident : float
+        Minimum pident (between 0 and 100)
+    min_q_cov : float
+        Minimum q coverage (between 0 and 1)
+    min_s_cov : float
+        Minimum s coverage (between 0 and 1)
+    """
 
     DEFAULT_MIN_LENGTH = 1
     DEFAULT_MIN_PIDENT = 0
@@ -126,7 +146,12 @@ class Config:
         return self.__min_length
 
     def min_pident(self) -> float:
-        """Get min pident."""
+        """Get min pident.
+
+        Note
+        ----
+        Pident is between 0 and 100
+        """
         return self.__min_pident
 
     def min_q_cov(self) -> float:
