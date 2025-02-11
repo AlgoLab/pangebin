@@ -2,11 +2,12 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - bioconda::samtools
   - python=3.11.*
+  - bioconda::samtools
   - bioconda::nextflow
   - bioconda::blast
   - pip
   - pip:
     - -e ../.
     - -r requirements-linters.txt
+    - -r requirements-figures.txt
