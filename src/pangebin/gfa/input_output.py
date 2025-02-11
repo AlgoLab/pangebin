@@ -3,12 +3,15 @@
 import gzip
 import shutil
 import subprocess
+from collections.abc import Iterator
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import gfapy  # type: ignore[import-untyped]
+from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
 import pangebin.gfa.iter as gfa_iter
+import pangebin.gfa.line as gfa_line
 import pangebin.input_output as io
 
 
@@ -32,6 +35,12 @@ def from_gfa_gz(in_gfa_gz_path: Path) -> gfapy.Gfa:
     return gfa
 
 
+def iter_segment(gfa_file: Path) -> Iterator[GfaSegment]:
+    """Get a segment line iterator."""
+    with io.open_file_read(gfa_file) as f_in:
+        yield from (line for line in f_in if line[0] == gfa_line.Type.SEGMENT)
+
+
 def gfa_to_fasta_file(graph: gfapy.Gfa, fasta_path: Path) -> None:
     """Write a FASTA file from GFA graph.
 
@@ -44,7 +53,7 @@ def gfa_to_fasta_file(graph: gfapy.Gfa, fasta_path: Path) -> None:
 
     """
     with fasta_path.open("w") as f_out:
-        for seq_record in gfa_iter.iter_gfa_to_seqrecord(graph):
+        for seq_record in gfa_iter.sequence_records(graph):
             f_out.write(seq_record.format("fasta"))
 
 

@@ -109,7 +109,7 @@ def to_fasta(
 
     gfa = gfapy.Gfa.from_file(gfa_path)
 
-    for seq_record in gfa_iter.iter_gfa_to_seqrecord(gfa):
+    for seq_record in gfa_iter.sequence_records(gfa):
         sys.stdout.write(seq_record.format("fasta"))
 
 

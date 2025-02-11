@@ -37,11 +37,11 @@ def __gfa_segment_attribute_to_string(segment: GfaSegment, sep: str = " ") -> st
     )
 
 
-def iter_gfa_to_seqrecord(
+def sequence_records(
     graph: gfapy.Gfa,
     sep: str = " ",
 ) -> Iterator[SeqRecord]:
-    """Iterate over contigs and their attributes from a GFA files.
+    """Iterate over sequence records corresponding to GFA segment lines.
 
     Parameters
     ----------
