@@ -8,3 +8,6 @@
         # flake8-todos
         "TD",
     ]
+
+    [lint.pydocstyle]
+        convention = "numpy"

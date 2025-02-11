@@ -9,3 +9,4 @@ resp
 int
 contigs
 subcontigs
+PlasBin-flow
