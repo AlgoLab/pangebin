@@ -41,7 +41,7 @@ def gfa_to_gc_scores(
 
     """
     intervals_and_scores = items.IntervalAndScores.from_intervals(gc_content_intervals)
-    for seq_record in gfa_iter.gfa_to_seqrecord(graph):
+    for seq_record in gfa_iter.sequence_records(graph):
         intervals_and_scores.add_sequence_scores(
             items.SequenceProbasAndScores(
                 seq_record.name,

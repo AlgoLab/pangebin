@@ -9,6 +9,7 @@ from enum import StrEnum
 
 import typer
 
+import pangebin.gc_content.app as gc_content_app
 import pangebin.gfa.app as gfa_app
 import pangebin.mapping.app as mapping_app
 import pangebin.panassembly.app as panassembly_app
@@ -43,7 +44,12 @@ APP.add_typer(
     help="Mapping operations.",
     rich_help_panel=_TyperRichHelpPanel.UTILS,
 )
-
+APP.add_typer(
+    gc_content_app.APP,
+    name="gc",
+    help="GC content operations.",
+    rich_help_panel=_TyperRichHelpPanel.UTILS,
+)
 
 if __name__ == "__main__":
     APP()
