@@ -3,8 +3,8 @@
 import logging
 import math
 from collections.abc import Iterator
+from pathlib import Path
 
-import gfapy  # type: ignore[import-untyped]
 import scipy.special as sc_spe  # type: ignore[import-untyped]
 from Bio.SeqRecord import SeqRecord
 from scipy import integrate
@@ -18,8 +18,8 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_PSEUDO_COUNT = 10
 
 
-def gfa_to_gc_scores(
-    graph: gfapy.Gfa,
+def gfa_file_to_gc_scores(
+    gfa_file: Path,
     gc_content_intervals: items.Intervals,
     pseudo_count: int = DEFAULT_PSEUDO_COUNT,
 ) -> items.IntervalAndScores:
@@ -27,8 +27,8 @@ def gfa_to_gc_scores(
 
     Parameters
     ----------
-    graph : gfapy.Gfa
-        GFA graph
+    gfa_file : Path
+        GFA file
     gc_content_intervals : items.Intervals
         GC content intervals
     pseudo_count : int, optional
@@ -41,7 +41,7 @@ def gfa_to_gc_scores(
 
     """
     intervals_and_scores = items.IntervalAndScores.from_intervals(gc_content_intervals)
-    for seq_record in gfa_iter.sequence_records(graph):
+    for seq_record in gfa_iter.sequence_records(gfa_file):
         intervals_and_scores.add_sequence_scores(
             items.SequenceProbasAndScores(
                 seq_record.name,
@@ -154,17 +154,14 @@ def sequence_gc_proba_and_score(
             ),
             *gc_interval,
         )
-        # FIXME I think it is multiplying instead of dividing
         prob_n_knw_b_x_prob_b = prob_n_knw_b[0] / all_prob_b[k]
         all_prob_n_knw_b_x_prob_b.append(prob_n_knw_b_x_prob_b)
 
     max_prob_n_knw_b_x_prob_b = max(all_prob_n_knw_b_x_prob_b)
 
-    # FIXME understand why we normalize by the total?
     normalized_probs = [
         prob_n_knw_b_x_prob_b / max_prob_n_knw_b_x_prob_b
         for prob_n_knw_b_x_prob_b in all_prob_n_knw_b_x_prob_b
     ]
     for normalized_prob in normalized_probs:
-        # FIXME decide here
         yield (normalized_prob, 2 * normalized_prob - 1)

@@ -11,7 +11,6 @@ from typing import Annotated
 
 import typer
 
-import pangebin.gfa.input_output as gfa_io
 import pangebin.logging as common_log
 from pangebin.gc_content import create, items
 
@@ -92,11 +91,10 @@ def from_gfa(
         )
         raise typer.Exit(1)
 
-    gfa = gfa_io.from_file(gfa_file)
     gc_content_intervals = items.Intervals.from_file(gc_content_interval_file)
 
-    intervals_and_scores = create.gfa_to_gc_scores(
-        gfa,
+    intervals_and_scores = create.gfa_file_to_gc_scores(
+        gfa_file,
         gc_content_intervals,
         pseudo_count=pseudo_count,
     )

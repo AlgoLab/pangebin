@@ -110,8 +110,14 @@ def std_asm_graph(
     skesa_gfa.to_file(io_manager.skesa_gfa_path())
     unicyler_gfa.to_file(io_manager.unicycler_gfa_path())
 
-    gfa_io.gfa_to_fasta_file(skesa_gfa, io_manager.skesa_fasta_path())
-    gfa_io.gfa_to_fasta_file(unicyler_gfa, io_manager.unicycler_fasta_path())
+    gfa_io.gfa_file_to_fasta_file(
+        io_manager.skesa_gfa_path(),
+        io_manager.skesa_fasta_path(),
+    )
+    gfa_io.gfa_file_to_fasta_file(
+        io_manager.unicycler_gfa_path(),
+        io_manager.unicycler_fasta_path(),
+    )
 
     standardize_fasta.fastas_to_pansn_mixed_fasta(
         io_manager.skesa_fasta_path(),

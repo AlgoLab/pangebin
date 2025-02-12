@@ -57,7 +57,6 @@ class Config:
 
     def to_yaml(self, yaml_filepath: Path) -> Path:
         """Write to yaml."""
-        yaml_filepath = Path(yaml_filepath)
         with yaml_filepath.open("w") as file:
             yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
         return yaml_filepath
