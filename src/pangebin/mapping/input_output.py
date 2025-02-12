@@ -96,7 +96,7 @@ def mapping_file_to_dataframe(
         dtype=map_items.BLAST6_COL_TYPES,
     )
     try:
-        for mapping in map_iter.mapping_from_files(mapping_file):
+        for mapping in map_iter.mapping_from_sam(mapping_file):
             mappings_df.loc[len(mappings_df)] = mapping.to_list()
     except Exception:
         _LOGGER.exception("Error reading mapping file %s", mapping_file)
