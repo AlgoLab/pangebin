@@ -10,33 +10,12 @@ from Bio import SeqIO
 
 import pangebin.mapping.filter as map_filter
 import pangebin.mapping.items as map_items
+import pangebin.mapping.iter as map_iter
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
     from pathlib import Path
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def iter_mapping_in_file(
-    mapping_file: Path,
-) -> Iterator[map_items.Mapping]:
-    """Iterate over a Blast6 mapping file.
-
-    Parameters
-    ----------
-    mapping_file : Path
-        Path to the Blast6 mapping file.
-
-    Yields
-    ------
-    Mapping
-        A Mapping object.
-
-    """
-    with mapping_file.open("r") as f:
-        for line in f:
-            yield map_items.Mapping.from_string(line)
 
 
 def to_filtered_sam_file(
@@ -117,7 +96,7 @@ def mapping_file_to_dataframe(
         dtype=map_items.BLAST6_COL_TYPES,
     )
     try:
-        for mapping in iter_mapping_in_file(mapping_file):
+        for mapping in map_iter.mapping_from_files(mapping_file):
             mappings_df.loc[len(mappings_df)] = mapping.to_list()
     except Exception:
         _LOGGER.exception("Error reading mapping file %s", mapping_file)
