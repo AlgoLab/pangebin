@@ -2,11 +2,23 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+import gfapy  # type: ignore[import-untyped]
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
+
+import pangebin.gfa.line as gfa_line
+
+if TYPE_CHECKING:
+    import gfapy  # type: ignore[import-untyped]
+    from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
+
 import logging
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-import pangebin.gfa.line as gfa_line
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
@@ -204,3 +216,57 @@ def name_to_prefix(segment_name: str) -> str:
 def name_to_integer(segment_name: str) -> int:
     """Get integer from segment name."""
     return int(segment_name.split(__SEP)[1])
+
+
+DEFAULT_ATTRIBUTE_STR_SEP = " "
+
+
+def to_sequence_record(
+    segment: GfaSegment,
+    sep: str = DEFAULT_ATTRIBUTE_STR_SEP,
+) -> SeqRecord:
+    """Convert a GFA segment line to a sequence record.
+
+    Parameters
+    ----------
+    segment: GfaSegment
+        GFA segment line
+    sep: str, optional
+        string for separating GFA attributes, default is space
+
+    Return
+    ------
+    SeqRecord
+        Sequence record
+
+    """
+    return SeqRecord(
+        Seq(segment.sequence),
+        id=segment.name,
+        name=segment.name,
+        description=f"{__format_attributes_string(segment, sep=sep)}",
+    )
+
+
+def __format_attributes_string(
+    segment: GfaSegment,
+    sep: str = DEFAULT_ATTRIBUTE_STR_SEP,
+) -> str:
+    """Format GFA segment attributes as a string.
+
+    Parameters
+    ----------
+    segment: GfaSegment
+        GFA segment
+    sep: str, optional
+        string for separating GFA attributes, default is space
+
+    Returns
+    -------
+    str
+        GFA segment attributes in format sep.join(key:value)
+
+    """
+    return sep.join(
+        [f"{tag_name}:{segment.get(tag_name)}" for tag_name in segment.tagnames],
+    )

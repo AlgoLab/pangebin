@@ -2,16 +2,13 @@
 
 import gzip
 import shutil
-import subprocess
-from collections.abc import Iterator
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import gfapy  # type: ignore[import-untyped]
-from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
 import pangebin.gfa.iter as gfa_iter
-import pangebin.gfa.line as gfa_line
+import pangebin.gfa.segment as gfa_segment
 import pangebin.input_output as io
 
 
@@ -35,37 +32,23 @@ def from_gfa_gz(in_gfa_gz_path: Path) -> gfapy.Gfa:
     return gfa
 
 
-def iter_segment(gfa_file: Path) -> Iterator[GfaSegment]:
-    """Get a segment line iterator."""
-    with io.open_file_read(gfa_file) as f_in:
-        yield from (line for line in f_in if line[0] == gfa_line.Type.SEGMENT)
-
-
-def gfa_to_fasta_file(graph: gfapy.Gfa, fasta_path: Path) -> None:
-    """Write a FASTA file from GFA graph.
+def gfa_file_to_fasta_file(
+    gfa_file: Path,
+    fasta_path: Path,
+    sep: str = gfa_segment.DEFAULT_ATTRIBUTE_STR_SEP,
+) -> None:
+    """Write a FASTA file from GFA file.
 
     Parameters
     ----------
-    graph : gfapy.Gfa
-        GFA graph
+    gfa_file : Path
+        GFA graph file
     fasta_path : Path
         Path to FASTA file
+    sep : str, optional
+        string for separating GFA attributes, default is space
 
     """
     with fasta_path.open("w") as f_out:
-        for seq_record in gfa_iter.sequence_records(graph):
+        for seq_record in gfa_iter.sequence_records(gfa_file, sep=sep):
             f_out.write(seq_record.format("fasta"))
-
-
-def gfa_file_to_fasta_file(gfa_path: Path, fasta_path: Path) -> Path:
-    """Convert GFA to FASTA."""
-    # REFACTOR may be deprecated
-    command = [
-        "awk",
-        '/^S/{print ">"$2; print $3}',
-        str(gfa_path),
-        ">",
-        str(fasta_path),
-    ]
-    subprocess.run(command, check=True)  # noqa: S603
-    return Path(fasta_path)

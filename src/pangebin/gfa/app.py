@@ -10,12 +10,12 @@ import sys
 from pathlib import Path
 from typing import Annotated
 
-import gfapy  # type: ignore[import-untyped]
 import typer
 
 import pangebin.gfa.header as gfa_header
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
+import pangebin.gfa.segment as gfa_segment
 import pangebin.logging as common_log
 from pangebin.gfa import iter as gfa_iter
 
@@ -87,7 +87,7 @@ def fix_skesa(
     _LOGGER.info("Fixed Skeza GFA file: %s", out_gfa)
 
 
-class ToFASTAArgs:
+class ToFASTAArguments:
     """GFA to FASTA arguments."""
 
     ARG_IN_GFA = typer.Argument(
@@ -95,9 +95,24 @@ class ToFASTAArgs:
     )
 
 
+class ToFASTAOptions:
+    """GFA to FASTA options."""
+
+    __RICH_HELP_PANEL = "GFA to FASTA options"
+
+    OPT_ATTRIBUTE_STRING_SEPARATOR = typer.Option(
+        help="String separator for attributes",
+        rich_help_panel=__RICH_HELP_PANEL,
+    )
+
+
 @APP.command()
 def to_fasta(
-    gfa_path: Annotated[Path, ToFASTAArgs.ARG_IN_GFA],
+    gfa_path: Annotated[Path, ToFASTAArguments.ARG_IN_GFA],
+    attribute_string_separator: Annotated[
+        str,
+        ToFASTAOptions.OPT_ATTRIBUTE_STRING_SEPARATOR,
+    ] = gfa_segment.DEFAULT_ATTRIBUTE_STR_SEP,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """Convert GFA to FASTA."""
@@ -107,9 +122,10 @@ def to_fasta(
         _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
         raise typer.Exit(1)
 
-    gfa = gfapy.Gfa.from_file(gfa_path)
-
-    for seq_record in gfa_iter.sequence_records(gfa):
+    for seq_record in gfa_iter.sequence_records(
+        gfa_path,
+        sep=attribute_string_separator,
+    ):
         sys.stdout.write(seq_record.format("fasta"))
 
 
