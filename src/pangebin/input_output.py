@@ -1,4 +1,4 @@
-"""Input-Output PlasBin-Flow module."""
+"""Main input-output module."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Generator
     from pathlib import Path
+
 import gzip  # OPTIMIZE use instead bgzip
 import io
 import logging
@@ -55,6 +56,7 @@ def open_file_read(filepath: Path) -> Generator[IO[str], None, None]:
         File to read.
 
     """
+    text_in: IO[str]
     if is_gz_file(filepath):
         with (
             filepath.open("rb") as f_in,
@@ -84,6 +86,7 @@ def open_file_write(filepath: Path) -> Generator[IO[str], None, None]:
         File to write to.
 
     """
+    text_out: IO[str]
     if is_gz_file(filepath):
         with (
             filepath.open("wb") as f_out,
@@ -113,6 +116,7 @@ def open_file_append(filepath: Path) -> Generator[IO[str], None, None]:
         File to append to.
 
     """
+    text_out: IO[str]
     if is_gz_file(filepath):
         with (
             filepath.open("ab") as f_out,
