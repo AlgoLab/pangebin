@@ -13,7 +13,7 @@ import pangebin.input_output as io
 
 
 def from_file(gfa_path: Path) -> gfapy.Gfa:
-    """Read a GFA file."""
+    """Read a GFA file (compressed or not)."""
     if io.is_gz_file(gfa_path):
         return from_gfa_gz(gfa_path)
     return gfapy.Gfa.from_file(gfa_path)
