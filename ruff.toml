@@ -1,5 +1,5 @@
 [lint]
-    select = ["ALL", "PL"]
+    select = ["ALL"]
     ignore = [
         # multi-line-summary-second-line
         "D213",
