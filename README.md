@@ -67,6 +67,12 @@ dataset_dir="test/SAMN16357463"
       ./test/gene_mapping.sh filter $dataset_dir
       ```
 
+   3. Obtain the gene density on the fragments
+
+      ```sh
+      ./test/frag_gene_densities.sh run $dataset_dir
+      ```
+
 6. Execute PlasBin-Flow modified for pan-assembly
 
    ```sh
