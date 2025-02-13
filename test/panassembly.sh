@@ -3,13 +3,18 @@
 # ------------------------------------------------------------------------------------ #
 # USAGE
 #
-# ./test/panassembly.sh {run|clean} test/<dataset>
+# ./test/panassembly.sh {run|clean} test/<dataset> [--debug]
 # ------------------------------------------------------------------------------------ #
 
 command=$1
 dataset_dir=$2
 
 out_dir="$dataset_dir/result/panassembly"
+
+debug=""
+if [ "$3" == "--debug" ]; then
+    debug="--debug"
+fi
 
 run() {
     local datadir="$dataset_dir/data"
@@ -21,7 +26,8 @@ run() {
     local unicycler="$std_asm_graph_datadir/unicycler.gfa"
 
     pangebin panassembly $pangenome $skesa $unicycler \
-        --outdir $out_dir
+        --outdir $out_dir \
+        $debug
 }
 
 case $command in

@@ -33,6 +33,7 @@ clean)
     echo "Cleaning $out_file"
     rm "$out_file"
     rmdir ${out_file%/*} 2>/dev/null
+    exit 0
     ;;
 *)
     echo "Unknown command '$command'"
