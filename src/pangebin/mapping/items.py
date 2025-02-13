@@ -183,24 +183,43 @@ class Mapping:
 class MappingInterval:
     """Mapping interval.
 
-    Warning
-    -------
-    Start coordinate can be greater than end coordinate
+    Note
+    ----
+    The interval correspond to :math:`[start, end]`,
+    with a length equals to :math:`end - start + 1`
 
     """
 
-    def __init__(self, query_id: str, start: int, end: int) -> None:
-        """Initialize object."""
-        self.__data = (query_id, start, end)
+    @classmethod
+    def from_string(cls, line: str) -> MappingInterval:
+        """Create object from string."""
+        str_items: list[str] = line.split(":")
+        return cls(int(str_items[0]), int(str_items[1]))
 
-    def query_id(self) -> str:
-        """Query ID."""
-        return self.__data[0]
+    def __init__(self, start: int, end: int) -> None:
+        """Initialize object."""
+        self.__data = (start, end)
 
     def start(self) -> int:
         """Start."""
-        return self.__data[1]
+        return self.__data[0]
 
     def end(self) -> int:
         """End."""
-        return self.__data[2]
+        return self.__data[1]
+
+    def set_start(self, start: int) -> None:
+        """Set start."""
+        self.__data = (start, self.__data[1])
+
+    def set_end(self, end: int) -> None:
+        """Set end."""
+        self.__data = (self.__data[0], end)
+
+    def __len__(self) -> int:
+        """Get length."""
+        return self.__data[1] - self.__data[0] + 1
+
+    def __str__(self) -> str:
+        """Get string representation."""
+        return f"{self.__data[0]}:{self.__data[1]}"
