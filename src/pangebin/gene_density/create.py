@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import gfapy  # type: ignore[import-untyped]
+from Bio import SeqIO
 from gfapy.line.group.path.path import (  # type: ignore[import-untyped]
     Path as GfaPath,
 )
@@ -12,6 +13,62 @@ import pangebin.gfa.segment as gfa_segment
 import pangebin.mapping.items as map_items
 import pangebin.mapping.ops as map_ops
 import pangebin.std_asm_graph.fasta as std_asm_graph_fasta
+
+
+def gene_density(
+    disjoint_mapping_intervals: list[map_items.MappingInterval],
+    sequence_length: int,
+) -> float:
+    """Return the gene density."""
+    return (
+        sum(len(interval) for interval in disjoint_mapping_intervals) / sequence_length
+    )
+
+
+def sequence_gene_density(
+    fasta_file: Path,
+    gene_mapping_sam: Path,
+) -> tuple[
+    dict[str, float],
+    dict[str, list[map_items.MappingInterval]],
+]:
+    """Return the gene density for each sequence in a FASTA file.
+
+    Parameters
+    ----------
+    fasta_file : Path
+        Path to the FASTA file.
+    gene_mapping_sam : Path
+        Path to the Blast6 SAM mapping file.
+
+    Returns
+    -------
+    dict[str, float]
+        Sequence ID (str): Gene density
+    dict[str, list[MappingInterval]]
+        Sequence ID (str): List of MappingIntervals
+
+    """
+    sequence_lengths: dict[str, int] = {
+        record.id: len(record.seq) for record in SeqIO.parse(fasta_file, "fasta")
+    }
+    all_sequence_disjoint_intervals = {
+        seq_name: map_ops.interval_union(intervals)
+        for seq_name, intervals in map_ops.subject_intervals_from_sam(
+            gene_mapping_sam,
+        ).items()
+    }
+    return (
+        {
+            seq_name: (
+                gene_density(all_sequence_disjoint_intervals[seq_name], seq_len)
+                if seq_name in all_sequence_disjoint_intervals
+                else 0
+            )
+            for seq_name, seq_len in sequence_lengths.items()
+        },
+        all_sequence_disjoint_intervals,
+    )
 
 
 def fragment_gene_density(
@@ -39,6 +96,7 @@ def fragment_gene_density(
 
     """
     panasm_graph = gfa_io.from_file(panassembly_gfa_file)
+
     all_contig_disjoint_intervals = {
         std_asm_graph_fasta.pansn_name_to_contig_name(
             ctg_name,
@@ -47,6 +105,7 @@ def fragment_gene_density(
             gene_mapping_on_contigs_sam,
         ).items()
     }
+
     fragment_lengths: dict[str, int] = {
         segment_line.name: gfa_segment.length(segment_line)
         for segment_line in panasm_graph.segments
@@ -59,6 +118,7 @@ def fragment_gene_density(
             fragment_lengths,
         ).items()
     }
+
     return (
         {
             frag_name: gene_density(
@@ -68,16 +128,6 @@ def fragment_gene_density(
             for frag_name, intervals in fragment_disjoint_mapping_intervals.items()
         },
         fragment_disjoint_mapping_intervals,
-    )
-
-
-def gene_density(
-    disjoint_mapping_intervals: list[map_items.MappingInterval],
-    sequence_length: int,
-) -> float:
-    """Return the gene density."""
-    return (
-        sum(len(interval) for interval in disjoint_mapping_intervals) / sequence_length
     )
 
 

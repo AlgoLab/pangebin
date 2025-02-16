@@ -18,6 +18,42 @@ _LOGGER = logging.getLogger(__name__)
 APP = typer.Typer(rich_markup_mode="rich")
 
 
+class SequenceGeneDensityArguments:
+    """Sequence gene density arguments."""
+
+    FASTA_FILE = typer.Argument(
+        help="FASTA file",
+    )
+
+    GENE_MAPPING_SAM = typer.Argument(
+        help="Gene mapping SAM file",
+    )
+
+    OUTPUT_FILE = typer.Argument(
+        help="Output file",
+    )
+
+
+@APP.command()
+def fasta(
+    fasta_file: Annotated[Path, SequenceGeneDensityArguments.FASTA_FILE],
+    gene_mapping_sam: Annotated[Path, SequenceGeneDensityArguments.GENE_MAPPING_SAM],
+    output_file: Annotated[Path, SequenceGeneDensityArguments.OUTPUT_FILE],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Compute the gene densities from the mapping of genes against the sequences."""
+    common_log.init_logger(_LOGGER, "Computing sequence gene densities.", debug)
+    sequence_gene_densities, sequence_intervals = gd_create.sequence_gene_density(
+        fasta_file,
+        gene_mapping_sam,
+    )
+    gd_io.to_file_with_intervals(
+        output_file,
+        sequence_gene_densities,
+        gene_mapping_intervals=sequence_intervals,
+    )
+
+
 class FragmentGeneDensityArguments:
     """Fragment gene density arguments."""
 

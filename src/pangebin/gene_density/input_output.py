@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
+# REFACTOR ouput only non-0 gene density (i.e. with mapping intervals)
+# It will enable to reduce the size of the dictionaries(?)
 def to_file_with_intervals(
     file: Path,
     gene_densities: dict[str, float],
@@ -30,13 +32,17 @@ def to_file_with_intervals(
     with file.open("w") as f_out:
         if gene_mapping_intervals is not None:
             for sequence_id, gene_density in gene_densities.items():
-                f_out.write(
-                    f"{sequence_id}\t{gene_density}\t"
+                interval_str = (
+                    ""
+                    if sequence_id not in gene_mapping_intervals
+                    else "\t"
                     + ",".join(
                         str(interval)
                         for interval in gene_mapping_intervals[sequence_id]
                     )
-                    + "\n",
+                )
+                f_out.write(
+                    f"{sequence_id}\t{gene_density}" + interval_str + "\n",
                 )
         else:
             for sequence_id, gene_density in gene_densities.items():
@@ -85,8 +91,12 @@ def from_file_with_intervals(
             yield (
                 str_items[0],
                 float(str_items[1]),
-                [
-                    map_items.MappingInterval.from_string(interval_str)
-                    for interval_str in str_items[2].split(",")
-                ],
+                (
+                    [
+                        map_items.MappingInterval.from_string(interval_str)
+                        for interval_str in str_items[2].split(",")
+                    ]
+                    if len(str_items) > 2  # noqa: PLR2004
+                    else []
+                ),
             )
