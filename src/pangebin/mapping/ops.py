@@ -9,7 +9,7 @@ import pangebin.mapping.iter as map_iter
 def subject_intervals_from_sam(
     sam_file: Path,
 ) -> dict[str, list[map_items.MappingInterval]]:
-    """Return the ammping intervals for each subject in a SAM file.
+    """Return the mapping intervals for each subject in a SAM file.
 
     Parameters
     ----------

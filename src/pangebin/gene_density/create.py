@@ -86,7 +86,7 @@ def fragment_mapping_intervals(
     all_contig_disjoint_intervals: dict[str, list[map_items.MappingInterval]],
     fragment_lengths: dict[str, int],
 ) -> dict[str, list[map_items.MappingInterval]]:
-    """Return the ammping intervals for each fragment in a GFA graph.
+    """Return the mapping intervals for each fragment in a GFA graph.
 
     Parameters
     ----------

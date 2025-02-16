@@ -83,19 +83,7 @@ def filter_mapping_dataframe(
 
 
 class Config:
-    """Standardize config class.
-
-    Attributes
-    ----------
-    min_length : int
-        Minimum length
-    min_pident : float
-        Minimum pident (between 0 and 100)
-    min_q_cov : float
-        Minimum q coverage (between 0 and 1)
-    min_s_cov : float
-        Minimum s coverage (between 0 and 1)
-    """
+    """Standardize config class."""
 
     DEFAULT_MIN_LENGTH = 1
     DEFAULT_MIN_PIDENT = 0
@@ -135,7 +123,19 @@ class Config:
         min_q_cov: float = DEFAULT_MIN_Q_COV,
         min_s_cov: float = DEFAULT_MIN_S_COV,
     ) -> None:
-        """Initialize object."""
+        """Initialize object.
+
+        Attributes
+        ----------
+        min_length : int
+        Minimum length
+        min_pident : float
+        Minimum pident (between 0 and 100)
+        min_q_cov : float
+        Minimum q coverage (between 0 and 1)
+        min_s_cov : float
+        Minimum s coverage (between 0 and 1)
+        """
         self.__min_length = min_length
         self.__min_pident = min_pident
         self.__min_q_cov = min_q_cov
