@@ -13,7 +13,7 @@ def blast_map(
     subject_fasta_file: Path,
     out_mapping_file: Path,
 ) -> None:
-    """Create nf-core/pangenome assembly."""
+    """Blast the query against the subject."""
     subject_db_file = subject_fasta_file.with_suffix(".db")
 
     cmd_path = subprocess_lib.command_path(MAKEBLASTDB_CMD_STR)
