@@ -40,6 +40,46 @@ def subject_intervals_from_sam(
     return subject_intervals
 
 
+def queries_intervals_for_each_subject_from_sam(
+    sam_file: Path,
+) -> dict[str, dict[str, list[map_items.MappingInterval]]]:
+    """Return the mapping intervals of each query for each subject in a SAM file.
+
+    Parameters
+    ----------
+    sam_file : Path
+        Path to the Blast6 SAM mapping file.
+
+    Returns
+    -------
+    dict[str, dict[str list[MappingInterval]]]
+        Subject ID (str):
+            Query ID (str): List of MappingIntervals
+
+    """
+    q_intervals_for_each_s: dict[str, dict[str, list[map_items.MappingInterval]]] = {}
+    for mapping in map_iter.mapping_from_sam(sam_file):
+        # q_interval_start, q_interval_end =
+        query_interval = map_items.MappingInterval(
+            *(mapping.qstart(), mapping.qend())
+            if mapping.qstart() < mapping.qend()
+            else (mapping.qend(), mapping.qstart()),
+        )
+        if mapping.sseqid() not in q_intervals_for_each_s:
+            q_intervals_for_each_s[mapping.sseqid()] = {
+                mapping.qseqid(): [query_interval],
+            }
+        elif mapping.qseqid() not in q_intervals_for_each_s[mapping.sseqid()]:
+            q_intervals_for_each_s[mapping.sseqid()][mapping.qseqid()] = [
+                query_interval,
+            ]
+        else:
+            q_intervals_for_each_s[mapping.sseqid()][mapping.qseqid()].append(
+                query_interval,
+            )
+    return q_intervals_for_each_s
+
+
 def interval_union(
     intervals: list[map_items.MappingInterval],
 ) -> list[map_items.MappingInterval]:
