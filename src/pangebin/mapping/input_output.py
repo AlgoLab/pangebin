@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 def to_filtered_sam_file(
     input_sam: Path,
     filtered_sam: Path,
-    config: map_filter.Config,
+    config: map_filter.Config | None = None,
     query_fasta: Path | None = None,
     subject_fasta: Path | None = None,
 ) -> None:
@@ -33,7 +33,7 @@ def to_filtered_sam_file(
         Path to the input SAM file.
     filtered_sam : Path
         Path to the filtered SAM file.
-    config : map_filter.Config
+    config : map_filter.Config, optional
         Config object.
     query_fasta : Path, optional
         Path to the query FASTA file.
@@ -41,6 +41,9 @@ def to_filtered_sam_file(
         Path to the subject FASTA file.
 
     """
+    if config is None:
+        config = map_filter.Config()
+
     q_len_dict: dict[str, int] | None = (
         None
         if query_fasta is None
