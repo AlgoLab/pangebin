@@ -87,7 +87,7 @@ def left_dovetails(
     """
     link_line: str
     for link_line in graph.segments[fragment.identifier()].dovetails_L:
-        tab_link_line = link_line.split("\t")
+        tab_link_line = link_line.split()
         if tab_link_line[3] == fragment.identifier():
             yield gfa_segment.OrientedFragment(
                 tab_link_line[1],
@@ -120,7 +120,7 @@ def right_dovetails(
     """
     link_line: str
     for link_line in graph.segments[fragment.identifier()].dovetails_R:
-        tab_link_line = link_line.split("\t")
+        tab_link_line = link_line.split()
         if tab_link_line[1] == fragment.identifier():
             yield gfa_segment.OrientedFragment(
                 tab_link_line[3],

@@ -31,11 +31,10 @@ def is_skesa_gfa_fixed(gfa_path: Path) -> bool:
     )
     with io.open_file_read(gfa_path) as f_in:
         for line in f_in:
-            if line.startswith(
-                str(gfa_line.Type.HEADER),
-            ) and yes_fix_tag in line.rstrip(
-                "\n",
-            ).split("\t"):
+            if (
+                line.startswith(str(gfa_line.Type.HEADER))
+                and yes_fix_tag in line.split()
+            ):
                 _LOGGER.debug("Skesa GFA file is fixed.")
                 return True
     _LOGGER.debug("Skesa GFA file is not fixed.")
@@ -88,7 +87,7 @@ def fix_skesa_gfa(
         f_out.write(f"{gfa_line.Type.HEADER}\t{yes_fix_tag}\n")
         for line in f_in:
             if line.startswith(gfa_line.Type.SEGMENT):
-                split_line = line.split("\t")
+                split_line = line.split()
                 f_out.write(split_line[0])  # S
                 f_out.write("\t")
                 f_out.write(split_line[1])  # segment name

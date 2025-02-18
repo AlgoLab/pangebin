@@ -27,7 +27,7 @@ class Arguments:
     """Standardize arguments."""
 
     INPUT_MIXED_FASTA = typer.Argument(
-        help="Mixed FASTA file",
+        help="Mixed FASTA file (can be gzipped or bgzipped or not)",
     )
 
 
@@ -125,13 +125,13 @@ def pangenome(
     io_manager.config().output_directory().mkdir(parents=True, exist_ok=True)
     io_manager.nfcore_pangenome_directory().mkdir(parents=True, exist_ok=True)
 
-    # XXX mixed_fasta is not already bgzipped normally
+    temp_mixed_fasta_gz = False
     if common_io.is_gz_file(mixed_fasta):
-        _LOGGER.error("Input FASTA file is already bgzipped: %s", mixed_fasta)
-        typer.Exit(1)
+        mixed_fasta_gz = mixed_fasta
+    else:
+        mixed_fasta_gz = common_io.bgzip_file(mixed_fasta)
+        temp_mixed_fasta_gz = True
 
-    mixed_fasta_gz = outdir / f"{mixed_fasta.name}.gz"
-    common_io.bgzip_file(mixed_fasta, mixed_fasta_gz)
     pangenome_create.add_false_sequence(mixed_fasta_gz)
 
     pangenome_create.nfcore_pangenome(
@@ -140,7 +140,8 @@ def pangenome(
         io_manager.nfcore_pangenome_directory(),
     )
 
-    mixed_fasta_gz.unlink()
+    if temp_mixed_fasta_gz:
+        mixed_fasta_gz.unlink()
 
     shutil.copy(
         io_manager.nfcore_pangenome_gfa_path(),

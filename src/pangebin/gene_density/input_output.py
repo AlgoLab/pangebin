@@ -61,7 +61,7 @@ def from_file(file: Path) -> Iterator[tuple[str, float]]:
     """
     with file.open() as f_in:
         for line in f_in:
-            str_items: list[str] = line.split("\t")
+            str_items: list[str] = line.split()
             yield str_items[0], float(str_items[1])
 
 
@@ -87,7 +87,7 @@ def from_file_with_intervals(
     """
     with file.open() as f_in:
         for line in f_in:
-            str_items: list[str] = line.split("\t")
+            str_items: list[str] = line.split()
             yield (
                 str_items[0],
                 float(str_items[1]),

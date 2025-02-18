@@ -61,7 +61,7 @@ class PlasmidContig:
     @classmethod
     def from_tsv_row(cls, tsv_row: str) -> PlasmidContig:
         """Create object from TSV row."""
-        items_str: list[str] = tsv_row.split("\t")
+        items_str: list[str] = tsv_row.split()
         return cls(
             items_str[0],
             items_str[1],
@@ -119,7 +119,7 @@ class NonPlasmidContig:
     @classmethod
     def from_tsv_row(cls, tsv_row: str) -> NonPlasmidContig:
         """Create object from TSV row."""
-        items_str: list[str] = tsv_row.split("\t")
+        items_str: list[str] = tsv_row.split()
         return cls(items_str[0], int(items_str[1]))
 
     def __init__(self, contig_id: str, contig_length: int) -> None:

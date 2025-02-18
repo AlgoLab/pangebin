@@ -62,7 +62,7 @@ class Mapping:
     @classmethod
     def from_string(cls, line: str) -> Mapping:
         """Create mapping from string."""
-        str_items: list[str] = line.split("\t")
+        str_items: list[str] = line.split()
         return cls(
             QSEQID_TYPE(str_items[0]),
             SSEQID_TYPE(str_items[1]),
