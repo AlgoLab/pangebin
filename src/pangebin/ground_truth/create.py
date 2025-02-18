@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from Bio import Entrez, SeqIO
 
 import pangebin.ground_truth.config as gt_config
+import pangebin.ground_truth.input_output as gt_io
 import pangebin.ground_truth.items as gt_items
 import pangebin.mapping.create as map_create
 import pangebin.mapping.filter as map_filter
@@ -22,27 +23,24 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 
-def separate_plasmid_and_other_contigs(
+def separate_plasmid_and_other_contigs(  # noqa: PLR0913
     contigs_fasta: Path,
     plasmid_genbank_ids: Iterable[str],
-    output_dir: Path,
     config: gt_config.Config | None = None,
-    email_address: str | None = None,
-) -> tuple[Path, Path]:
+    merged_plasmid_fasta: Path = gt_io.Manager.MERGED_PLASMID_FASTANAME,
+    mapping_sam: Path = gt_io.Manager.MAPPING_SAMNAME,
+    filtered_mapping_sam: Path = gt_io.Manager.FILTERED_MAPPING_SAMNAME,
+) -> tuple[list[gt_items.PlasmidContig], list[gt_items.NonPlasmidContig]]:
     """Create files of plasmid and non-plasmid contigs.
 
     Parameters
     ----------
     contigs_fasta : Path
         Path to contigs FASTA file.
-    plasmid_genbank_ids : Iterable[str]
+    plasmid_genbank_ids : iterable of str
         GenBank IDs of plasmid sequences.
-    output_dir : Path
-        Path to output directory.
     config : gd_config.Config, optional
         Configuration object.
-    email_address : str | None, optional
-        Email address to fetch NCBI database, by default None
 
     Returns
     -------
@@ -54,26 +52,21 @@ def separate_plasmid_and_other_contigs(
     if config is None:
         config = gt_config.Config()
 
-    if email_address is not None:
-        Entrez.email = email_address  # type: ignore[assignment]
-
-    plasmid_contigs_file = output_dir / "plasmid_contigs.tsv"
-    non_plasmid_contigs_file = output_dir / "non_plasmid_contigs.tsv"
+    if config.email_address() is not None:
+        Entrez.email = config.email_address()  # type: ignore[assignment]
 
     merged_fasta, plasmid_lengths = __merged_plasmid_sequences_fasta(
         plasmid_genbank_ids,
-        output_dir,
+        merged_plasmid_fasta,
     )
-    mapping_file = output_dir / "contigs_vs_plasmids.sam"
-    map_create.blast_map(contigs_fasta, merged_fasta, mapping_file)
-    filtered_mapping_file = output_dir / "filtered_contigs_vs_plasmids.sam"
+    map_create.blast_map(contigs_fasta, merged_fasta, mapping_sam)
     map_io.to_filtered_sam_file(
-        mapping_file,
-        filtered_mapping_file,
+        mapping_sam,
+        filtered_mapping_sam,
         map_filter.Config(min_pident=config.min_pident()),
     )
     q_intervals_for_each_s = map_ops.queries_intervals_for_each_subject_from_sam(
-        filtered_mapping_file,
+        filtered_mapping_sam,
     )
 
     contig_lengths: dict[str, int] = {
@@ -114,25 +107,14 @@ def separate_plasmid_and_other_contigs(
                 ),
             )
 
-    _LOGGER.info("Write plasmid contigs file: %s", plasmid_contigs_file)
-    with plasmid_contigs_file.open("w") as f_out:
-        for plasmid_contig in plasmid_contigs:
-            f_out.write(plasmid_contig.to_tsv_row() + "\n")
-
-    _LOGGER.info("Write non plasmid contigs file: %s", non_plasmid_contigs_file)
-    with non_plasmid_contigs_file.open("w") as f_out:
-        for non_plasmid_contig in non_plasmid_contigs:
-            f_out.write(non_plasmid_contig.to_tsv_row() + "\n")
-
-    return (plasmid_contigs_file, non_plasmid_contigs_file)
+    return (plasmid_contigs, non_plasmid_contigs)
 
 
 def __merged_plasmid_sequences_fasta(
     genbank_ids: Iterable[str],
-    output_dir: Path,
+    merged_fasta: Path,
 ) -> tuple[Path, dict[str, int]]:
     _LOGGER.info("Merge plasmid sequences.")
-    merged_fasta = output_dir / "merged_plasmid_sequences.fasta"
 
     plasmid_lengths: dict[str, int] = {}
     with merged_fasta.open("w") as f_out:

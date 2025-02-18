@@ -13,6 +13,7 @@ import typer
 
 import pangebin.ground_truth.config as gt_config
 import pangebin.ground_truth.create as gt_create
+import pangebin.ground_truth.input_output as gt_io
 import pangebin.logging as common_log
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,9 +29,6 @@ class GroundTruthArguments:
     )
     PLASMID_GENBANK_IDS = typer.Argument(
         help="GenBank IDs of plasmid sequences",
-    )
-    OUTPUT_DIR = typer.Argument(
-        help="Output directory",
     )
 
 
@@ -54,7 +52,21 @@ class GroundTruthOptions:
     )
 
     EMAIL_ADDRESS = typer.Option(
+        "--email",
         help="Email address to fetch NCBI database",
+        rich_help_panel=__RICH_HELP_PANEL,
+    )
+
+
+class GroundTruthIOOptions:
+    """Input/Output options."""
+
+    __RICH_HELP_PANEL = "Input/Output options"
+
+    OUTPUT_DIR = typer.Option(
+        "-o",
+        "--outdir",
+        help="Output folder",
         rich_help_panel=__RICH_HELP_PANEL,
     )
 
@@ -63,7 +75,6 @@ class GroundTruthOptions:
 def create(
     contigs_fasta_file: Annotated[Path, GroundTruthArguments.CONTIGS_FASTA],
     plasmid_genbank_ids: Annotated[list[str], GroundTruthArguments.PLASMID_GENBANK_IDS],
-    output_dir: Annotated[Path, GroundTruthArguments.OUTPUT_DIR],
     min_pident: Annotated[
         float,
         GroundTruthOptions.MIN_PIDENT,
@@ -74,6 +85,10 @@ def create(
     ] = gt_config.Config.DEFAULT_MIN_CONTIG_COVERAGE,
     email_address: Annotated[str | None, GroundTruthOptions.EMAIL_ADDRESS] = None,
     config_file: Annotated[Path | None, GroundTruthOptions.CONFIG_FILE] = None,
+    output_dir: Annotated[
+        Path,
+        GroundTruthIOOptions.OUTPUT_DIR,
+    ] = gt_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """Create ground truth."""
@@ -84,13 +99,24 @@ def create(
         else gt_config.Config(
             min_pident=min_pident,
             min_contig_coverage=min_contig_coverage,
+            email_address=email_address,
         )
     )
-    output_dir.mkdir(parents=True, exist_ok=True)
-    gt_create.separate_plasmid_and_other_contigs(
+
+    io_manager = gt_io.Manager(gt_io.Config(output_directory=output_dir))
+    io_manager.config().output_directory().mkdir(parents=True, exist_ok=True)
+
+    plasmid_contigs, non_plasmid_contigs = gt_create.separate_plasmid_and_other_contigs(
         contigs_fasta_file,
         plasmid_genbank_ids,
-        output_dir,
         config=config,
-        email_address=email_address,
+        merged_plasmid_fasta=io_manager.merged_plasmid_fasta(),
+        mapping_sam=io_manager.mapping_sam(),
+        filtered_mapping_sam=io_manager.filtered_mapping_sam(),
+    )
+
+    gt_io.plasmid_contigs_to_file(plasmid_contigs, io_manager.plasmid_contigs_file())
+    gt_io.non_plasmid_contigs_to_file(
+        non_plasmid_contigs,
+        io_manager.non_plasmid_contigs_file(),
     )
