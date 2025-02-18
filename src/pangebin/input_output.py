@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from pathlib import Path
 
-import gzip  # OPTIMIZE use instead bgzip
 import io
 import logging
 import shutil
@@ -23,6 +22,8 @@ _LOGGER = logging.getLogger(__name__)
 
 def is_gz_file(filepath: Path) -> bool:
     """Check if a file is gzipped or bgzipped.
+
+    The last extension must be ".gz"
 
     Parameters
     ----------
@@ -38,7 +39,7 @@ def is_gz_file(filepath: Path) -> bool:
     if not filepath.exists():
         return filepath.suffix == ".gz"
     with filepath.open("rb") as test_f:
-        return test_f.read(2) == b"\x1f\x8b"
+        return filepath.suffix == ".gz" and test_f.read(2) == b"\x1f\x8b"
 
 
 @contextmanager
@@ -60,7 +61,7 @@ def open_file_read(filepath: Path) -> Generator[IO[str], None, None]:
     if is_gz_file(filepath):
         with (
             filepath.open("rb") as f_in,
-            gzip.GzipFile(fileobj=f_in, mode="rb") as g_in,
+            bgzip.BGZipReader(fileobj=f_in) as g_in,
         ):
             text_in = io.TextIOWrapper(g_in, encoding="utf-8")
             yield text_in
@@ -90,7 +91,7 @@ def open_file_write(filepath: Path) -> Generator[IO[str], None, None]:
     if is_gz_file(filepath):
         with (
             filepath.open("wb") as f_out,
-            gzip.GzipFile(fileobj=f_out, mode="wb") as g_out,
+            bgzip.BGZipWriter(fileobj=f_out) as g_out,
         ):
             text_out = io.TextIOWrapper(g_out, encoding="utf-8")
             yield text_out
@@ -120,7 +121,7 @@ def open_file_append(filepath: Path) -> Generator[IO[str], None, None]:
     if is_gz_file(filepath):
         with (
             filepath.open("ab") as f_out,
-            gzip.GzipFile(fileobj=f_out, mode="ab") as g_out,
+            bgzip.BGZipWriter(fileobj=f_out) as g_out,
         ):
             text_out = io.TextIOWrapper(g_out, encoding="utf-8")
             yield text_out
@@ -192,27 +193,66 @@ def bgzip_file(input_filepath: Path, compressed_filepath: Path | None = None) ->
     """
     if compressed_filepath is None:
         _LOGGER.info("Compressing file: %s", input_filepath)
+        compressed_filepath = input_filepath.parent / f"{input_filepath.name}.gz"
+        _LOGGER.debug("Output file: %s", compressed_filepath)
     else:
+        if input_filepath == compressed_filepath:
+            _err_msg = f"Input and output files are the same: {input_filepath}"
+            _LOGGER.error(_err_msg)
+            raise ValueError(_err_msg)
         _LOGGER.info("Compressing file: %s to %s", input_filepath, compressed_filepath)
 
     with (
-        possible_tmp_file(
-            input_filepath,
-            compressed_filepath,
-        ) as (use_in_filepath, use_out_filepath),
-        use_in_filepath.open("rb") as raw_in,
+        input_filepath.open("rb") as raw_in,
+        compressed_filepath.open("wb") as raw_out,
+        bgzip.BGZipWriter(raw_out) as f_out,
     ):
-        if not is_gz_file(use_out_filepath):
-            use_compressed_out_filepath = (
-                use_out_filepath.parent / f"{use_out_filepath.name}.gz"
-            )
-        else:
-            use_compressed_out_filepath = use_out_filepath
-        _LOGGER.debug("Output file: %s", use_compressed_out_filepath)
-        with (
-            use_compressed_out_filepath.open("wb") as raw_out,
-            bgzip.BGZipWriter(raw_out) as f_out,
-        ):
-            shutil.copyfileobj(raw_in, f_out)
+        shutil.copyfileobj(raw_in, f_out)
 
-    return use_compressed_out_filepath
+    return compressed_filepath
+
+
+def bgunzip_file(
+    compressed_filepath: Path,
+    uncompressed_filepath: Path | None = None,
+) -> Path:
+    """Uncompress a file using bgzip.
+
+    Parameters
+    ----------
+    compressed_filepath : Path
+        Path of compressed file.
+    uncompressed_filepath : Path, optional
+        Path of uncompressed file, by default None.
+
+    Returns
+    -------
+    Path
+        Path of uncompressed file
+
+    """
+    if uncompressed_filepath is None:
+        _LOGGER.info("Uncompressing file: %s", compressed_filepath)
+        uncompressed_filepath = (
+            compressed_filepath.parent / f"{compressed_filepath.name}.gz"
+        )
+        _LOGGER.debug("Output file: %s", uncompressed_filepath)
+    else:
+        if compressed_filepath == uncompressed_filepath:
+            _err_msg = f"Input and output files are the same: {compressed_filepath}"
+            _LOGGER.error(_err_msg)
+            raise ValueError(_err_msg)
+        _LOGGER.info(
+            "Uncompressing file: %s to %s",
+            compressed_filepath,
+            uncompressed_filepath,
+        )
+
+    with (
+        compressed_filepath.open("rb") as raw_in,
+        uncompressed_filepath.open("wb") as raw_out,
+        bgzip.BGZipReader(raw_in) as f_in,
+    ):
+        shutil.copyfileobj(f_in, raw_out)
+
+    return uncompressed_filepath
