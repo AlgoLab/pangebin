@@ -9,6 +9,7 @@ from enum import StrEnum
 
 import typer
 
+import pangebin.database.app as db_app
 import pangebin.gc_content.app as gc_content_app
 import pangebin.gene_density.app as gd_app
 import pangebin.gfa.app as gfa_app
@@ -36,6 +37,9 @@ APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(pangenome_app.pangenome)
 APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(panassembly_app.panassembly)
 # APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(plasbin_app.plasbin)
 
+APP.command(name="database", rich_help_panel=_TyperRichHelpPanel.TUNING)(
+    db_app.create,
+)
 APP.command(name="ground-truth", rich_help_panel=_TyperRichHelpPanel.TUNING)(
     gt_app.create,
 )
