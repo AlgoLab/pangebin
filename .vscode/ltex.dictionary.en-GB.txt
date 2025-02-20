@@ -10,3 +10,8 @@ int
 contigs
 subcontigs
 PlasBin-flow
+noqa
+Illumina
+BioSamples
+BioSample
+SRAs
