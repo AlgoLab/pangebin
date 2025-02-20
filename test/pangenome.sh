@@ -27,7 +27,7 @@ run() {
 
     local mixed_fasta="$std_asm_graph_datadir/mixed.fasta"
 
-    pangebin pangenome $mixed_fasta \
+    pangebin sub pangenome $mixed_fasta \
         --supplementary-nfcore-pangenome-config-path $supp_nfcore_pangenome_config_path \
         --outdir $out_dir \
         $debug

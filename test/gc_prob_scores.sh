@@ -21,7 +21,7 @@ run() {
     local panassembly_datadir="$datadir/panassembly"
     local panassembly_gfa="$panassembly_datadir/panassembly.gfa"
 
-    pangebin gc from-gfa $panassembly_gfa $out_file \
+    pangebin sub gc from-gfa $panassembly_gfa $out_file \
         $debug
 }
 

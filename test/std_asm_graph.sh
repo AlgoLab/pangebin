@@ -23,7 +23,7 @@ run() {
     local skesa_gfa="$assembly_datadir/skesa.gfa.gz"
     local unicycler_gfa="$assembly_datadir/unicycler.gfa.gz"
 
-    pangebin std-asm-graph $skesa_gfa $unicycler_gfa \
+    pangebin sub std-asm-graph $skesa_gfa $unicycler_gfa \
         --outdir $out_dir \
         $debug
 }

@@ -25,7 +25,7 @@ run() {
     local skesa="$std_asm_graph_datadir/skesa.gfa"
     local unicycler="$std_asm_graph_datadir/unicycler.gfa"
 
-    pangebin panassembly $pangenome $skesa $unicycler \
+    pangebin sub panassembly $pangenome $skesa $unicycler \
         --outdir $out_dir \
         $debug
 }

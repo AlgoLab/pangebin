@@ -17,64 +17,97 @@ import pangebin.ground_truth.app as gt_app
 import pangebin.mapping.app as mapping_app
 import pangebin.panassembly.app as panassembly_app
 import pangebin.pangenome.app as pangenome_app
+import pangebin.pipeline.app as pipeline_app
 import pangebin.seed.app as seed_app
 import pangebin.std_asm_graph.app as std_asm_graph_app
+
+APP = typer.Typer(rich_markup_mode="rich")
 
 
 class _TyperRichHelpPanel(StrEnum):
     """Typer rich help panel categories."""
 
+    PIPELINE = "Pipelines"
+    SUBCMD = "Pipeline subcommands"
+
+
+# ------------------------------------------------------------------------------------ #
+#                                   Pipeline Commands                                  #
+# ------------------------------------------------------------------------------------ #
+APP.command(rich_help_panel=_TyperRichHelpPanel.PIPELINE)(pipeline_app.run)
+APP.command(rich_help_panel=_TyperRichHelpPanel.PIPELINE)(pipeline_app.seed_thresholds)
+
+# ------------------------------------------------------------------------------------ #
+#                                     Sub Commands                                     #
+# ------------------------------------------------------------------------------------ #
+SUB_APP = typer.Typer(
+    name="sub",
+    help="Subcommands",
+    rich_markup_mode="rich",
+)
+APP.add_typer(SUB_APP, rich_help_panel=_TyperRichHelpPanel.SUBCMD)
+
+
+class _SubCMDTyperRichHelpPanel(StrEnum):
+    """Typer rich help panel categories."""
+
     MAIN = "Main commands"
-    TUNING = "Tuning commands"
     ATTRIBUTES = "Attribute commands"
-    UTILS = "Utility commands"
+    TUNING = "Tuning commands"
 
 
-APP = typer.Typer(rich_markup_mode="rich")
-
-APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(std_asm_graph_app.std_asm_graph)
-APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(pangenome_app.pangenome)
-APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(panassembly_app.panassembly)
+SUB_APP.command(rich_help_panel=_SubCMDTyperRichHelpPanel.MAIN)(
+    std_asm_graph_app.std_asm_graph,
+)
+SUB_APP.command(rich_help_panel=_SubCMDTyperRichHelpPanel.MAIN)(pangenome_app.pangenome)
+SUB_APP.command(rich_help_panel=_SubCMDTyperRichHelpPanel.MAIN)(
+    panassembly_app.panassembly,
+)
 # APP.command(rich_help_panel=_TyperRichHelpPanel.MAIN)(plasbin_app.plasbin)
 
-APP.command(name="database", rich_help_panel=_TyperRichHelpPanel.TUNING)(
-    db_app.create,
-)
-APP.command(name="ground-truth", rich_help_panel=_TyperRichHelpPanel.TUNING)(
-    gt_app.create,
-)
-
-APP.add_typer(
-    gfa_app.APP,
-    name="gfa",
-    help="GFA operations.",
-    rich_help_panel=_TyperRichHelpPanel.UTILS,
-)
-APP.add_typer(
-    mapping_app.APP,
-    name="map",
-    help="Mapping operations.",
-    rich_help_panel=_TyperRichHelpPanel.UTILS,
-)
-
-APP.add_typer(
+SUB_APP.add_typer(
     gc_content_app.APP,
     name="gc",
     help="GC content operations.",
-    rich_help_panel=_TyperRichHelpPanel.ATTRIBUTES,
+    rich_help_panel=_SubCMDTyperRichHelpPanel.ATTRIBUTES,
 )
-APP.add_typer(
+SUB_APP.add_typer(
     gd_app.APP,
     name="gd",
     help="Gene density operations.",
-    rich_help_panel=_TyperRichHelpPanel.ATTRIBUTES,
+    rich_help_panel=_SubCMDTyperRichHelpPanel.ATTRIBUTES,
 )
-APP.add_typer(
+SUB_APP.add_typer(
     seed_app.APP,
     name="seed",
     help="Seed sequences operations.",
-    rich_help_panel=_TyperRichHelpPanel.ATTRIBUTES,
+    rich_help_panel=_SubCMDTyperRichHelpPanel.ATTRIBUTES,
 )
+
+SUB_APP.command(name="database", rich_help_panel=_SubCMDTyperRichHelpPanel.TUNING)(
+    db_app.create,
+)
+SUB_APP.command(name="ground-truth", rich_help_panel=_SubCMDTyperRichHelpPanel.TUNING)(
+    gt_app.create,
+)
+
+# ------------------------------------------------------------------------------------ #
+#                                   Utility Commands                                   #
+# ------------------------------------------------------------------------------------ #
+UTILS_APP = typer.Typer(name="utils", help="Utility commands", rich_markup_mode="rich")
+APP.add_typer(UTILS_APP, rich_help_panel=_TyperRichHelpPanel.SUBCMD)
+
+UTILS_APP.add_typer(
+    gfa_app.APP,
+    name="gfa",
+    help="GFA operations.",
+)
+UTILS_APP.add_typer(
+    mapping_app.APP,
+    name="map",
+    help="Mapping operations.",
+)
+
 
 if __name__ == "__main__":
     APP()

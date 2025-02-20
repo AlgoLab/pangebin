@@ -16,7 +16,7 @@ if [ "$3" == "--debug" ]; then
     debug="--debug"
 fi
 
-gene_fasta="database/genes.fasta"
+gene_fasta="src/pangebin/database/genes.fasta"
 
 blast() {
     mkdir $out_dir 2>/dev/null
@@ -27,7 +27,7 @@ blast() {
 
     local original_sam="$out_dir/gene_map_on_contigs.sam"
 
-    pangebin map blast $gene_fasta $mixed_fasta $original_sam \
+    pangebin utils map blast $gene_fasta $mixed_fasta $original_sam \
         $debug
 }
 
@@ -38,11 +38,11 @@ filter() {
 
     local gene_mapping_datadir="$datadir/gene_mapping"
     local original_sam="$gene_mapping_datadir/gene_map_on_contigs.sam"
-    local filter_config_yaml="$gene_mapping_datadir/filter_config.yaml"
+    local filter_config_yaml="test/config/filter_config.yaml"
 
     local filtered_sam="$out_dir/gene_map_on_contigs.filtered.sam"
 
-    pangebin map filter $original_sam $filtered_sam \
+    pangebin utils map filter $original_sam $filtered_sam \
         --query-fasta $gene_fasta \
         --config $filter_config_yaml \
         $debug

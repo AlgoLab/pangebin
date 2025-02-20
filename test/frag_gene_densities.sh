@@ -25,7 +25,7 @@ run() {
     local gene_mapping_datadir="$datadir/gene_mapping"
     local filtered_sam="$gene_mapping_datadir/gene_map_on_contigs.filtered.sam"
 
-    pangebin gd frag $panassembly_gfa $filtered_sam $out_file \
+    pangebin sub gd frag $panassembly_gfa $filtered_sam $out_file \
         $debug
 }
 

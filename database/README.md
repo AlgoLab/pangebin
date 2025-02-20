@@ -22,5 +22,5 @@ Creating the paired-end Illumina SRA reads database:
 ```bash
 # At the workspace root
 # Do not forget to activate the conda env.
-pangebin database database/accessions.txt  --outdir database/  # See --help for NCBI Entrez options
+pangebin sub database database/accessions.txt --outdir database/  # See --help for NCBI Entrez options
 ```
