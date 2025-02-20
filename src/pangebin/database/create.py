@@ -35,7 +35,6 @@ def illumina_exp_sra_ids_from_plasmid_accessions(
     non_illumina_biosamples: dict[str, db_items.NonIlluminaBioSamples] = {}
 
     _nb_plasmids_without_biosample = 0
-    _nb_biosamples_without_illumina_paired_reads = 0
 
     accessions = list(accessions)
     try:
@@ -86,7 +85,6 @@ def illumina_exp_sra_ids_from_plasmid_accessions(
             )
 
             if not illumina_exp_sra_ids:
-                _nb_biosamples_without_illumina_paired_reads += 1
                 _LOGGER.warning(
                     "No Illumina paired reads for biosample %s",
                     biosample_id,
@@ -109,11 +107,15 @@ def illumina_exp_sra_ids_from_plasmid_accessions(
             "Plasmids without biosample: %s",
             _nb_plasmids_without_biosample,
         )
-    if _nb_biosamples_without_illumina_paired_reads > 0:
+    if non_illumina_biosamples:
         _LOGGER.warning(
             "Biosamples without Illumina paired reads: %s",
-            _nb_biosamples_without_illumina_paired_reads,
+            len(non_illumina_biosamples),
         )
+    _LOGGER.info(
+        "Biosamples with Illumina paired reads: %s",
+        len(illumina_biosamples),
+    )
 
     return (
         list(illumina_biosamples.values()),
@@ -195,18 +197,35 @@ def summaries(
 
 def illumina_exp_sra_from_summary(sra_summary: dict) -> str | None:
     """Extract paired illumina experiment SRA from summary."""
-    sra_info = f"<ExpXml>{sra_summary['ExpXml']}</ExpXml>"
+    if not is_paired_illumina(sra_summary):
+        return None
 
-    root = DET.fromstring(sra_info)
+    return srr_acc_from_summary(sra_summary)
+
+
+def is_paired_illumina(sra_summary: dict) -> bool:
+    """Check if paired illumina experiment."""
+    sra_exp_info = f"<ExpXml>{sra_summary['ExpXml']}</ExpXml>"
+
+    root = DET.fromstring(sra_exp_info)
 
     platform = root.find("Summary").find("Platform").text
     if "illumina" not in platform.lower():
-        return None
+        return False
 
     child = root
     for tag in ("Library_descriptor", "LIBRARY_LAYOUT", "PAIRED"):
         child = child.find(tag)
         if child is None:
-            return None
+            return False
 
-    return str(root.find("Experiment").get("acc"))
+    return True
+
+
+def srr_acc_from_summary(sra_summary: dict) -> str:
+    """Extract SRR id from summary."""
+    sra_runs = f"<Runs>{sra_summary['Runs']}</Runs>"
+
+    root = DET.fromstring(sra_runs)
+
+    return str(root.find("Run").get("acc"))

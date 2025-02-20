@@ -14,7 +14,7 @@ class IlluminaBioSamples:
     KEY_BIOSAMPLE_ID = "BioSampleID"
     KEY_SAMPLE_SRA_ID = "SampleSRAID"
     KEY_PLASMID_GENBANK_IDS = "PlasmidGenBankIDs"
-    KEY_EXP_SRA_IDS = "ExpSRAIDs"
+    KEY_RUN_SRA_IDS = "RunSRAIDs"
 
     @classmethod
     def from_dict(cls, dict_from_yaml: dict) -> IlluminaBioSamples:
@@ -23,7 +23,7 @@ class IlluminaBioSamples:
             dict_from_yaml[cls.KEY_BIOSAMPLE_ID],
             dict_from_yaml[cls.KEY_SAMPLE_SRA_ID],
             dict_from_yaml[cls.KEY_PLASMID_GENBANK_IDS],
-            dict_from_yaml[cls.KEY_EXP_SRA_IDS],
+            dict_from_yaml[cls.KEY_RUN_SRA_IDS],
         )
 
     def __init__(
@@ -31,7 +31,7 @@ class IlluminaBioSamples:
         biosample_id: str,
         sample_sra_id: str,
         plasmids: Iterable[str],
-        experiments_reads: Iterable[str],
+        run_sra_ids: Iterable[str],
     ) -> None:
         """Initialize object.
 
@@ -43,13 +43,13 @@ class IlluminaBioSamples:
             Sample SRA ID
         plasmids : iterable of str
             Set of plasmid Genbank IDs
-        experiments_reads : iterable of str
-            Set of reads SRA experiment IDs
+        run_sra_ids : iterable of str
+            Set of reads run SRA IDs
         """
         self.__biosample_id = biosample_id
         self.__sample_sra_id = sample_sra_id
         self.__plasmids = list(plasmids)
-        self.__experiments_reads = list(experiments_reads)
+        self.__run_sra_ids = list(run_sra_ids)
 
     def biosample_id(self) -> str:
         """Get BioSample ID."""
@@ -63,9 +63,9 @@ class IlluminaBioSamples:
         """Get plasmid Genbank IDs."""
         return self.__plasmids
 
-    def experiments_reads(self) -> list[str]:
-        """Get experiment SRA reads IDs."""
-        return self.__experiments_reads
+    def run_sra_ids(self) -> list[str]:
+        """Get run SRA reads IDs."""
+        return self.__run_sra_ids
 
     def to_dict(self) -> dict[str, str | list[str]]:
         """Convert to dict."""
@@ -73,7 +73,7 @@ class IlluminaBioSamples:
             self.KEY_BIOSAMPLE_ID: self.__biosample_id,
             self.KEY_SAMPLE_SRA_ID: self.__sample_sra_id,
             self.KEY_PLASMID_GENBANK_IDS: self.__plasmids,
-            self.KEY_EXP_SRA_IDS: self.__experiments_reads,
+            self.KEY_RUN_SRA_IDS: self.__run_sra_ids,
         }
 
 
