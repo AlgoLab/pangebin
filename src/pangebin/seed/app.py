@@ -115,7 +115,7 @@ def thresholds(
     output_dir: Annotated[
         Path,
         SeedThresholdsIOOptions.OUTPUT_DIR,
-    ] = seed_io.Config.DEFAULT_OUTPUT_DIR,
+    ] = seed_io.ThresholdsConfig.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """Seed thresholds."""
@@ -134,7 +134,9 @@ def thresholds(
         )
     )
 
-    io_manager = seed_io.ThresholdManager(seed_io.Config(output_directory=output_dir))
+    io_manager = seed_io.ThresholdsManager(
+        seed_io.ThresholdsConfig(output_directory=output_dir),
+    )
     io_manager.config().output_directory().mkdir(parents=True, exist_ok=True)
 
     seed_contig_thresholds = seed_create.thresholds_from_datatest(

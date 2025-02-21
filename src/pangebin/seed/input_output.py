@@ -42,12 +42,12 @@ def test_items_from_file(
             yield seed_items.SeedContigThresholdTestItem.from_datatest_line(line)
 
 
-class ThresholdManager:
-    """Seed threshold IO manager."""
+class ThresholdsManager:
+    """Seed thresholds IO manager."""
 
     SEED_THRESHOLD_YAMLNAME = Path("seed_thresholds.yaml")
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: ThresholdsConfig) -> None:
         """Initialize object."""
         self.__config = config
 
@@ -55,27 +55,27 @@ class ThresholdManager:
         """Get threshold YAML path."""
         return self.__config.output_directory() / self.SEED_THRESHOLD_YAMLNAME
 
-    def config(self) -> Config:
+    def config(self) -> ThresholdsConfig:
         """Get config."""
         return self.__config
 
 
-class Config:
-    """Seed IO configuration."""
+class ThresholdsConfig:
+    """Seed thresholds IO configuration."""
 
-    DEFAULT_OUTPUT_DIR = Path("./seed")
+    DEFAULT_OUTPUT_DIR = Path("./seed_thresholds")
 
     KEY_OUTPUT_DIR = "output_directory"
 
     @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> Config:
+    def from_yaml(cls, yaml_filepath: Path) -> ThresholdsConfig:
         """Create config instance from a YAML file."""
         with Path(yaml_filepath).open("r") as file:
             config_data = yaml.safe_load(file)
         return cls.from_dict(config_data)
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> Config:
+    def from_dict(cls, config_dict: dict[str, Any]) -> ThresholdsConfig:
         """Convert dict to object."""
         return cls(
             config_dict.get(cls.KEY_OUTPUT_DIR, cls.DEFAULT_OUTPUT_DIR),
