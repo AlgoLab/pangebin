@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from Bio import Entrez, SeqIO
 
+import pangebin.entrez as pg_entrez
 import pangebin.ground_truth.config as gt_config
 import pangebin.ground_truth.input_output as gt_io
 import pangebin.ground_truth.items as gt_items
@@ -27,6 +28,7 @@ def separate_plasmid_and_other_contigs(  # noqa: PLR0913
     contigs_fasta: Path,
     plasmid_genbank_ids: Iterable[str],
     config: gt_config.Config | None = None,
+    entrez_config: pg_entrez.Config | None = None,
     merged_plasmid_fasta: Path = gt_io.Manager.MERGED_PLASMID_FASTANAME,
     mapping_sam: Path = gt_io.Manager.MAPPING_SAMNAME,
     filtered_mapping_sam: Path = gt_io.Manager.FILTERED_MAPPING_SAMNAME,
@@ -41,6 +43,14 @@ def separate_plasmid_and_other_contigs(  # noqa: PLR0913
         GenBank IDs of plasmid sequences.
     config : gd_config.Config, optional
         Configuration object.
+    entrez_config : pg_entrez.Config, optional
+        Entrez configuration object.
+    merged_plasmid_fasta : Path, optional
+        Path to merged plasmid FASTA file.
+    mapping_sam : Path, optional
+        Path to mapping SAM file.
+    filtered_mapping_sam : Path, optional
+        Path to filtered mapping SAM file.
 
     Returns
     -------
@@ -52,8 +62,9 @@ def separate_plasmid_and_other_contigs(  # noqa: PLR0913
     if config is None:
         config = gt_config.Config()
 
-    if config.email_address() is not None:
-        Entrez.email = config.email_address()  # type: ignore[assignment]
+    if entrez_config is None:
+        entrez_config = pg_entrez.Config()
+    pg_entrez.set_entrez_config(entrez_config)
 
     merged_fasta, plasmid_lengths = __merged_plasmid_sequences_fasta(
         plasmid_genbank_ids,

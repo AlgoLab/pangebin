@@ -18,11 +18,9 @@ class Config:
 
     KEY_MIN_PIDENT = "min_pident"
     KEY_MIN_CONTIG_COVERAGE = "min_contig_coverage"
-    KEY_EMAIL = "email_address"
 
     DEFAULT_MIN_PIDENT = 95
     DEFAULT_MIN_CONTIG_COVERAGE = 0.95
-    DEFAULT_EMAIL_ADDRESS = None
 
     DEFAULT_YAML_FILE = Path("ground_truth_config.yaml")
 
@@ -44,14 +42,12 @@ class Config:
                 cls.KEY_MIN_CONTIG_COVERAGE,
                 cls.DEFAULT_MIN_CONTIG_COVERAGE,
             ),
-            config_dict.get(cls.KEY_EMAIL, cls.DEFAULT_EMAIL_ADDRESS),
         )
 
     def __init__(
         self,
         min_pident: float = DEFAULT_MIN_PIDENT,
         min_contig_coverage: float = DEFAULT_MIN_CONTIG_COVERAGE,
-        email_address: str | None = DEFAULT_EMAIL_ADDRESS,
     ) -> None:
         """Initialize object.
 
@@ -61,12 +57,9 @@ class Config:
             Pourcentage of identity threshold (between 0 and 100)
         min_contig_coverage : float
             Contig coverage threshold (between 0 and 1)
-        email_address : str | None, optional
-            Email address to fetch NCBI database, by default None
         """
         self.__min_pident = min_pident
         self.__min_contig_coverage = min_contig_coverage
-        self.__email_address = email_address
 
     def min_pident(self) -> float:
         """Get min pident."""
@@ -76,16 +69,11 @@ class Config:
         """Get min contig coverage."""
         return self.__min_contig_coverage
 
-    def email_address(self) -> str | None:
-        """Get email address."""
-        return self.__email_address
-
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict."""
         return {
             self.KEY_MIN_PIDENT: self.__min_pident,
             self.KEY_MIN_CONTIG_COVERAGE: self.__min_contig_coverage,
-            self.KEY_EMAIL: self.__email_address,
         }
 
     def to_yaml(self, yaml_filepath: Path) -> Path:

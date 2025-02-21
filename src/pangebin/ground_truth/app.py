@@ -11,6 +11,7 @@ from typing import Annotated
 
 import typer
 
+import pangebin.entrez as pg_entrez
 import pangebin.ground_truth.config as gt_config
 import pangebin.ground_truth.create as gt_create
 import pangebin.ground_truth.input_output as gt_io
@@ -51,12 +52,6 @@ class GroundTruthOptions:
         rich_help_panel=__RICH_HELP_PANEL,
     )
 
-    EMAIL_ADDRESS = typer.Option(
-        "--email",
-        help="Email address to fetch NCBI database",
-        rich_help_panel=__RICH_HELP_PANEL,
-    )
-
 
 class GroundTruthIOOptions:
     """Input/Output options."""
@@ -83,8 +78,32 @@ def create(
         float,
         GroundTruthOptions.MIN_CONTIG_COVERAGE,
     ] = gt_config.Config.DEFAULT_MIN_CONTIG_COVERAGE,
-    email_address: Annotated[str | None, GroundTruthOptions.EMAIL_ADDRESS] = None,
     config_file: Annotated[Path | None, GroundTruthOptions.CONFIG_FILE] = None,
+    # Entrez configuration
+    entrez_email: Annotated[
+        str | None,
+        pg_entrez.AppOptions.EMAIL,
+    ] = pg_entrez.Config.DEFAULT_EMAIL,
+    entrez_tool: Annotated[
+        str,
+        pg_entrez.AppOptions.TOOL,
+    ] = pg_entrez.Config.DEFAULT_TOOL,
+    entrez_api_key: Annotated[
+        str | None,
+        pg_entrez.AppOptions.API_KEY,
+    ] = pg_entrez.Config.DEFAULT_API_KEY,
+    entrez_max_tries: Annotated[
+        int,
+        pg_entrez.AppOptions.MAX_TRIES,
+    ] = pg_entrez.Config.DEFAULT_MAX_TRIES,
+    entrez_sleep_between_tries: Annotated[
+        int,
+        pg_entrez.AppOptions.SLEEP_BETWEEN_TRIES,
+    ] = pg_entrez.Config.DEFAULT_SLEEP_BETWEEN_TRIES,
+    entrez_config_file: Annotated[
+        Path | None,
+        pg_entrez.AppOptions.CONFIG_FILE,
+    ] = None,
     output_dir: Annotated[
         Path,
         GroundTruthIOOptions.OUTPUT_DIR,
@@ -99,7 +118,17 @@ def create(
         else gt_config.Config(
             min_pident=min_pident,
             min_contig_coverage=min_contig_coverage,
-            email_address=email_address,
+        )
+    )
+    entrez_config = (
+        pg_entrez.Config.from_yaml(entrez_config_file)
+        if entrez_config_file
+        else pg_entrez.Config(
+            email=entrez_email,
+            tool=entrez_tool,
+            api_key=entrez_api_key,
+            max_tries=entrez_max_tries,
+            sleep_between_tries=entrez_sleep_between_tries,
         )
     )
 
@@ -110,6 +139,7 @@ def create(
         contigs_fasta_file,
         plasmid_genbank_ids,
         config=config,
+        entrez_config=entrez_config,
         merged_plasmid_fasta=io_manager.merged_plasmid_fasta(),
         mapping_sam=io_manager.mapping_sam(),
         filtered_mapping_sam=io_manager.filtered_mapping_sam(),
