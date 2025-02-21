@@ -6,6 +6,7 @@ dependencies:
   - bioconda::samtools
   - bioconda::nextflow
   - bioconda::blast
+  - bioconda::sra-tools
   - pip
   - pip:
     - -e ../.
