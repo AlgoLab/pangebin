@@ -6,6 +6,10 @@ import logging
 import shutil
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,7 +30,7 @@ def command_path(command_str: str | Path) -> Path:
     return Path(cmd_path)
 
 
-def run_cmd(cli_line: list[object], cmd_str: str) -> None:
+def run_cmd(cli_line: Sequence[object], cmd_str: str) -> None:
     """Run external command."""
     try:
         subprocess.run(  # noqa: S603
