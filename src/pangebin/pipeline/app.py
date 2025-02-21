@@ -11,6 +11,7 @@ from typing import Annotated
 import typer
 
 import pangebin.logging as common_log
+import pangebin.pipeline.seed_thresholds.app as pipe_seed_thr_app
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,11 +24,11 @@ def run(debug: Annotated[bool, common_log.OPT_DEBUG] = False) -> None:
     common_log.init_logger(_LOGGER, "Running pangebin pipeline.", debug)
 
 
-@APP.command()
-def seed_thresholds(debug: Annotated[bool, common_log.OPT_DEBUG] = False) -> None:
-    """Obtain the seed threshold pairs from paired Illumina BioSamples."""
-    common_log.init_logger(
-        _LOGGER,
-        "Obtaining the seed threshold pairs from paired Illumina BioSamples.",
-        debug,
-    )
+CONFIG_APP = typer.Typer(
+    name="configs",
+    rich_markup_mode="rich",
+    help="Write default configuration files for the pipelines",
+)
+
+
+CONFIG_APP.command(name="seed-thresholds")(pipe_seed_thr_app.write_configs)

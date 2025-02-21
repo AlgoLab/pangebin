@@ -18,6 +18,7 @@ import pangebin.mapping.app as mapping_app
 import pangebin.panassembly.app as panassembly_app
 import pangebin.pangenome.app as pangenome_app
 import pangebin.pipeline.app as pipeline_app
+import pangebin.pipeline.seed_thresholds.app as pipe_seed_thr_app
 import pangebin.seed.app as seed_app
 import pangebin.std_asm_graph.app as std_asm_graph_app
 
@@ -35,7 +36,11 @@ class _TyperRichHelpPanel(StrEnum):
 #                                   Pipeline Commands                                  #
 # ------------------------------------------------------------------------------------ #
 APP.command(rich_help_panel=_TyperRichHelpPanel.PIPELINE)(pipeline_app.run)
-APP.command(rich_help_panel=_TyperRichHelpPanel.PIPELINE)(pipeline_app.seed_thresholds)
+APP.command(rich_help_panel=_TyperRichHelpPanel.PIPELINE)(
+    pipe_seed_thr_app.seed_thresholds,
+)
+
+APP.add_typer(pipeline_app.CONFIG_APP, rich_help_panel=_TyperRichHelpPanel.PIPELINE)
 
 # ------------------------------------------------------------------------------------ #
 #                                     Sub Commands                                     #
