@@ -1,6 +1,10 @@
 # Pangebin (WIP)
-Check ISMB2025 branch.
+Checkout ISMB2025 branch.
+```
+git checkout ismb2025
+```
 
+---
 
 ### activate env
 `source venv/bin/activate`
