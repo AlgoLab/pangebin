@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from Bio import SeqIO
 
-from pangebin import assembler
+import pangebin.assembly.items as asm_items
 
 if TYPE_CHECKING:
     from Bio.SeqRecord import SeqRecord
@@ -25,8 +25,8 @@ def fastas_to_pansn_mixed_fasta(
     """
     with mixed_fasta_path.open("w") as mixed_fasta_file:
         for fasta_in, haplotype_id in (
-            (skesa_fasta_path, assembler.HaplotypeID.SKESA),
-            (unicycler_fasta_path, assembler.HaplotypeID.UNICYCLER),
+            (skesa_fasta_path, asm_items.HaplotypeID.SKESA),
+            (unicycler_fasta_path, asm_items.HaplotypeID.UNICYCLER),
         ):
             seq_record: SeqRecord
             for seq_record in SeqIO.parse(fasta_in, "fasta"):
@@ -39,7 +39,7 @@ def fastas_to_pansn_mixed_fasta(
 
 def fmt_seq_name_to_pansn_spec(
     sequence_name: str,
-    haplotype_id: assembler.HaplotypeID,
+    haplotype_id: asm_items.HaplotypeID,
 ) -> str:
     """Format sequence name according to the PanSN standard.
 

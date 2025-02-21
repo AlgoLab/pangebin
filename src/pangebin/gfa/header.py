@@ -30,8 +30,8 @@ class TagType(StrEnum):
         return cls(tag.name)
 
 
-class SkesaFixTagValue(StrEnum):
-    """Skesa fix header tag values."""
+class SKESAFixTagValue(StrEnum):
+    """SKESA fix header tag values."""
 
     YES = "Y"
     NO = "N"
@@ -40,7 +40,7 @@ class SkesaFixTagValue(StrEnum):
     def from_bool(
         cls,
         is_fixed: bool,  # noqa: FBT001
-    ) -> SkesaFixTagValue:
+    ) -> SKESAFixTagValue:
         """Initialize from bool."""
         return cls.YES if is_fixed else cls.NO
 
@@ -69,15 +69,15 @@ class PanAssemblyTypeTagValue(StrEnum):
 
 def is_skesa_fixed(gfa: gfapy.Gfa) -> bool:
     """Check if a GFA graph is fixed."""
-    return gfa.header.get(Tag.SKESA_FIX) == SkesaFixTagValue.YES
+    return gfa.header.get(Tag.SKESA_FIX) == SKESAFixTagValue.YES
 
 
 def set_skesa_fixed_header_tag(
     gfa: gfapy.Gfa,
     is_fixed: bool,  # noqa: FBT001
 ) -> None:
-    """Set the Skesa fixed header tag in the GFA graph."""
-    gfa.header.add(Tag.SKESA_FIX, SkesaFixTagValue.from_bool(is_fixed))
+    """Set the SKESA fixed header tag in the GFA graph."""
+    gfa.header.add(Tag.SKESA_FIX, SKESAFixTagValue.from_bool(is_fixed))
 
 
 def is_standardized(gfa: gfapy.Gfa) -> bool:

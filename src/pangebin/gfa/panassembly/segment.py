@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 
 import gfapy  # type: ignore[import-untyped]
 
+import pangebin.assembly.items as asm_items
 import pangebin.gfa.assembler.segment as gfa_asm_segment
 import pangebin.gfa.segment as gfa_segment
-from pangebin import assembler
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
@@ -97,15 +97,15 @@ class NatureTagValue(StrEnum):
                 return NatureTagValue.SUB_UNICYCLER_CONTIG
 
     @classmethod
-    def from_assembler(cls, assembler_id: assembler.Identifier) -> NatureTagValue:
+    def from_assembler(cls, assembler_id: asm_items.Identifier) -> NatureTagValue:
         """Get segment nature tag value from assembler.
 
         It returns only the segment nature for the two assemblers, not the pangenome.
         """
         match assembler_id:
-            case assembler.Identifier.SKESA:
+            case asm_items.Identifier.SKESA:
                 return NatureTagValue.SUB_SKESA_CONTIG
-            case assembler.Identifier.UNICYCLER:
+            case asm_items.Identifier.UNICYCLER:
                 return NatureTagValue.SUB_UNICYCLER_CONTIG
 
 

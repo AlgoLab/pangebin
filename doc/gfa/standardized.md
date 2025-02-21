@@ -1,6 +1,6 @@
 # Standardized assembly graphs
 
-Standardize the tags of Skesa and Unicycler assembly graphs.
+Standardize the tags of SKESA and Unicycler assembly graphs.
 
 ## Header
 
@@ -12,7 +12,7 @@ Standardize the tags of Skesa and Unicycler assembly graphs.
 
 ### Names
 
-* `ske_<k>` for Skesa
+* `ske_<k>` for SKESA
 * `uni_<k>` for Unicycler
 
 For $k \in \{1...|S|\}$, with $S$ the set of segments.

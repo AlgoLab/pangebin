@@ -5,8 +5,8 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+import pangebin.assembly.items as asm_items
 import pangebin.gfa.panassembly.segment as gfa_pan_segment
-from pangebin import assembler
 from pangebin.gfa.segment import OrientedFragment, get_segment_line_by_name
 from pangebin.gfa.tag import FieldType
 
@@ -41,15 +41,15 @@ class LinkOriginTagValue(StrEnum):
     PANGENOME_LINK = "p"
 
     @classmethod
-    def from_assembler(cls, assembler_id: assembler.Identifier) -> LinkOriginTagValue:
+    def from_assembler(cls, assembler_id: asm_items.Identifier) -> LinkOriginTagValue:
         """Get link origin tag value from assembler.
 
         It only returns the link origin for the two assemblers, not the pangenome.
         """
         match assembler_id:
-            case assembler.Identifier.SKESA:
+            case asm_items.Identifier.SKESA:
                 return cls.SKESA_LINK
-            case assembler.Identifier.UNICYCLER:
+            case asm_items.Identifier.UNICYCLER:
                 return cls.UNICYCLER_LINK
 
 

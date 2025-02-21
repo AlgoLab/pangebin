@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING
 
 import gfapy  # type: ignore[import-untyped]
 
+import pangebin.assembly.items as asm_items
 import pangebin.gfa.link as gfa_link
 import pangebin.gfa.panassembly.link as gfa_pan_link
 import pangebin.gfa.panassembly.path as gfa_pan_path
 import pangebin.gfa.panassembly.segment as gfa_pan_segment
 import pangebin.gfa.path as gfa_path
 import pangebin.gfa.segment as gfa_segment
-from pangebin import assembler
 
 if TYPE_CHECKING:
     from gfapy.line.group.path.path import (  # type: ignore[import-untyped]
@@ -34,7 +34,7 @@ def pangenome_graph_into_panassembly_graph(
     pangenome_gfa : gfapy.Gfa
         Pangenome GFA graph
     standardized_skesa_gfa : gfapy.Gfa
-        Skesa GFA standardized graph
+        SKESA GFA standardized graph
     standardized_unicycler_gfa : gfapy.Gfa
         Unicycler GFA standardized graph
 
@@ -68,8 +68,8 @@ def pangenome_graph_into_panassembly_graph(
     set_pangenome_link_origins(pangenome_gfa)
 
     for assembler_gfa, assmbler_id in (
-        (standardized_skesa_gfa, assembler.Identifier.SKESA),
-        (standardized_unicycler_gfa, assembler.Identifier.UNICYCLER),
+        (standardized_skesa_gfa, asm_items.Identifier.SKESA),
+        (standardized_unicycler_gfa, asm_items.Identifier.UNICYCLER),
     ):
         add_assembly_links_to_pangenome(pangenome_gfa, assembler_gfa, assmbler_id)
 
@@ -93,7 +93,7 @@ def set_path_lengths(
     pangenome_gfa : gfapy.Gfa
         Pangenome GFA graph
     standardized_skesa_gfa : gfapy.Gfa
-        Skesa GFA standardized graph
+        SKESA GFA standardized graph
     standardized_unicycler_gfa : gfapy.Gfa
         Unicycler GFA standardized graph
 
@@ -130,7 +130,7 @@ def set_path_normalized_coverages(
     pangenome_gfa : gfapy.Gfa
         Pangenome GFA graph
     standardized_skesa_gfa : gfapy.Gfa
-        Skesa GFA standardized graph
+        SKESA GFA standardized graph
     standardized_unicycler_gfa : gfapy.Gfa
         Unicycler GFA standardized graph
 
@@ -425,7 +425,7 @@ def set_pangenome_link_origins(pangenome_gfa: gfapy.Gfa) -> None:
 def add_assembly_links_to_pangenome(
     pangenome_gfa: gfapy.Gfa,
     assembler_gfa: gfapy.Gfa,
-    assembler_id: assembler.Identifier,
+    assembler_id: asm_items.Identifier,
 ) -> None:
     """Add assembly links to pangenome graph.
 
@@ -435,7 +435,7 @@ def add_assembly_links_to_pangenome(
         Pangenome GFA graph
     assembler_gfa : gfapy.Gfa
         Assembler GFA graph
-    assembler_id : assembler.Identifier
+    assembler_id : asm_items.Identifier
         Assembler ID
 
     Warnings

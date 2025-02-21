@@ -11,12 +11,12 @@ from typing import Annotated
 
 import typer
 
+import pangebin.assembly.items as asm_items
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.logging as common_log
 import pangebin.std_asm_graph.fasta as standardize_fasta
 import pangebin.std_asm_graph.input_output as standardize_io
-from pangebin import assembler
 from pangebin.std_asm_graph.config import Config
 from pangebin.std_asm_graph.ops import (
     standardize_assembly_graph,
@@ -35,7 +35,7 @@ class Arguments:
     )
 
     INPUT_SKESA_GFA = typer.Argument(
-        help="Skesa GFA assembly graph file",
+        help="SKESA GFA assembly graph file",
     )
 
 
@@ -104,8 +104,8 @@ def std_asm_graph(
     skesa_gfa = gfa_io.from_file(skesa_gfa_path)
     unicyler_gfa = gfa_io.from_file(unicycler_gfa_path)
 
-    standardize_assembly_graph(skesa_gfa, assembler.Identifier.SKESA, config)
-    standardize_assembly_graph(unicyler_gfa, assembler.Identifier.UNICYCLER, config)
+    standardize_assembly_graph(skesa_gfa, asm_items.Identifier.SKESA, config)
+    standardize_assembly_graph(unicyler_gfa, asm_items.Identifier.UNICYCLER, config)
 
     skesa_gfa.to_file(io_manager.skesa_gfa_path())
     unicyler_gfa.to_file(io_manager.unicycler_gfa_path())

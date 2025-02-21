@@ -27,7 +27,7 @@ def is_skesa_gfa_fixed(gfa_path: Path) -> bool:
     yes_fix_tag = (
         f"{gfa_header.Tag.SKESA_FIX}"
         f":{gfa_header.TagType.SKESA_FIX}"
-        f":{gfa_header.SkesaFixTagValue.YES}"
+        f":{gfa_header.SKESAFixTagValue.YES}"
     )
     with io.open_file_read(gfa_path) as f_in:
         for line in f_in:
@@ -35,9 +35,9 @@ def is_skesa_gfa_fixed(gfa_path: Path) -> bool:
                 line.startswith(str(gfa_line.Type.HEADER))
                 and yes_fix_tag in line.split()
             ):
-                _LOGGER.debug("Skesa GFA file is fixed.")
+                _LOGGER.debug("SKESA GFA file is fixed.")
                 return True
-    _LOGGER.debug("Skesa GFA file is not fixed.")
+    _LOGGER.debug("SKESA GFA file is not fixed.")
     return False
 
 
@@ -77,7 +77,7 @@ def fix_skesa_gfa(
     yes_fix_tag = (
         f"{gfa_header.Tag.SKESA_FIX}"
         f":{gfa_header.TagType.SKESA_FIX}"
-        f":{gfa_header.SkesaFixTagValue.YES}"
+        f":{gfa_header.SKESAFixTagValue.YES}"
     )
     with (
         io.possible_tmp_file(in_gfa_path, out_gfa_path) as (use_in_path, use_out_path),

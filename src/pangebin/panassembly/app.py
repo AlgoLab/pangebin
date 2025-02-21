@@ -36,7 +36,7 @@ class Arguments:
     )
 
     STANDARDIZED_SKESA_GFA = typer.Argument(
-        help="Skesa GFA standardized graph",
+        help="SKESA GFA standardized graph",
     )
 
 
@@ -69,7 +69,7 @@ def panassembly(
 
     standardized_skesa_gfa = gfa_io.from_file(standardized_skesa_gfa_path)
     if not gfa_header.is_standardized(standardized_skesa_gfa):
-        _LOGGER.error("Skesa GFA is not standardized.")
+        _LOGGER.error("SKESA GFA is not standardized.")
         raise typer.Exit(1)
 
     standardized_unicycler_gfa = gfa_io.from_file(standardized_unicycler_gfa_path)

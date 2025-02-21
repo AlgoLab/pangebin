@@ -1,4 +1,4 @@
-"""Assembler module."""
+"""Assembly items."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from enum import IntEnum, StrEnum
 class Identifier(StrEnum):
     """Assemblers."""
 
-    SKESA = "Skesa"
+    SKESA = "SKESA"
     UNICYCLER = "Unicycler"
 
 

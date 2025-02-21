@@ -15,9 +15,9 @@
 
 For pangenome segments:
 
-* `panske_<k>` for Skesa subcontigs (with $k \in \{1...|S_{ps}|\}$ where $S_{ps}$ is the set of pangenome segments corresponding to Skesa subcontigs)
+* `panske_<k>` for SKESA subcontigs (with $k \in \{1...|S_{ps}|\}$ where $S_{ps}$ is the set of pangenome segments corresponding to SKESA subcontigs)
 * `panuni_<k>` for Unicycler subcontigs (with $k \in \{1...|S_{pu}|\}$ where $S_{pu}$ is the set of pangenome segments corresponding to Unicycler subcontigs)
-* `panboth_<k>` for Skesa-Unicycler subcontigs (with $k \in \{1...|S_{pb}|\}$ where $S_{pb}$ is the set of pangenome segments corresponding to Skesa-Unicycler subcontigs)
+* `panboth_<k>` for SKESA-Unicycler subcontigs (with $k \in \{1...|S_{pb}|\}$ where $S_{pb}$ is the set of pangenome segments corresponding to SKESA-Unicycler subcontigs)
 
 ### Tags
 
@@ -33,9 +33,9 @@ For pangenome segments:
 
 **Nature of the segment (`ns` tag):**
 
-* `s` Skesa subcontig (from pangenome Skesa-Unicycler)
-* `u` Unicycler subcontig (from pangenome Skesa-Unicycler)
-* `b` Skesa and Unicycler subcontig (from pangenome Skesa-Unicycler)
+* `s` SKESA subcontig (from pangenome SKESA-Unicycler)
+* `u` Unicycler subcontig (from pangenome SKESA-Unicycler)
+* `b` SKESA and Unicycler subcontig (from pangenome SKESA-Unicycler)
 
 **Pangenome penalty (`ap` tag):**
 
@@ -60,18 +60,18 @@ The idea here is to favour the subcontig shared by the two assemblers by penaliz
 **Origin of the link (`lo` tag):**
 
 <!-- FIXME p lo value description is not correct, because of multiedges... see example of bb lt -->
-* `p` pangenome link (between a subcontig from Skesa or Unicycler, and a subcontig from both Skesa and Unicycler)
-* `s` Skesa link
+* `p` pangenome link (between a subcontig from SKESA or Unicycler, and a subcontig from both SKESA and Unicycler)
+* `s` SKESA link
 * `u` Unicycler link
 
 **Link type (`lt` tag):**
 
 Between subcontigs:
 
-* `su` Skesa subcontig to Unicycler subcontig
-* `bs` Skesa-Unicycler subcontig to Skesa subcontig
-* `bu` Skesa-Unicycler subcontig to Unicycler subcontig
-* `bb` Skesa-Unicycler subcontig to Skesa-Unicycler subcontig
+* `su` SKESA subcontig to Unicycler subcontig
+* `bs` SKESA-Unicycler subcontig to SKESA subcontig
+* `bu` SKESA-Unicycler subcontig to Unicycler subcontig
+* `bb` SKESA-Unicycler subcontig to SKESA-Unicycler subcontig
 
 Redundant combinations (and their reverse order):
 
@@ -82,7 +82,7 @@ Redundant combinations (and their reverse order):
 
 ### Names
 
-* `ske_<k>` for Skesa (with $k \in \{1...|S|\}$, with $S$ the set of Skesa whole contigs)
+* `ske_<k>` for SKESA (with $k \in \{1...|S|\}$, with $S$ the set of SKESA whole contigs)
 * `uni_<k>` for Unicycler (with $k \in \{1...|S|\}$, with $S$ the set of Unicycler whole contigs)
 
 ### Tags

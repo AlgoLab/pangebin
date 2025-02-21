@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pangebin import assembler
+import pangebin.assembly.items as asm_items
 
 
 class NamePrefix(StrEnum):
@@ -14,10 +14,10 @@ class NamePrefix(StrEnum):
     SKESA = "ske"
 
     @classmethod
-    def from_assembler(cls, assembler_id: assembler.Identifier) -> NamePrefix:
+    def from_assembler(cls, assembler_id: asm_items.Identifier) -> NamePrefix:
         """Get prefix from assembler."""
         match assembler_id:
-            case assembler.Identifier.UNICYCLER:
+            case asm_items.Identifier.UNICYCLER:
                 return cls.UNICYCLER
-            case assembler.Identifier.SKESA:
+            case asm_items.Identifier.SKESA:
                 return cls.SKESA

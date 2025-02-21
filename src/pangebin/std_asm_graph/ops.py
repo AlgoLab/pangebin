@@ -6,9 +6,9 @@ from itertools import product
 
 import gfapy  # type: ignore[import-untyped]
 
+import pangebin.assembly.items as asm_items
 import pangebin.gfa.ops as gfa_ops
 import pangebin.gfa.segment as gfa_segment
-from pangebin import assembler
 from pangebin.gfa.assembler import segment as gfa_asm_segment
 from pangebin.gfa.link import Link
 from pangebin.gfa.segment import OrientedFragment
@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def standardize_assembly_graph(
     graph: gfapy.Gfa,
-    assembler_id: assembler.Identifier,
+    assembler_id: asm_items.Identifier,
     config: Config,
 ) -> None:
     """Standardize assembly graph.
@@ -28,7 +28,7 @@ def standardize_assembly_graph(
     ----------
     graph : gfapy.Gfa
         GFA graph
-    assembler_id : assembler.Identifier
+    assembler_id : asm_items.Identifier
         Assembler
     config : Config
         Configuration
@@ -47,7 +47,7 @@ def standardize_assembly_graph(
         gfa_asm_segment.NamePrefix.from_assembler(assembler_id),
     )
 
-    if assembler_id == assembler.Identifier.SKESA:
+    if assembler_id == asm_items.Identifier.SKESA:
         gfa_ops.convert_kmer_coverage_to_normalized_coverage(graph)
 
     transform_small_contigs_into_links(graph, config.min_contig_length())

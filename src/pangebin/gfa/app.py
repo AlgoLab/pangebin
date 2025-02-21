@@ -24,7 +24,7 @@ APP = typer.Typer(rich_markup_mode="rich")
 _LOGGER = logging.getLogger(__name__)
 
 
-class CheckSkesaGFAArgs:
+class CheckSKESAGFAArgs:
     """Check Skeza GFA arguments."""
 
     ARG_IN_GFA = typer.Argument(
@@ -34,7 +34,7 @@ class CheckSkesaGFAArgs:
 
 @APP.command()
 def check_skesa(
-    in_gfa: Annotated[Path, CheckSkesaGFAArgs.ARG_IN_GFA],
+    in_gfa: Annotated[Path, CheckSKESAGFAArgs.ARG_IN_GFA],
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> bool:
     """Check a Skeza GFA file."""
@@ -45,13 +45,13 @@ def check_skesa(
         raise typer.Exit(1)
 
     if gfa_ops.is_skesa_gfa_fixed(in_gfa):
-        _LOGGER.info("Skesa GFA file is already fixed.")
+        _LOGGER.info("SKESA GFA file is already fixed.")
         return True
-    _LOGGER.info("Skesa GFA file is not fixed.")
+    _LOGGER.info("SKESA GFA file is not fixed.")
     return False
 
 
-class FixSkesaGFAArgs:
+class FixSKESAGFAArgs:
     """Fix Skeza GFA arguments."""
 
     ARG_IN_GFA = typer.Argument(
@@ -65,8 +65,8 @@ class FixSkesaGFAArgs:
 
 @APP.command()
 def fix_skesa(
-    in_gfa: Annotated[Path, FixSkesaGFAArgs.ARG_IN_GFA],
-    out_gfa: Annotated[Path | None, FixSkesaGFAArgs.ARG_OUT_GFA] = None,
+    in_gfa: Annotated[Path, FixSKESAGFAArgs.ARG_IN_GFA],
+    out_gfa: Annotated[Path | None, FixSKESAGFAArgs.ARG_OUT_GFA] = None,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """Fix a Skeza GFA file."""
@@ -77,7 +77,7 @@ def fix_skesa(
         raise typer.Exit(1)
 
     if gfa_ops.is_skesa_gfa_fixed(in_gfa):
-        _LOGGER.info("Skesa GFA file is already fixed.")
+        _LOGGER.info("SKESA GFA file is already fixed.")
         return
     try:
         out_gfa = gfa_ops.fix_skesa_gfa(in_gfa, out_gfa_path=out_gfa)

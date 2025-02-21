@@ -1,9 +1,9 @@
 pangenome
-Skesa
+SKESA
 Unicycler
 subcontig
 contig
-Skesa-Unicycler
+SKESA-Unicycler
 Contigs
 resp
 int
