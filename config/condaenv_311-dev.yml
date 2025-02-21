@@ -3,12 +3,13 @@ channels:
   - bioconda
 dependencies:
   - python=3.11.*
+  - bioconda::unicycler
   - bioconda::samtools
   - bioconda::nextflow
   - bioconda::blast
   - bioconda::sra-tools
   - pip
   - pip:
-    - -e ../.
-    - -r requirements-linters.txt
-    - -r requirements-figures.txt
+    - -e ../.  # Specific to dev, different for users
+    - -r requirements-linters.txt  # Dev only
+    - -r requirements-figures.txt  # Dev only (can become necessary for users)
