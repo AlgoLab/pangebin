@@ -140,5 +140,5 @@ class ThresholdRanges:
     def to_yaml(self, yaml_filepath: Path) -> Path:
         """Write to yaml."""
         with Path(yaml_filepath).open("w") as file:
-            yaml.dump(self.to_dict(), file, Dumper=Dumper)
+            yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
         return yaml_filepath
