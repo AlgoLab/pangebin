@@ -12,13 +12,14 @@ from typing import Annotated
 
 import typer
 
+import pangebin.assembly.config as asm_cfg
 import pangebin.assembly.create as asm_create
 import pangebin.database.input_output as db_io
-import pangebin.entrez as pg_entrez
 import pangebin.gene_density.app as gd_app
 import pangebin.ground_truth.app as gt_app
 import pangebin.logging as common_log
 import pangebin.mapping.app as mapping_app
+import pangebin.pipeline.seed_thresholds.config as pipe_seed_thr_cfg
 import pangebin.seed.app as seed_app
 import pangebin.seed.input_output as seed_io
 import pangebin.seed.items as seed_items
@@ -57,28 +58,14 @@ class SeedThresholdsOptions:
 
     __RICH_HELP_PANEL = "Configurations"
 
-    GROUND_TRUTH_CFG_FILE = typer.Option(
-        "--gd-cfg",
-        help="Ground truth config file",
-        rich_help_panel=__RICH_HELP_PANEL,
-    )
-
-    FILTER_GENE_ON_CONTIGS_SAM_CFG_FILE = typer.Option(
-        "--sam-filter-cfg",
-        help="Filter gene on contigs SAM config file",
-        rich_help_panel=__RICH_HELP_PANEL,
-    )
-
-    THR_RANGES_CFG_FILE = typer.Option(
-        "--thr-ranges-cfg",
+    CONFIG_FILE = typer.Option(
+        "--config",
         help="The configuration file path",
         rich_help_panel=__RICH_HELP_PANEL,
     )
 
 
-DEFAULT_GD_CFG_FILE = Path(__file__).parent / "ground_truth_config.yaml"
-DEFAULT_SAM_FILTER_CFG_FILE = Path(__file__).parent / "sam_filter_config.yaml"
-DEFAULT_THR_RANGES_CFG_FILE = Path(__file__).parent / "thr_ranges_config.yaml"
+DEFAULT_CONFIG_FILE = Path(__file__).parent / pipe_seed_thr_cfg.Config.DEFAULT_FILENAME
 
 
 @APP.command()
@@ -89,22 +76,10 @@ def seed_thresholds(
         SeedThresholdsArguments.GENE_FASTA,
     ],
     # Configurations
-    entrez_cfg_file: Annotated[
-        Path | None,
-        pg_entrez.AppOptions.CONFIG_FILE,
-    ] = None,
-    ground_truth_cfg_file: Annotated[
+    config_file: Annotated[
         Path,
-        SeedThresholdsOptions.GROUND_TRUTH_CFG_FILE,
-    ] = DEFAULT_GD_CFG_FILE,
-    filter_gene_on_contigs_sam_cfg_file: Annotated[
-        Path,
-        SeedThresholdsOptions.FILTER_GENE_ON_CONTIGS_SAM_CFG_FILE,
-    ] = DEFAULT_SAM_FILTER_CFG_FILE,
-    thr_ranges_cfg_file: Annotated[
-        Path,
-        SeedThresholdsOptions.THR_RANGES_CFG_FILE,
-    ] = DEFAULT_THR_RANGES_CFG_FILE,
+        SeedThresholdsOptions.CONFIG_FILE,
+    ] = DEFAULT_CONFIG_FILE,
     # IO options
     outdir: Annotated[
         Path,
@@ -120,6 +95,23 @@ def seed_thresholds(
     )
     io_manager = seed_io.ThresholdsManager(seed_io.ThresholdsConfig(outdir))
     io_manager.config().output_directory().mkdir(parents=True, exist_ok=True)
+
+    config = pipe_seed_thr_cfg.Config.from_yaml(config_file)
+    #
+    # Temporary configuration files
+    #
+    ground_truth_cfg_file = config.ground_truth_config().to_yaml(
+        io_manager.config().output_directory() / "ground_truth_cfg.yaml",
+    )
+    entrez_cfg_file = config.entrez_config().to_yaml(
+        io_manager.config().output_directory() / "entrez_cfg.yaml",
+    )
+    gene_on_contigs_sam_filter_cfg_file = config.sam_filter_config().to_yaml(
+        io_manager.config().output_directory() / "gene_on_ctgs_sam_filter_cfg.yaml",
+    )
+    thr_ranges_cfg_file = config.threshold_ranges().to_yaml(
+        io_manager.config().output_directory() / "threshold_ranges_cfg.yaml",
+    )
 
     seed_ctg_thr_dataset_tsv = (
         io_manager.config().output_directory() / "seed_ctg_thr_dataset.tsv"
@@ -140,6 +132,7 @@ def seed_thresholds(
             fastq_1,
             fastq_2,
             assembly_outdir,
+            asm_cfg.Unicycler(config.ressources_config().max_cores()),
         )
         # remove short reads
         fastq_1.unlink()
@@ -169,7 +162,7 @@ def seed_thresholds(
             gene_mapping_on_contigs_sam,
             filtered_gene_mapping_on_contigs_sam,
             query_fasta=gene_fasta,
-            config_file=filter_gene_on_contigs_sam_cfg_file,
+            config_file=gene_on_contigs_sam_filter_cfg_file,
             debug=debug,
         )
         gene_mapping_on_contigs_sam.unlink()
@@ -197,22 +190,22 @@ def seed_thresholds(
         debug=debug,
     )
 
+    ground_truth_cfg_file.unlink()
+    entrez_cfg_file.unlink()
+    thr_ranges_cfg_file.unlink()
 
-PRINT_CFG_OUTDIR_OPT = typer.Argument(help="Output directory")
-DEFAULT_PRINT_CFG_OUTDIR = Path()
+
+ARG_CONFIG_PATH = typer.Argument(help="Output directory")
 
 
 def write_configs(
-    outdir: Annotated[Path, PRINT_CFG_OUTDIR_OPT] = DEFAULT_GD_CFG_FILE,
+    config_path: Annotated[
+        Path,
+        ARG_CONFIG_PATH,
+    ] = pipe_seed_thr_cfg.Config.DEFAULT_FILENAME,
 ) -> None:
-    """Write the configuration files for seed thresholds pipeline."""
-    outdir.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(DEFAULT_GD_CFG_FILE, outdir / DEFAULT_GD_CFG_FILE.name)
+    """Write the configuration file for the seed thresholds pipeline."""
     shutil.copyfile(
-        DEFAULT_SAM_FILTER_CFG_FILE,
-        outdir / DEFAULT_SAM_FILTER_CFG_FILE.name,
-    )
-    shutil.copyfile(
-        DEFAULT_THR_RANGES_CFG_FILE,
-        outdir / DEFAULT_THR_RANGES_CFG_FILE.name,
+        DEFAULT_CONFIG_FILE,
+        config_path,
     )

@@ -1,0 +1,30 @@
+ground_truth_cfg:
+  min_pident: 95
+  min_contig_coverage: 0.95
+
+sam_filter_cfg:
+  min_length: 1
+  min_pident: 95
+  min_q_cov: 0.95
+  min_s_cov: 0
+
+threshold_ranges_cfg:
+  length:
+    min: 50
+    max: 5000
+    step: 50
+  gene_density:
+    min: 0.01
+    max: 1.0
+    step: 0.01
+
+entrez_cfg:
+  email: null
+  tool: biopython
+  api_key: null
+  max_tries: 3
+  sleep_between_tries: 15
+
+ressources_cfg:
+  max_number_of_cores: 8
+  max_memory: 8
