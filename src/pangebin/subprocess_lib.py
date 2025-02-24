@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
+import yaml  # type: ignore[import-untyped]
+
+try:
+    from yaml import CDumper as Dumper
+except ImportError:
+    from yaml import Dumper
 import logging
 import shutil
 import subprocess
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -80,3 +88,65 @@ class CommandFailedError(Exception):
     def __str__(self) -> str:
         """Return the error message."""
         return f"{self.__cmd_str} command failed: {self.__called_proc_exc.stderr}"
+
+
+class RessourcesConfig:
+    """Ressources config."""
+
+    DEFAULT_MAX_CORES = 8
+    DEFAULT_MAX_MEMORY = 8
+
+    KEY_MAX_CORES = "max_number_of_cores"
+    KEY_MAX_MEMORY = "max_memory"
+
+    @classmethod
+    def from_yaml(cls, yaml_filepath: Path) -> RessourcesConfig:
+        """Create config instance from a YAML file."""
+        with Path(yaml_filepath).open("r") as file:
+            config_data = yaml.safe_load(file)
+        return cls.from_dict(config_data)
+
+    @classmethod
+    def from_dict(cls, config_dict: dict[str, Any]) -> RessourcesConfig:
+        """Convert dict to object."""
+        return cls(
+            config_dict.get(cls.KEY_MAX_CORES, cls.DEFAULT_MAX_CORES),
+        )
+
+    def __init__(
+        self,
+        max_cores: int = DEFAULT_MAX_CORES,
+        max_memory: int = DEFAULT_MAX_MEMORY,
+    ) -> None:
+        """Initialize object.
+
+        Parameters
+        ----------
+        max_cores : int, optional
+            Max number of cores, by default DEFAULT_MAX_CORES
+        max_memory : int, optional
+            Max memory usage (in GB), by default DEFAULT_MAX_MEMORY
+        """
+        self.__max_cores = max_cores
+        self.__max_memory = max_memory
+
+    def max_cores(self) -> int:
+        """Get max number of cores option."""
+        return self.__max_cores
+
+    def max_memory(self) -> int:
+        """Get max memory option (in GB)."""
+        return self.__max_memory
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dict."""
+        return {
+            self.KEY_MAX_CORES: self.__max_cores,
+            self.KEY_MAX_MEMORY: self.__max_memory,
+        }
+
+    def to_yaml(self, yaml_filepath: Path) -> Path:
+        """Write to yaml."""
+        with yaml_filepath.open("w") as yaml_file:
+            yaml.dump(self.to_dict(), yaml_file, Dumper=Dumper, sort_keys=False)
+        return yaml_filepath
