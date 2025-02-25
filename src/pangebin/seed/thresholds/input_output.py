@@ -1,4 +1,4 @@
-"""Seed sequence input-output module."""
+"""Seed contig thresholds input-output module."""
 
 from __future__ import annotations
 
@@ -17,14 +17,14 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-import pangebin.seed.items as seed_items
+import pangebin.seed.thresholds.items as seed_thr_items
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def test_items_from_file(
     file: Path,
-) -> Iterator[seed_items.SeedContigThresholdTestItem]:
+) -> Iterator[seed_thr_items.TestItem]:
     """Get seed contig threshold test items from file.
 
     Parameters
@@ -39,15 +39,15 @@ def test_items_from_file(
     """
     with file.open() as f_in:
         for line in f_in:
-            yield seed_items.SeedContigThresholdTestItem.from_datatest_line(line)
+            yield seed_thr_items.TestItem.from_datatest_line(line)
 
 
-class ThresholdsManager:
+class Manager:
     """Seed thresholds IO manager."""
 
     SEED_THRESHOLD_YAMLNAME = Path("seed_thresholds.yaml")
 
-    def __init__(self, config: ThresholdsConfig) -> None:
+    def __init__(self, config: Config) -> None:
         """Initialize object."""
         self.__config = config
 
@@ -55,12 +55,12 @@ class ThresholdsManager:
         """Get threshold YAML path."""
         return self.__config.output_directory() / self.SEED_THRESHOLD_YAMLNAME
 
-    def config(self) -> ThresholdsConfig:
+    def config(self) -> Config:
         """Get config."""
         return self.__config
 
 
-class ThresholdsConfig:
+class Config:
     """Seed thresholds IO configuration."""
 
     DEFAULT_OUTPUT_DIR = Path("./seed_thresholds")
@@ -68,14 +68,14 @@ class ThresholdsConfig:
     KEY_OUTPUT_DIR = "output_directory"
 
     @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> ThresholdsConfig:
+    def from_yaml(cls, yaml_filepath: Path) -> Config:
         """Create config instance from a YAML file."""
         with Path(yaml_filepath).open("r") as file:
             config_data = yaml.safe_load(file)
         return cls.from_dict(config_data)
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> ThresholdsConfig:
+    def from_dict(cls, config_dict: dict[str, Any]) -> Config:
         """Convert dict to object."""
         return cls(
             config_dict.get(cls.KEY_OUTPUT_DIR, cls.DEFAULT_OUTPUT_DIR),

@@ -1,4 +1,4 @@
-"""Seed contig creation module."""
+"""Seed contig thresholds creation module."""
 
 import logging
 from itertools import chain
@@ -7,17 +7,17 @@ from statistics import mean
 
 import pangebin.gene_density.input_output as gd_io
 import pangebin.ground_truth.input_output as gt_io
-import pangebin.seed.config as seed_config
-import pangebin.seed.input_output as seed_io
-import pangebin.seed.items as seed_items
+import pangebin.seed.thresholds.config as seed_thr_config
+import pangebin.seed.thresholds.input_output as seed_thr_io
+import pangebin.seed.thresholds.items as seed_thr_items
 
 _LOGGER = logging.getLogger(__name__)
 
 
-def thresholds_from_datatest(
+def from_datatest(
     datatest: Path,
-    threshold_ranges: seed_config.ThresholdRanges,
-) -> seed_items.SeedContigThresholds:
+    threshold_ranges: seed_thr_config.ThresholdRanges,
+) -> seed_thr_items.Items:
     """Compute threshold."""
     plasmid_ctg_len_gd_plasmid, nonplasmid_ctg_len_gd = (
         dispath_plasmid_and_nonplasmid_attributes(datatest)
@@ -46,7 +46,7 @@ def thresholds_from_datatest(
         threshold_ranges,
     )
 
-    return seed_items.SeedContigThresholds(
+    return seed_thr_items.Items(
         mean_length,
         mean_gene_density,
         best_sp_nps,
@@ -64,7 +64,7 @@ def dispath_plasmid_and_nonplasmid_attributes(
     plasmid_ctg_len_gd_plasmid: dict[str, tuple[int, float, str]] = {}
     nonplasmid_ctg_len_gd: dict[str, tuple[int, float]] = {}
 
-    for k, test_item in enumerate(seed_io.test_items_from_file(datatest)):
+    for k, test_item in enumerate(seed_thr_io.test_items_from_file(datatest)):
         for pls_ctg in gt_io.plasmid_contigs_from_file(
             test_item.plasmid_contigs_file(),
         ):
@@ -103,7 +103,7 @@ def dispath_plasmid_and_nonplasmid_attributes(
 def get_best_thresholds(
     plasmid_ctg_len_gd: dict[str, tuple[int, float, str]],
     nonplasmid_ctg_len_gd: dict[str, tuple[int, float]],
-    threshold_ranges: seed_config.ThresholdRanges,
+    threshold_ranges: seed_thr_config.ThresholdRanges,
 ) -> tuple[list[tuple[int, float]], int]:
     """Get best thresholds that maximizes SP - NPS."""
     best_thresholds: list[tuple[int, float]] = []

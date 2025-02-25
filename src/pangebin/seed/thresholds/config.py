@@ -1,4 +1,4 @@
-"""Seed sequences configuration module."""
+"""Seed contig thresholds configuration module."""
 
 from __future__ import annotations
 

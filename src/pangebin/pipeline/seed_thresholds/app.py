@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import logging
 import shutil
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Annotated
 
@@ -19,9 +21,9 @@ import pangebin.ground_truth.app as gt_app
 import pangebin.logging as common_log
 import pangebin.mapping.app as mapping_app
 import pangebin.pipeline.seed_thresholds.config as pipe_seed_thr_cfg
-import pangebin.seed.app as seed_app
-import pangebin.seed.input_output as seed_io
-import pangebin.seed.items as seed_items
+import pangebin.seed.thresholds.app as seed_thr_app
+import pangebin.seed.thresholds.input_output as seed_thr_io
+import pangebin.seed.thresholds.items as seed_thr_items
 import pangebin.sra_tools as sra
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,8 +31,8 @@ _LOGGER = logging.getLogger(__name__)
 APP = typer.Typer(rich_markup_mode="rich")
 
 
-class SeedThresholdsArguments:
-    """Seed threshold arguments."""
+class Arguments:
+    """Seed thresholds arguments."""
 
     DATATEST_YAML = typer.Argument(
         help="Paired Illumina datatest YAML file",
@@ -41,8 +43,24 @@ class SeedThresholdsArguments:
     )
 
 
-class SeedThresholdsIOOptions:
-    """Seed threshold I/O options."""
+class Options:
+    """Seed thresholds options."""
+
+    __RICH_HELP_PANEL = "Configurations"
+
+    DEFAULT_CONFIG_FILE = (
+        Path(__file__).parent / pipe_seed_thr_cfg.Config.DEFAULT_FILENAME
+    )
+
+    CONFIG_FILE = typer.Option(
+        "--config",
+        help="The configuration file path",
+        rich_help_panel=__RICH_HELP_PANEL,
+    )
+
+
+class IOOptions:
+    """Seed thresholds I/O options."""
 
     __RICH_HELP_PANEL = "Input/Output options"
 
@@ -52,53 +70,125 @@ class SeedThresholdsIOOptions:
     )
 
 
-class SeedThresholdsOptions:
-    """Seed threshold options."""
-
-    __RICH_HELP_PANEL = "Configurations"
-
-    CONFIG_FILE = typer.Option(
-        "--config",
-        help="The configuration file path",
-        rich_help_panel=__RICH_HELP_PANEL,
-    )
-
-
-DEFAULT_CONFIG_FILE = Path(__file__).parent / pipe_seed_thr_cfg.Config.DEFAULT_FILENAME
-
-
 @APP.command()
 def seed_thresholds(
-    datatest_yaml: Annotated[Path, SeedThresholdsArguments.DATATEST_YAML],
+    datatest_yaml: Annotated[Path, Arguments.DATATEST_YAML],
     gene_fasta: Annotated[
         Path,
-        SeedThresholdsArguments.GENE_FASTA,
+        Arguments.GENE_FASTA,
     ],
     # Configurations
     config_file: Annotated[
         Path,
-        SeedThresholdsOptions.CONFIG_FILE,
-    ] = DEFAULT_CONFIG_FILE,
+        Options.CONFIG_FILE,
+    ] = Options.DEFAULT_CONFIG_FILE,
     # IO options
     outdir: Annotated[
         Path,
-        SeedThresholdsIOOptions.OUTDIR,
-    ] = seed_io.ThresholdsConfig.DEFAULT_OUTPUT_DIR,
+        IOOptions.OUTDIR,
+    ] = seed_thr_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
-) -> None:
+) -> seed_thr_io.Manager:
     """Obtain the seed threshold pairs from paired Illumina BioSamples."""
     common_log.init_logger(
         _LOGGER,
         "Obtaining the seed threshold pairs from paired Illumina BioSamples.",
         debug,
     )
-    io_manager = seed_io.ThresholdsManager(seed_io.ThresholdsConfig(outdir))
+    io_manager = seed_thr_io.Manager(seed_thr_io.Config(outdir))
     io_manager.config().output_directory().mkdir(parents=True, exist_ok=True)
 
     config = pipe_seed_thr_cfg.Config.from_yaml(config_file)
+
+    seed_ctg_thr_dataset_tsv = (
+        io_manager.config().output_directory() / "seed_ctg_thr_dataset.tsv"
+    )
     #
     # Temporary configuration files
     #
+    with __tmp_seed_thresholds_config_files(config, io_manager) as (
+        ground_truth_cfg_file,
+        entrez_cfg_file,
+        gene_on_contigs_sam_filter_cfg_file,
+        thr_ranges_cfg_file,
+    ):
+        for datatest in db_io.illumina_biosamples_from_file(datatest_yaml):
+            first_srr_id = datatest.run_sra_ids()[0]
+            datatest_outdir = io_manager.config().output_directory() / first_srr_id
+            datatest_outdir.mkdir(parents=True, exist_ok=True)
+            fastq_1, fastq_2 = sra.download_sra_fastq_paired(
+                first_srr_id,
+                datatest_outdir,
+                remove_dir=True,
+            )
+            assembly_outdir = datatest_outdir / "assembly"
+            assembly_outdir.mkdir(parents=True, exist_ok=True)
+            asm_create.unicycler_paired_end_reads(
+                fastq_1,
+                fastq_2,
+                assembly_outdir,
+                config.ressources_config(),
+            )
+            # remove short reads
+            fastq_1.unlink()
+            fastq_2.unlink()
+
+            asm_fasta = assembly_outdir / "assembly.fasta"
+            gt_io_manager = gt_app.create(
+                asm_fasta,
+                datatest.plasmids(),
+                config_file=ground_truth_cfg_file,
+                entrez_config_file=entrez_cfg_file,
+                output_dir=datatest_outdir,
+                debug=debug,
+            )
+
+            gene_mapping_on_contigs_sam = mapping_app.blast(
+                gene_fasta,
+                asm_fasta,
+                datatest_outdir / "gene_mapping_on_contigs.sam",
+                debug=debug,
+            )
+            filtered_gene_mapping_on_contigs_sam = mapping_app.filter(
+                gene_mapping_on_contigs_sam,
+                query_fasta=gene_fasta,
+                config_file=gene_on_contigs_sam_filter_cfg_file,
+                debug=debug,
+            )
+            gene_mapping_on_contigs_sam.unlink()
+
+            ctg_gd_tsv = gd_app.fasta(
+                asm_fasta,
+                filtered_gene_mapping_on_contigs_sam,
+                datatest_outdir / "ctg_gene_density.tsv",
+                debug=debug,
+            )
+
+            seed_ctg_thr_test_item = seed_thr_items.TestItem(
+                gt_io_manager.plasmid_contigs_file(),
+                gt_io_manager.non_plasmid_contigs_file(),
+                ctg_gd_tsv,
+            )
+            with seed_ctg_thr_dataset_tsv.open("a") as tsv_out:
+                tsv_out.write(f"{seed_ctg_thr_test_item.to_dataset_line()}\n")
+
+    return seed_thr_app.thresholds(
+        seed_ctg_thr_dataset_tsv,
+        config_file=thr_ranges_cfg_file,
+        output_dir=io_manager.config().output_directory(),
+        debug=debug,
+    )
+
+
+@contextmanager
+def __tmp_seed_thresholds_config_files(
+    config: pipe_seed_thr_cfg.Config,
+    io_manager: seed_thr_io.Manager,
+) -> Generator[
+    tuple[Path, Path, Path, Path],
+    None,
+    None,
+]:
     ground_truth_cfg_file = config.ground_truth_config().to_yaml(
         io_manager.config().output_directory() / "ground_truth_cfg.yaml",
     )
@@ -112,81 +202,11 @@ def seed_thresholds(
         io_manager.config().output_directory() / "threshold_ranges_cfg.yaml",
     )
 
-    seed_ctg_thr_dataset_tsv = (
-        io_manager.config().output_directory() / "seed_ctg_thr_dataset.tsv"
-    )
-
-    for datatest in db_io.illumina_biosamples_from_file(datatest_yaml):
-        first_srr_id = datatest.run_sra_ids()[0]
-        datatest_outdir = io_manager.config().output_directory() / first_srr_id
-        datatest_outdir.mkdir(parents=True, exist_ok=True)
-        fastq_1, fastq_2 = sra.download_sra_fastq_paired(
-            first_srr_id,
-            datatest_outdir,
-            remove_dir=True,
-        )
-        assembly_outdir = datatest_outdir / "assembly"
-        assembly_outdir.mkdir(parents=True, exist_ok=True)
-        asm_create.unicycler_paired_end_reads(
-            fastq_1,
-            fastq_2,
-            assembly_outdir,
-            config.ressources_config(),
-        )
-        # remove short reads
-        fastq_1.unlink()
-        fastq_2.unlink()
-
-        asm_fasta = assembly_outdir / "assembly.fasta"
-        gt_app.create(
-            asm_fasta,
-            datatest.plasmids(),
-            config_file=ground_truth_cfg_file,
-            entrez_config_file=entrez_cfg_file,
-            output_dir=datatest_outdir,
-            debug=debug,
-        )
-
-        gene_mapping_on_contigs_sam = datatest_outdir / "gene_mapping_on_contigs.sam"
-        mapping_app.blast(
-            gene_fasta,
-            asm_fasta,
-            gene_mapping_on_contigs_sam,
-            debug=debug,
-        )
-        filtered_gene_mapping_on_contigs_sam = (
-            datatest_outdir / "gene_mapping_on_contigs.filtered.sam"
-        )
-        mapping_app.filter(
-            gene_mapping_on_contigs_sam,
-            filtered_gene_mapping_on_contigs_sam,
-            query_fasta=gene_fasta,
-            config_file=gene_on_contigs_sam_filter_cfg_file,
-            debug=debug,
-        )
-        gene_mapping_on_contigs_sam.unlink()
-
-        ctg_gd_tsv = datatest_outdir / "ctg_gene_density.tsv"
-        gd_app.fasta(
-            asm_fasta,
-            filtered_gene_mapping_on_contigs_sam,
-            ctg_gd_tsv,
-            debug=debug,
-        )
-
-        seed_ctg_thr_test_item = seed_items.SeedContigThresholdTestItem(
-            datatest_outdir / "plasmid_contigs.tsv",
-            datatest_outdir / "non_plasmid_contigs.tsv",
-            ctg_gd_tsv,
-        )
-        with seed_ctg_thr_dataset_tsv.open("a") as tsv_out:
-            tsv_out.write(f"{seed_ctg_thr_test_item.to_dataset_line()}\n")
-
-    seed_app.thresholds(
-        seed_ctg_thr_dataset_tsv,
-        config_file=thr_ranges_cfg_file,
-        output_dir=io_manager.config().output_directory(),
-        debug=debug,
+    yield (
+        ground_truth_cfg_file,
+        entrez_cfg_file,
+        gene_on_contigs_sam_filter_cfg_file,
+        thr_ranges_cfg_file,
     )
 
     ground_truth_cfg_file.unlink()
@@ -206,6 +226,6 @@ def write_configs(
 ) -> None:
     """Write the configuration file for the seed thresholds pipeline."""
     shutil.copyfile(
-        DEFAULT_CONFIG_FILE,
+        Options.DEFAULT_CONFIG_FILE,
         config_path,
     )

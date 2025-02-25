@@ -1,4 +1,4 @@
-"""Seed sequence items."""
+"""Seed contig thresholds items."""
 
 from __future__ import annotations
 
@@ -16,11 +16,11 @@ except ImportError:
     from yaml import Dumper
 
 
-class SeedContigThresholdTestItem:
+class TestItem:
     """Seed contig threshold test item."""
 
     @classmethod
-    def from_datatest_line(cls, line: str) -> SeedContigThresholdTestItem:
+    def from_datatest_line(cls, line: str) -> TestItem:
         """Create object from datatest line."""
         items_str: list[str] = line.split()
         return cls(
@@ -60,7 +60,7 @@ class SeedContigThresholdTestItem:
         )
 
 
-class SeedContigThresholds:
+class Items:
     """Seed contig thresholds."""
 
     KEY_MEANS = "means"
@@ -71,14 +71,14 @@ class SeedContigThresholds:
     KEY_GENE_DENSITY = "gene_density"
 
     @classmethod
-    def from_yaml(cls, file: Path) -> SeedContigThresholds:
+    def from_yaml(cls, file: Path) -> Items:
         """Create object from yaml file."""
         with file.open() as f_in:
             dict_from_yaml = yaml.safe_load(f_in)
         return cls.from_dict(dict_from_yaml)
 
     @classmethod
-    def from_dict(cls, dict_from_yaml: dict) -> SeedContigThresholds:
+    def from_dict(cls, dict_from_yaml: dict) -> Items:
         """Create object from dict."""
         return cls(
             dict_from_yaml[cls.KEY_MEANS][cls.KEY_LENGHT],

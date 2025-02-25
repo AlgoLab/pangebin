@@ -15,7 +15,7 @@ except ImportError:
 import pangebin.entrez as pg_entrez
 import pangebin.ground_truth.config as gt_cfg
 import pangebin.mapping.filter as map_filter
-import pangebin.seed.config as seed_cfg
+import pangebin.seed.thresholds.config as seed_thr_cfg
 from pangebin import subprocess_lib
 
 
@@ -47,9 +47,9 @@ class Config:
             map_filter.Config.from_dict(config_dict[cls.KEY_SAM_FILTER_CFG])
             if cls.KEY_SAM_FILTER_CFG in config_dict
             else map_filter.Config(),
-            seed_cfg.ThresholdRanges.from_dict(config_dict[cls.KEY_THR_RANGES_CFG])
+            seed_thr_cfg.ThresholdRanges.from_dict(config_dict[cls.KEY_THR_RANGES_CFG])
             if cls.KEY_THR_RANGES_CFG in config_dict
-            else seed_cfg.ThresholdRanges(),
+            else seed_thr_cfg.ThresholdRanges(),
             pg_entrez.Config.from_dict(config_dict[cls.KEY_ENTREZ_CFG])
             if cls.KEY_ENTREZ_CFG in config_dict
             else pg_entrez.Config(),
@@ -64,7 +64,7 @@ class Config:
         self,
         ground_truth_config: gt_cfg.Config | None = None,
         sam_filter_config: map_filter.Config | None = None,
-        threshold_ranges: seed_cfg.ThresholdRanges | None = None,
+        threshold_ranges: seed_thr_cfg.ThresholdRanges | None = None,
         entrez_config: pg_entrez.Config | None = None,
         ressources_config: subprocess_lib.RessourcesConfig | None = None,
     ) -> None:
@@ -77,7 +77,7 @@ class Config:
         self.__threshold_ranges = (
             threshold_ranges
             if threshold_ranges is not None
-            else seed_cfg.ThresholdRanges()
+            else seed_thr_cfg.ThresholdRanges()
         )
         self.__entrez_cfg = (
             entrez_config if entrez_config is not None else pg_entrez.Config()
@@ -96,7 +96,7 @@ class Config:
         """Get sam filter config."""
         return self.__sam_filter_cgf
 
-    def threshold_ranges(self) -> seed_cfg.ThresholdRanges:
+    def threshold_ranges(self) -> seed_thr_cfg.ThresholdRanges:
         """Get threshold ranges."""
         return self.__threshold_ranges
 
