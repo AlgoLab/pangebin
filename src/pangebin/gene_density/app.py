@@ -40,7 +40,7 @@ def fasta(
     gene_mapping_sam: Annotated[Path, SequenceGeneDensityArguments.GENE_MAPPING_SAM],
     output_file: Annotated[Path, SequenceGeneDensityArguments.OUTPUT_FILE],
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
-) -> None:
+) -> Path:
     """Compute the gene densities from the mapping of genes against the sequences."""
     common_log.init_logger(_LOGGER, "Computing sequence gene densities.", debug)
     sequence_gene_densities, sequence_intervals = gd_create.sequence_gene_density(
@@ -52,6 +52,7 @@ def fasta(
         sequence_gene_densities,
         gene_mapping_intervals=sequence_intervals,
     )
+    return output_file
 
 
 class FragmentGeneDensityArguments:

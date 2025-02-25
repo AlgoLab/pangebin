@@ -109,7 +109,7 @@ def create(
         GroundTruthIOOptions.OUTPUT_DIR,
     ] = gt_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
-) -> None:
+) -> gt_io.Manager:
     """Create ground truth."""
     common_log.init_logger(_LOGGER, "Creating ground truth.", debug)
     config = (
@@ -150,3 +150,5 @@ def create(
         non_plasmid_contigs,
         io_manager.non_plasmid_contigs_file(),
     )
+
+    return io_manager

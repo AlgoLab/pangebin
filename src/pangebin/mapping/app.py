@@ -43,10 +43,11 @@ def blast(
     subject_fasta_file: Annotated[Path, BlastArguments.SUBJECT_FASTA_FILE],
     out_mapping_file: Annotated[Path, BlastArguments.OUTPUT_FILE],
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
-) -> None:
+) -> Path:
     """Map a query FASTA file to a subject FASTA file."""
     common_log.init_logger(_LOGGER, "Mapping query to subject.", debug)
     create.blast_map(query_fasta_file, subject_fasta_file, out_mapping_file)
+    return out_mapping_file
 
 
 class FilterArguments:
@@ -112,7 +113,7 @@ class FilterOptions:
 @APP.command()
 def filter(  # noqa: A001
     input_sam: Annotated[Path, FilterArguments.INPUT_SAM],
-    filtered_sam: Annotated[Path, FilterArguments.FILTERED_SAM],
+    filtered_sam: Annotated[Path | None, FilterArguments.FILTERED_SAM] = None,
     query_fasta: Annotated[Path | None, FilterOptions.QUERY_FASTA] = None,
     subject_fasta: Annotated[Path | None, FilterOptions.SUBJECT_FASTA] = None,
     min_length: Annotated[
@@ -133,7 +134,7 @@ def filter(  # noqa: A001
     ] = map_filter.Config.DEFAULT_MIN_S_COV,
     config_file: Annotated[Path | None, FilterOptions.CONFIG_FILE] = None,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
-) -> None:
+) -> Path:
     """Filter a SAM file."""
     common_log.init_logger(_LOGGER, "Filtering SAM file.", debug)
     config = (
@@ -146,6 +147,9 @@ def filter(  # noqa: A001
             min_s_cov=min_s_cov,
         )
     )
+    if filtered_sam is None:
+        filtered_sam = input_sam.with_suffix(".filtered.sam")
+
     map_io.to_filtered_sam_file(
         input_sam,
         filtered_sam,
@@ -153,3 +157,5 @@ def filter(  # noqa: A001
         query_fasta=query_fasta,
         subject_fasta=subject_fasta,
     )
+
+    return filtered_sam
