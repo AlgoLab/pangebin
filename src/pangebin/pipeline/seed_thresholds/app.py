@@ -12,7 +12,6 @@ from typing import Annotated
 
 import typer
 
-import pangebin.assembly.config as asm_cfg
 import pangebin.assembly.create as asm_create
 import pangebin.database.input_output as db_io
 import pangebin.gene_density.app as gd_app
@@ -132,10 +131,7 @@ def seed_thresholds(
             fastq_1,
             fastq_2,
             assembly_outdir,
-            asm_cfg.Unicycler(
-                config.ressources_config().max_cores(),
-                config.ressources_config().max_memory(),
-            ),
+            config.ressources_config(),
         )
         # remove short reads
         fastq_1.unlink()
