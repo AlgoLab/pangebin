@@ -59,6 +59,8 @@ thresholds:
 
 **Tasks:**
 
+<!-- TODO seed fragments tasks -->
+
 * [ ] Compute mean of fragments lengths and gene densities
 * [ ] Get a list of fragments name passing the normalized thresholds
 * [ ] Output to file
