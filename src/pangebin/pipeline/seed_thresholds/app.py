@@ -132,7 +132,10 @@ def seed_thresholds(
             fastq_1,
             fastq_2,
             assembly_outdir,
-            asm_cfg.Unicycler(config.ressources_config().max_cores()),
+            asm_cfg.Unicycler(
+                config.ressources_config().max_cores(),
+                config.ressources_config().max_memory(),
+            ),
         )
         # remove short reads
         fastq_1.unlink()
@@ -192,6 +195,7 @@ def seed_thresholds(
 
     ground_truth_cfg_file.unlink()
     entrez_cfg_file.unlink()
+    gene_on_contigs_sam_filter_cfg_file.unlink()
     thr_ranges_cfg_file.unlink()
 
 

@@ -26,5 +26,7 @@ def unicycler_paired_end_reads(
         out_directory,
         "--threads",
         config.number_threads(),
+        "--spades_options",
+        f"-m {config.spades_max_memory()}",
     ]
     subprocess_lib.run_cmd(cli_line, UNICYCLER_CMD_STR)
