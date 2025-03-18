@@ -23,20 +23,6 @@ _LOGGER = logging.getLogger(__name__)
 class SequenceProbasAndScores(list[tuple[float, float]]):
     """GC content score for a sequence."""
 
-    @classmethod
-    def from_dict(
-        cls,
-        score_dict: dict[str, list[tuple[float, float]]],
-    ) -> SequenceProbasAndScores:
-        """Convert dict to object."""
-        if len(score_dict) != 1:
-            _err_msg = f"Expected a single sequence, got {len(score_dict)}"
-            _LOGGER.error(_err_msg)
-            raise ValueError(_err_msg)
-
-        seq_id, gc_prob_scores = next(iter(score_dict.items()))
-        return cls(seq_id, gc_prob_scores)
-
     def __init__(
         self,
         seq_id: str,
@@ -49,6 +35,14 @@ class SequenceProbasAndScores(list[tuple[float, float]]):
     def sequence_id(self) -> str:
         """Sequence ID."""
         return self.__seq_id
+
+    def probas(self) -> list[float]:
+        """Probas."""
+        return [proba for proba, _ in self]
+
+    def scores(self) -> list[float]:
+        """Scores."""
+        return [score for _, score in self]
 
     def to_dict(self) -> dict[str, list[list[float]]]:
         """Convert to dictionary."""
@@ -122,21 +116,21 @@ class Intervals:
                 f_out.write(f"{increasing_steps}\n")
 
 
-class IntervalAndScores:
+class IntervalsAndScores:
     """GC content intervals and scores."""
 
     KEY_INTERVALS = "intervals"
     KEY_SEQUENCES = "sequences"
 
     @classmethod
-    def from_yaml(cls, file: Path) -> IntervalAndScores:
+    def from_yaml(cls, file: Path) -> IntervalsAndScores:
         """Create object from yaml file."""
         with file.open() as f_in:
             dict_from_yaml = yaml.safe_load(f_in)
         return cls.from_dict(dict_from_yaml)
 
     @classmethod
-    def from_dict(cls, dict_from_yaml: dict) -> IntervalAndScores:
+    def from_dict(cls, dict_from_yaml: dict) -> IntervalsAndScores:
         """Create object from dict."""
         return cls(
             Intervals(dict_from_yaml[cls.KEY_INTERVALS]),
@@ -147,7 +141,7 @@ class IntervalAndScores:
         )
 
     @classmethod
-    def from_intervals(cls, intervals: Intervals) -> IntervalAndScores:
+    def from_intervals(cls, intervals: Intervals) -> IntervalsAndScores:
         """Create object from intervals."""
         return cls(intervals, [])
 

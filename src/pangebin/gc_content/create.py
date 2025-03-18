@@ -22,7 +22,7 @@ def gfa_file_to_gc_scores(
     gfa_file: Path,
     gc_content_intervals: items.Intervals,
     pseudo_count: int = DEFAULT_PSEUDO_COUNT,
-) -> items.IntervalAndScores:
+) -> items.IntervalsAndScores:
     """Compute GC scores for a GFA graph.
 
     Parameters
@@ -40,7 +40,7 @@ def gfa_file_to_gc_scores(
         GC scores for each GC interval
 
     """
-    intervals_and_scores = items.IntervalAndScores.from_intervals(gc_content_intervals)
+    intervals_and_scores = items.IntervalsAndScores.from_intervals(gc_content_intervals)
     for seq_record in gfa_iter.sequence_records(gfa_file):
         intervals_and_scores.add_sequence_scores(
             items.SequenceProbasAndScores(
