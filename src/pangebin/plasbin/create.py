@@ -18,7 +18,8 @@ from pangebin.plasbin.config import Config
 
 def plasbin(  # noqa: PLR0913
     panasm_graph: gfapy.Gfa,
-    gc_intervals_and_scores: gc_items.IntervalsAndScores,
+    gc_intervals: gc_items.Intervals,
+    gc_scores: Iterable[gc_items.SequenceProbabilityScores],
     plasmidness: Iterable[tuple[str, float]],
     seeds: Iterable[str],
     config: Config,
@@ -30,12 +31,7 @@ def plasbin(  # noqa: PLR0913
     -------
     The pan-assembly graph can mute.
     """
-    network = pb_network.Network.from_pangebin_objects(
-        panasm_graph,
-        gc_intervals_and_scores,
-        plasmidness,
-        seeds,
-    )
+    network = pb_network.Network(panasm_graph, seeds, gc_scores, plasmidness)
     bin_number = 0
     while network.seeds():
         #
@@ -56,7 +52,7 @@ def plasbin(  # noqa: PLR0913
             mcf_model,
             mcf_vars,
             network,
-            gc_intervals_and_scores.intervals(),
+            gc_intervals,
             config.gamma_mgc(),
         )
         mgc_model.Params.LogFile = str(
@@ -75,7 +71,7 @@ def plasbin(  # noqa: PLR0913
             mgc_model,
             mgc_vars,
             network,
-            gc_intervals_and_scores.intervals(),
+            gc_intervals,
             config.gamma_mgc(),
         )
         mps_model.Params.LogFile = str(
@@ -84,21 +80,14 @@ def plasbin(  # noqa: PLR0913
         mps_model.optimize()
         mps_stats = milp_views.MPSStats(
             milp_vars.coverage_score(network, mcf_vars).getValue(),
-            milp_vars.gc_probability_score(
-                network,
-                gc_intervals_and_scores.intervals(),
-                mgc_vars,
-            ).getValue(),
+            milp_vars.gc_probability_score(network, gc_intervals, mgc_vars).getValue(),
             mps_model.ObjVal,
         )
         yield (
             bins_item.Stats(
                 cumulative_fragment_id_length(mps_vars.mcf_vars(), network),
                 milp_vars.total_flow_value(mps_vars.mcf_vars()),
-                milp_vars.active_gc_content_interval(
-                    gc_intervals_and_scores.intervals(),
-                    mps_vars.mgc_vars(),
-                ),
+                milp_vars.active_gc_content_interval(gc_intervals, mps_vars.mgc_vars()),
                 mcf_stats,
                 mgc_stats,
                 mps_stats,

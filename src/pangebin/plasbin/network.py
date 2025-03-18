@@ -27,30 +27,11 @@ class Network:
     SOURCE_VERTEX = "S"
     SINK_VERTEX = "T"
 
-    @classmethod
-    def from_pangebin_objects(
-        cls,
-        panasm_graph: gfapy.Gfa,
-        gc_intervals_and_scores: gc_items.IntervalsAndScores,
-        plasmidness: Iterable[tuple[str, float]],
-        seeds: Iterable[str],
-    ) -> Network:
-        """Create plasbin network graph from pangebin objects."""
-        return cls(
-            panasm_graph,
-            seeds,
-            (
-                (seq_pro_score.sequence_id(), seq_pro_score.scores())
-                for seq_pro_score in gc_intervals_and_scores.scores()
-            ),
-            plasmidness,
-        )
-
     def __init__(
         self,
         panasm_graph: gfapy.Gfa,
         seeds: Iterable[str],
-        gc_scores: Iterable[tuple[str, list[float]]],
+        gc_scores: Iterable[gc_items.SequenceProbabilityScores],
         plasmidness: Iterable[tuple[str, float]],
     ) -> None:
         """Initialize a plasbin network graph.
@@ -64,7 +45,10 @@ class Network:
         self.__panasm_graph: gfapy.Gfa = panasm_graph
         self.__seeds = set(seeds)
         self.__coverages: dict[str, float] = dict(self.__init_coverages())
-        self.__gc_scores = dict(gc_scores)
+        self.__gc_scores = {
+            frag_gc_score.sequence_id(): frag_gc_score.probability_scores()
+            for frag_gc_score in gc_scores
+        }
         self.__plasmidness = dict(plasmidness)
 
     def number_of_vertices(self) -> int:
