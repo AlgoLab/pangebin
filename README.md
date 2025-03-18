@@ -73,7 +73,14 @@ dataset_dir="test/SAMN16357463"
       ./test/frag_gene_densities.sh run $dataset_dir
       ```
 
-6. Execute PlasBin-Flow modified for pan-assembly
+6. Obtain the seed from positive gene densities
+
+   ```sh
+   ./test/fragment_seeds.sh run $dataset_dir
+   ```
+
+7. Execute PlasBin-Flow modified for pan-assembly
+<!-- FIXME not good yet -->
 
    ```sh
    ./test/plasbin.sh run $dataset_dir
