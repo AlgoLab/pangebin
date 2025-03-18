@@ -7,16 +7,10 @@ from typing import TYPE_CHECKING
 
 import pangebin.assembly.items as asm_items
 import pangebin.gfa.panassembly.segment as gfa_pan_segment
-from pangebin.gfa.segment import OrientedFragment, get_segment_line_by_name
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
-    import gfapy  # type: ignore[import-untyped]
     from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
-
-    from pangebin.gfa.link import Link
 
 
 class Tag(StrEnum):
@@ -85,49 +79,3 @@ def set_link_type(
     value = f"{pred_segment_nature.value}{succ_segment_nature.value}"
     link.set(Tag.LINK_TYPE, value)
     return value
-
-
-def get_link_line_by_link_definition(gfa: gfapy.Gfa, link: Link) -> GfaLink | None:
-    """Get link line by link definition.
-
-    Parameters
-    ----------
-    gfa : gfapy.Gfa
-        GFA graph
-    link : Link
-        Link
-
-    Returns
-    -------
-    GfaLink | None
-        GFA link line, None if not found
-
-    """
-    pred = link.predecessor()
-    if pred.is_forward():
-        succ = link.successor()
-        r_link_line_iter: Iterator[GfaLink] = iter(
-            get_segment_line_by_name(gfa, pred.identifier()).dovetails_R,
-        )
-        link_line = next(r_link_line_iter, None)
-        while link_line is not None:
-            if (
-                OrientedFragment.from_right_dovetail_line(link_line, pred.identifier())
-                == succ
-            ):
-                return link_line
-            link_line = next(r_link_line_iter, None)
-    else:
-        succ_rev = link.successor().to_reverse()
-        l_link_line_iter: Iterator[GfaLink] = iter(
-            get_segment_line_by_name(gfa, pred.identifier()).dovetails_L,
-        )
-        link_line = next(l_link_line_iter, None)
-        while link_line is not None:
-            if (
-                OrientedFragment.from_left_dovetail_line(link_line, pred.identifier())
-                == succ_rev
-            ):
-                return link_line
-            link_line = next(l_link_line_iter, None)
-    return None

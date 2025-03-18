@@ -64,10 +64,15 @@ class Link:
             self.__overlap_match,
         )
 
-    def to_gfa_link_line(self) -> GfaLink:
+    def to_gfa_line(self) -> GfaLink:
         """Get GFA link line."""
         return GfaLink(
-            f"{gfa_line.Type.LINK}\t{self.__predecessor}\t{self.__successor}\t{self.__overlap_match}M",
+            (
+                f"{gfa_line.Type.LINK}"
+                f"\t{self.__predecessor.identifier()}\t{self.__predecessor.orientation()}"
+                f"\t{self.__successor.identifier()}\t{self.__successor.orientation()}"
+                f"\t{self.__overlap_match}M"
+            ),
         )
 
     def simplify(self) -> None:
@@ -84,8 +89,12 @@ class Link:
                 self.__predecessor.to_reverse(),
             )
 
+    def __str__(self) -> str:
+        """Get string representation, e.g. `u+_v-`."""
+        return f"{self.__predecessor}_{self.__successor}"
 
-def link_or_its_reversed_exists(
+
+def link_line_or_its_reversed_from_link(
     gfa: gfapy.Gfa,
     link: Link,
 ) -> tuple[GfaLink, Orientation] | None:
@@ -135,3 +144,89 @@ def link_or_its_reversed_exists(
                 return link_line, Orientation.REVERSE
             link_line = next(l_link_line_iter, None)
     return None
+
+
+def gfa_links(gfa: gfapy.Gfa) -> Iterator[Link]:
+    """Get GFA links.
+
+    Iterate over only one version of the link.
+
+    Yields
+    ------
+    Link
+        One version of the link
+    """
+    for link_line in gfa.dovetails:
+        yield Link.from_link_line(link_line)
+
+
+def incoming_links(
+    gfa: gfapy.Gfa,
+    oriented_fragment: OrientedFragment,
+) -> Iterator[Link]:
+    """Get incoming links.
+
+    Iterate over only one version of the link.
+
+    Yields
+    ------
+    Link
+        Link where the successor is the given oriented fragment
+    """
+    if oriented_fragment.is_forward():
+        return (
+            Link(
+                OrientedFragment.from_left_dovetail_line(
+                    link_line,
+                    oriented_fragment.identifier(),
+                ),
+                oriented_fragment,
+            )
+            for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_L
+        )
+    return (
+        Link(
+            OrientedFragment.from_right_dovetail_line(
+                link_line,
+                oriented_fragment.identifier(),
+            ).to_reverse(),
+            oriented_fragment,
+        )
+        for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_R
+    )
+
+
+def outgoing_links(
+    gfa: gfapy.Gfa,
+    oriented_fragment: OrientedFragment,
+) -> Iterator[Link]:
+    """Get outgoing links.
+
+    Iterate over only one version of the link.
+
+    Yields
+    ------
+    Link
+        Link where the predecessor is the given oriented fragment
+    """
+    if oriented_fragment.is_forward():
+        return (
+            Link(
+                oriented_fragment,
+                OrientedFragment.from_right_dovetail_line(
+                    link_line,
+                    oriented_fragment.identifier(),
+                ),
+            )
+            for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_R
+        )
+    return (
+        Link(
+            oriented_fragment,
+            OrientedFragment.from_left_dovetail_line(
+                link_line,
+                oriented_fragment.identifier(),
+            ).to_reverse(),
+        )
+        for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_L
+    )

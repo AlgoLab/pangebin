@@ -105,5 +105,5 @@ def transform_small_contigs_into_links(
             ):
                 with contextlib.suppress(gfapy.NotUniqueError):
                     # XXX the exception should not happen
-                    gfa.add_line(link.to_gfa_link_line())
+                    gfa.add_line(link.to_gfa_line())
             gfa.validate()

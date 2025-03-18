@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 import gfapy  # type: ignore[import-untyped]
@@ -10,18 +12,11 @@ from Bio.SeqRecord import SeqRecord
 from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
 import pangebin.gfa.line as gfa_line
-
-if TYPE_CHECKING:
-    import gfapy  # type: ignore[import-untyped]
-    from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
-
-import logging
-from enum import StrEnum
-from typing import TYPE_CHECKING
-
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     import gfapy  # type: ignore[import-untyped]
     from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
     from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
@@ -88,6 +83,15 @@ class OrientedFragment:
             Orientation.from_reverse_string(link_line.from_orient),
         )
 
+    @classmethod
+    def from_segment_line(
+        cls,
+        segment_line: GfaSegment,
+        orientation: Orientation = Orientation.FORWARD,
+    ) -> OrientedFragment:
+        """Get oriented fragment from segment line, by default the forward."""
+        return cls(segment_line.name, orientation)
+
     def __init__(self, identifier: str, orientation: Orientation) -> None:
         """Initialize object."""
         self.__identifier = identifier
@@ -114,8 +118,8 @@ class OrientedFragment:
         return self.__orientation == Orientation.REVERSE
 
     def __str__(self) -> str:
-        """Get string representation."""
-        return f"{self.__identifier}\t{self.__orientation}"
+        """Get string representation, e.g. `frag+` or `frag-`."""
+        return f"{self.__identifier}{self.__orientation}"
 
 
 def get_segment_line_by_name(gfa: gfapy.Gfa, name: str) -> GfaSegment:
@@ -145,6 +149,25 @@ def get_segment_line_by_name(gfa: gfapy.Gfa, name: str) -> GfaSegment:
         _LOGGER.error(_err_msg)
         raise ValueError(_err_msg)
     return line
+
+
+def gfa_oriented_fragments(
+    gfa: gfapy.Gfa,
+) -> Iterator[tuple[OrientedFragment, OrientedFragment]]:
+    """Iterate over GFA forward and reverse fragments.
+
+    Yields
+    ------
+    OrientedFragment
+        Forward fragment
+    OrientedFragment
+        Reverse fragment
+    """
+    for segment_line in gfa.segments:
+        yield (
+            OrientedFragment.from_segment_line(segment_line),
+            OrientedFragment.from_segment_line(segment_line),
+        )
 
 
 class Tag(StrEnum):

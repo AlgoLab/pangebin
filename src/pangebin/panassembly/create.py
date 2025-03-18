@@ -498,7 +498,7 @@ def add_assembly_links_to_pangenome(
         # Convert multi-edges to single edge
         #
         # XXX See also unexpected multi-edges in GFA issue https://github.com/ggonnella/gfapy/issues/35
-        _existing_link_with_orient = gfa_link.link_or_its_reversed_exists(
+        _existing_link_with_orient = gfa_link.link_line_or_its_reversed_from_link(
             pangenome_gfa,
             new_panassembly_link,
         )
@@ -514,7 +514,7 @@ def add_assembly_links_to_pangenome(
                 add_new_panassembly_link = False
 
         if add_new_panassembly_link:
-            new_panassembly_link_line = new_panassembly_link.to_gfa_link_line()
+            new_panassembly_link_line = new_panassembly_link.to_gfa_line()
             new_panassembly_link_line.set_datatype(
                 gfa_pan_link.Tag.LINK_ORIGIN,
                 gfa_pan_link.TagType.LINK_ORIGIN,
