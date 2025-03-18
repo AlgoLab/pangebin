@@ -24,11 +24,11 @@ class Intervals:
     @classmethod
     def from_file(cls, file: Path) -> Intervals:
         """Read intervals from file."""
-        intervals = []
+        intervals = cls()
         with file.open() as f_in:
             for line in f_in:
-                intervals.append(float(line))  # noqa: PERF401
-        return cls(intervals)
+                intervals.append(float(line))
+        return intervals
 
     def __init__(self, step_list: Iterable[float] | None = None) -> None:
         """Initialize object."""
