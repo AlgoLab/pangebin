@@ -17,6 +17,12 @@
 * [x] Compute GC scores from GC probabilities
 * [x] Out GC score file
 
+**Refactoring:**
+
+* [ ] #REFACTOR GC content score should be an array -> adapt classes
+* [ ] #REFACTOR GC content proba should be an array -> adapt classes
+
+
 ### GC score file format
 
 `gc_prob_scores.yaml`

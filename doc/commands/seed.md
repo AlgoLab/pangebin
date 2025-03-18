@@ -47,7 +47,7 @@ thresholds:
   # ...
 ```
 
-* [ ] #TODO add other score original seed threshold script gives
+* [ ] #TODO add other score original seed threshold script gives(?)
 
 ## Seed fragments
 
@@ -57,19 +57,43 @@ thresholds:
 * Fragment gene densities
 * Seed thresholds file
 
+### From seed thresholds
+
 **Tasks:**
 
-<!-- TODO seed fragments tasks -->
+<!-- TODO seed fragments from seed thresholds -->
 
 * [ ] Compute mean of fragments lengths and gene densities
 * [ ] Get a list of fragments name passing the normalized thresholds
 * [ ] Output to file
+
+### From positive gene densities
+
+**Tasks:**
+
+* [x] Return fragments whose gene density is positive
+
+### From gene density distribution
+
+**Tasks:**
+
+* [ ] Return fragments whose gene density is above a percentage times max gene density
+
+### From plasmidness score
+
+**Tasks:**
+
+* [ ] Compute plasmidness score:
+
+  $$\rho_i = \frac{ gd_i }{1 +  \max_{ j \in \mathcal{F} } \{ |j| \} - |i| }$$
+
+* [ ] Return fragments whose plasmidness score is above a percentage times max plasmidness score
 
 ### Output file format
 
 (Tabulation separated)
 
 ```html
-<segment_id>  <length>  <gene_density>
+<segment_id>  <length>  <gene_density>  [<plasmidness_score>]
 ...
 ```
