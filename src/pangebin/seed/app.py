@@ -36,8 +36,6 @@ class IOOptions:
 
     __RICH_HELP_PANEL = "Input/Output options"
 
-    DEFAULT_OUTPUT_FILENAME = Path("seeds.tsv")
-
     OUTPUT_FILE = typer.Argument(
         help="Seed sequence output file",
         rich_help_panel=__RICH_HELP_PANEL,
@@ -47,7 +45,7 @@ class IOOptions:
 @APP.command(name="pos-gd")
 def from_positive_gene_densities(
     gene_density_file: Annotated[Path, FromGeneDensityArguments.GENE_DENSITY_FILE],
-    output_file: Annotated[Path | None, IOOptions.OUTPUT_FILE] = None,
+    output_file: Annotated[Path, IOOptions.OUTPUT_FILE],
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> Path:
     """Extract seed sequences with positive gene density."""
@@ -56,8 +54,6 @@ def from_positive_gene_densities(
         "Extracting seed sequences with positive gene density.",
         debug,
     )
-    if output_file is None:
-        output_file = gene_density_file.parent / IOOptions.DEFAULT_OUTPUT_FILENAME
     seed_io.to_tsv(seed_create.from_gene_density(gene_density_file), output_file)
     _LOGGER.info("Write seed sequence identifiers in file: %s", output_file)
     return output_file
