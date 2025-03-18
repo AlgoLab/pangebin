@@ -1,1 +1,1 @@
-"""PlasBin-flow module."""
+"""PangeBin-flow module."""
