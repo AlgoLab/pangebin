@@ -13,6 +13,7 @@ import typer
 
 import pangebin.logging as common_log
 from pangebin.gc_content import create, items
+from pangebin.gc_content import input_output as io
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,8 +32,8 @@ class GFAScoresArguments:
         help="GFA assembly graph file",
     )
 
-    INTERVALS_AND_SCORES_YAML_FILE = typer.Argument(
-        help="Output YAML file with intervals and scores",
+    SEQUENCES_PROBA_SCORES_TSV = typer.Argument(
+        help="Output TSV file with the sequences and their probability scores",
     )
 
 
@@ -55,9 +56,9 @@ class ScoresOptions:
 @APP.command()
 def from_gfa(
     gfa_file: Annotated[Path, GFAScoresArguments.GFA_FILE],
-    intervals_and_scores_yaml_file: Annotated[
+    sequences_proba_scores_tsv: Annotated[
         Path,
-        GFAScoresArguments.INTERVALS_AND_SCORES_YAML_FILE,
+        GFAScoresArguments.SEQUENCES_PROBA_SCORES_TSV,
     ],
     gc_content_interval_file: Annotated[
         Path | None,
@@ -76,7 +77,7 @@ def from_gfa(
         debug,
     )
 
-    # REFACTOR: check file exist in class methods
+    # REFACTOR: check file exist in class methods (?)
     if not gfa_file.exists():
         _LOGGER.error("Input GFA file does not exist: %s", gfa_file)
         raise typer.Exit(1)
@@ -93,10 +94,10 @@ def from_gfa(
 
     gc_content_intervals = items.Intervals.from_file(gc_content_interval_file)
 
-    intervals_and_scores = create.gfa_file_to_gc_scores(
-        gfa_file,
-        gc_content_intervals,
-        pseudo_count=pseudo_count,
-    )
-
-    intervals_and_scores.to_yaml(intervals_and_scores_yaml_file)
+    with io.Writer.open(gc_content_intervals, sequences_proba_scores_tsv) as writer:
+        for sequence_proba_scores in create.gfa_file_to_gc_scores(
+            gfa_file,
+            gc_content_intervals,
+            pseudo_count=pseudo_count,
+        ):
+            writer.write_sequence_proba_scores(sequence_proba_scores)

@@ -22,7 +22,7 @@ def gfa_file_to_gc_scores(
     gfa_file: Path,
     gc_content_intervals: items.Intervals,
     pseudo_count: int = DEFAULT_PSEUDO_COUNT,
-) -> items.IntervalsAndScores:
+) -> Iterator[items.SequenceProbabilityScores]:
     """Compute GC scores for a GFA graph.
 
     Parameters
@@ -34,37 +34,34 @@ def gfa_file_to_gc_scores(
     pseudo_count : int, optional
         Pseudocount, by default DEFAULT_PSEUDO_COUNT
 
-    Returns
-    -------
-    items.IntervalAndScores
-        GC scores for each GC interval
+    Yield
+    -----
+    items.SequenceProbabilityScores
+        The GC probability scores for a sequence
 
     """
-    intervals_and_scores = items.IntervalsAndScores.from_intervals(gc_content_intervals)
-    for seq_record in gfa_iter.sequence_records(gfa_file):
-        intervals_and_scores.add_sequence_scores(
-            items.SequenceProbasAndScores(
-                seq_record.name,
-                (
-                    sequence_gc_proba_and_score(
-                        seq_record,
-                        gc_content_intervals,
-                        list(gc_content_intervals.interval_equiprobabilities()),
-                        pseudo_count=pseudo_count,
-                    )
-                ),
+    all_prob_b = list(gc_content_intervals.interval_equiprobabilities())
+    return (
+        items.SequenceProbabilityScores(
+            seq_record.name,
+            sequence_gc_proba_scores(
+                seq_record,
+                gc_content_intervals,
+                all_prob_b,
+                pseudo_count=pseudo_count,
             ),
         )
-    return intervals_and_scores
+        for seq_record in gfa_iter.sequence_records(gfa_file)
+    )
 
 
-def sequence_gc_proba_and_score(
+def sequence_gc_proba_scores(
     seq_record: SeqRecord,
     gc_content_intervals: items.Intervals,
     all_prob_b: list[float],
     pseudo_count: int,
-) -> Iterator[tuple[float, float]]:
-    """Compute sequence GC probabilities and scores for each GC interval.
+) -> Iterator[float]:
+    """Compute sequence GC probability scores for each GC interval.
 
     Parameters
     ----------
@@ -79,8 +76,8 @@ def sequence_gc_proba_and_score(
 
     Yield
     -----
-    tuple[float, float]
-        GC probability and score for the sequence record
+    float
+        GC probability score for the sequence record
 
     """
 
@@ -163,5 +160,4 @@ def sequence_gc_proba_and_score(
         prob_n_knw_b_x_prob_b / max_prob_n_knw_b_x_prob_b
         for prob_n_knw_b_x_prob_b in all_prob_n_knw_b_x_prob_b
     ]
-    for normalized_prob in normalized_probs:
-        yield (normalized_prob, 2 * normalized_prob - 1)
+    return (2 * normalized_prob - 1 for normalized_prob in normalized_probs)

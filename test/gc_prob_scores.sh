@@ -9,7 +9,7 @@
 command=$1
 dataset_dir=$2
 
-out_file="$dataset_dir/result/panassembly/gc_prob_scores.yaml"
+out_file="$dataset_dir/result/panassembly/gc_prob_scores.tsv"
 
 debug=""
 if [ "$3" == "--debug" ]; then

@@ -17,27 +17,13 @@
 * [x] Compute GC scores from GC probabilities
 * [x] Out GC score file
 
-**Refactoring:**
-
-* [ ] #REFACTOR GC content score should be an array -> adapt classes
-* [ ] #REFACTOR GC content proba should be an array -> adapt classes
-
-
 ### GC score file format
 
-`gc_prob_scores.yaml`
+`gc_prob_scores.tsv`
 
-```yaml
-intervals:
-  - - <min_gc>
-    - <max_gc>
-  # ...
-
-sequences:
-  <fragment_id>:
-    - - <gc_prob>
-      - <gc_score>
-  # ...
+```html
+sequence_id  <interval_1>  <interval_2> ... <interval_n>
+<id_1>       <score_1>     <score_2>    ... <score_n>
 ```
 
 ## GC content intervals
