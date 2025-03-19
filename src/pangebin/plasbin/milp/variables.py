@@ -502,6 +502,11 @@ class MaxPlasmidScore:
         """Get MGC variables."""
         return self.__mgc_vars
 
+    def start_with_previous_values(self, variables: MaxPlasmidScore) -> None:
+        """Set start variables values with previous result."""
+        self.mcf_vars().start_with_previous_values(variables.mcf_vars())
+        self.mgc_vars().start_with_previous_values(variables.mgc_vars())
+
 
 def fragment_gc_sum(
     frag_id: str,
