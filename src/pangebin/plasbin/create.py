@@ -19,11 +19,11 @@ from pangebin.plasbin.config import Config
 def plasbin(  # noqa: PLR0913
     panasm_graph: gfapy.Gfa,
     gc_intervals: gc_items.Intervals,
-    gc_scores: Iterable[gc_items.SequenceProbabilityScores],
+    gc_scores: Iterable[gc_items.SequenceGCScores],
     plasmidness: Iterable[tuple[str, float]],
     seeds: Iterable[str],
     config: Config,
-    log_directory: Path = pb_io.Config.DEFAULT_DIR,
+    log_directory: Path = pb_io.Config.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage]]]:
     """Bin fragments from a pan-assembly graph.
 
@@ -78,10 +78,30 @@ def plasbin(  # noqa: PLR0913
             pb_io.gurobi_log_path(log_directory, bin_number, milp_models.Names.MPS),
         )
         mps_model.optimize()
+        mps_obj_val = mps_model.ObjVal
+        #
+        # MPS' model
+        #
+        mps_vars.start_with_previous_values(mps_vars)
+        mps_prime_model, _ = milp_models.mps_prime_from_mps(
+            mps_model,
+            mps_vars,
+            network,
+            gc_intervals,
+        )
+        mps_prime_model.Params.LogFile = str(
+            pb_io.gurobi_log_path(
+                log_directory,
+                bin_number,
+                milp_models.Names.MPS_PRIME,
+            ),
+        )
+        mps_prime_model.optimize()
+
         mps_stats = milp_views.MPSStats(
             milp_vars.coverage_score(network, mcf_vars).getValue(),
             milp_vars.gc_probability_score(network, gc_intervals, mgc_vars).getValue(),
-            mps_model.ObjVal,
+            mps_obj_val,
         )
         yield (
             bins_item.Stats(
@@ -125,13 +145,13 @@ def fragment_norm_coverages(
             ).getValue()
             / total_flow,
         )
-        for frag_id in network.fragment_ids()
+        for frag_id in milp_vars.active_fragments(network, mcf_vars)
     )
 
 
 def update_network(network: pb_network.Network, mcf_vars: milp_vars.MaxCovFlow) -> None:
     """Update network."""
-    for frag_id in network.fragment_ids():
+    for frag_id in milp_vars.active_fragments(network, mcf_vars):
         network.reduce_coverage(
             frag_id,
             milp_vars.incoming_flow_forward_reverse(
