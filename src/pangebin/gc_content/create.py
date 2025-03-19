@@ -22,7 +22,7 @@ def gfa_file_to_gc_scores(
     gfa_file: Path,
     gc_content_intervals: items.Intervals,
     pseudo_count: int = DEFAULT_PSEUDO_COUNT,
-) -> Iterator[items.SequenceProbabilityScores]:
+) -> Iterator[items.SequenceGCScores]:
     """Compute GC scores for a GFA graph.
 
     Parameters
@@ -42,7 +42,7 @@ def gfa_file_to_gc_scores(
     """
     all_prob_b = list(gc_content_intervals.interval_equiprobabilities())
     return (
-        items.SequenceProbabilityScores(
+        items.SequenceGCScores(
             seq_record.name,
             sequence_gc_proba_scores(
                 seq_record,

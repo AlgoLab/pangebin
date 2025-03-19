@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class Header(StrEnum):
     """GC probability scores TSV header."""
 
-    SEQUENCE_ID = "sequence_id"
+    SEQUENCE_ID = "Sequence_ID"
 
     @classmethod
     def fmt_interval(cls, interval: tuple[float, float]) -> str:
@@ -61,15 +61,12 @@ class Writer:
             ],
         )
 
-    def write_sequence_proba_scores(
-        self,
-        seq_proba_scores: items.SequenceProbabilityScores,
-    ) -> None:
+    def write_sequence_gc_scores(self, seq_gc_scores: items.SequenceGCScores) -> None:
         """Write sequence probability scores."""
         self.__csv_writer.writerow(
             [
-                seq_proba_scores.sequence_id(),
-                *seq_proba_scores.probability_scores(),
+                seq_gc_scores.sequence_id(),
+                *seq_gc_scores.probability_scores(),
             ],
         )
 
@@ -83,7 +80,6 @@ class Reader:
         """Open TSV file for reading."""
         with file.open() as f_in:
             reader = Reader(csv.reader(f_in, delimiter="\t"))
-            next(reader.__csv_reader)  # skip header
             yield reader
 
     def __init__(self, csv_reader: _csv._reader) -> None:
@@ -95,10 +91,10 @@ class Reader:
         """Get intervals."""
         return self.__intervals
 
-    def __iter__(self) -> Iterator[items.SequenceProbabilityScores]:
+    def __iter__(self) -> Iterator[items.SequenceGCScores]:
         """Iterate sequence probability scores."""
         for row in self.__csv_reader:
-            yield items.SequenceProbabilityScores(
+            yield items.SequenceGCScores(
                 row[0],
                 (float(item) for item in row[1:]),
             )

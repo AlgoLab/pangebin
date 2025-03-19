@@ -32,8 +32,8 @@ class GFAScoresArguments:
         help="GFA assembly graph file",
     )
 
-    SEQUENCES_PROBA_SCORES_TSV = typer.Argument(
-        help="Output TSV file with the sequences and their probability scores",
+    GC_SCORES_TSV = typer.Argument(
+        help="Output TSV file with the sequences and their GC scores",
     )
 
 
@@ -56,9 +56,9 @@ class ScoresOptions:
 @APP.command()
 def from_gfa(
     gfa_file: Annotated[Path, GFAScoresArguments.GFA_FILE],
-    sequences_proba_scores_tsv: Annotated[
+    gc_scores_tsv: Annotated[
         Path,
-        GFAScoresArguments.SEQUENCES_PROBA_SCORES_TSV,
+        GFAScoresArguments.GC_SCORES_TSV,
     ],
     gc_content_interval_file: Annotated[
         Path | None,
@@ -94,10 +94,10 @@ def from_gfa(
 
     gc_content_intervals = items.Intervals.from_file(gc_content_interval_file)
 
-    with io.Writer.open(gc_content_intervals, sequences_proba_scores_tsv) as writer:
-        for sequence_proba_scores in create.gfa_file_to_gc_scores(
+    with io.Writer.open(gc_content_intervals, gc_scores_tsv) as writer:
+        for sequence_gc_scores in create.gfa_file_to_gc_scores(
             gfa_file,
             gc_content_intervals,
             pseudo_count=pseudo_count,
         ):
-            writer.write_sequence_proba_scores(sequence_proba_scores)
+            writer.write_sequence_gc_scores(sequence_gc_scores)

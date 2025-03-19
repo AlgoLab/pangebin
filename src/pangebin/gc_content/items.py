@@ -58,7 +58,7 @@ class Intervals:
 
     def __iter__(self) -> Iterator[tuple[float, float]]:
         """Get interval iterator."""
-        yield from zip(self.__step_list[:-1], self.__step_list[1:])
+        yield from zip(self.__step_list[:-1], self.__step_list[1:], strict=False)
 
     def interval_equiprobabilities(self) -> Iterator[float]:
         """Get interval equiprobability iterator."""
@@ -80,7 +80,7 @@ class Intervals:
                 f_out.write(f"{increasing_steps}\n")
 
 
-class SequenceProbabilityScores:
+class SequenceGCScores:
     """Sequence probability scores."""
 
     def __init__(

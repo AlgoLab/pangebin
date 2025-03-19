@@ -31,7 +31,7 @@ class Network:
         self,
         panasm_graph: gfapy.Gfa,
         seeds: Iterable[str],
-        gc_scores: Iterable[gc_items.SequenceProbabilityScores],
+        gc_scores: Iterable[gc_items.SequenceGCScores],
         plasmidness: Iterable[tuple[str, float]],
     ) -> None:
         """Initialize a plasbin network graph.
