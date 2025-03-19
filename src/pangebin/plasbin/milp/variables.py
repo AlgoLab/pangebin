@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from itertools import chain, product
+from itertools import chain
 from typing import TYPE_CHECKING
 
 import gurobipy
@@ -469,9 +469,8 @@ def gc_probability_score(
     """Get linear expression for GC probability score."""
     return gurobipy.quicksum(
         network.gc_score(frag_id)[b] * var.frag_gc(frag_id, interval)
-        for b, (frag_id, interval) in enumerate(
-            product(network.fragment_ids(), intervals),
-        )
+        for b, interval in enumerate(intervals)
+        for frag_id in network.fragment_ids()
     )
 
 
