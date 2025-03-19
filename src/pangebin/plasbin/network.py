@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from itertools import chain
 from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
@@ -51,12 +50,16 @@ class Network:
         }
         self.__plasmidness = dict(plasmidness)
 
+    def number_of_fragments(self) -> int:
+        """Get number of fragments."""
+        return len(self.__panasm_graph.segment_names)
+
     def number_of_vertices(self) -> int:
         """Get number of vertices.
 
         :math:`|V| = 2 x |Fragments| + 2`
         """
-        return 2 * len(self.__panasm_graph.segment_names) + 2
+        return 2 * self.number_of_fragments() + 2
 
     def fragment_ids(self) -> Iterator[str]:
         """Get fragment ids."""
@@ -69,7 +72,7 @@ class Network:
             for oriented_fragments in gfa_segment.gfa_oriented_fragments(
                 self.__panasm_graph,
             )
-            for fragment in chain(oriented_fragments)
+            for fragment in oriented_fragments
         )
 
     def source_arcs(
@@ -104,6 +107,7 @@ class Network:
     # Attributes
     #
     def __init_coverages(self) -> Iterator[tuple[str, float]]:
+        # TODO generalize for gfa without paths
         for segment in self.__panasm_graph.segments:
             yield (
                 segment.name,
