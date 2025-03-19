@@ -165,8 +165,8 @@ def gfa_oriented_fragments(
     """
     for segment_line in gfa.segments:
         yield (
-            OrientedFragment.from_segment_line(segment_line),
-            OrientedFragment.from_segment_line(segment_line),
+            OrientedFragment.from_segment_line(segment_line, Orientation.FORWARD),
+            OrientedFragment.from_segment_line(segment_line, Orientation.REVERSE),
         )
 
 
