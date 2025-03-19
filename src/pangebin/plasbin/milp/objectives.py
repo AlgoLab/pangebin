@@ -40,3 +40,18 @@ def set_mps_objective(
         milp_vars.plasmidness_score(network, intervals, var),
         gurobipy.GRB.MAXIMIZE,
     )
+
+
+def set_mps_prime_objective(
+    m: gurobipy.Model,
+    var: milp_vars.MaxPlasmidScore,
+    network: pb_network.Network,
+    intervals: gc_items.Intervals,
+) -> None:
+    """MPS' objective."""
+    m.setObjective(
+        network.number_of_fragments()
+        * milp_vars.coverage_score(network, var.mcf_vars())
+        + milp_vars.gc_probability_score(network, intervals, var.mgc_vars()),
+        gurobipy.GRB.MAXIMIZE,
+    )
