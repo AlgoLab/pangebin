@@ -487,3 +487,30 @@ def _gc_probability_score_lower_bound(  # noqa: PLR0913
         <= milp_vars.gc_probability_score(network, intervals, var.mgc_vars()),
         name="gc_probability_score_lower_bound",
     )
+
+
+# ------------------------------------------------------------------------------------ #
+#                                         MPS'                                         #
+# ------------------------------------------------------------------------------------ #
+def add_mps_prime_constraints_to_mps(
+    m: gurobipy.Model,
+    var: milp_vars.MaxPlasmidScore,
+    network: pb_network.Network,
+    intervals: gc_items.Intervals,
+    mps_obj_value: float,
+) -> None:
+    """Add MPS' constraints to MPS model."""
+    _fix_plasmidness_score(m, var, network, intervals, mps_obj_value)
+
+
+def _fix_plasmidness_score(
+    m: gurobipy.Model,
+    var: milp_vars.MaxPlasmidScore,
+    network: pb_network.Network,
+    intervals: gc_items.Intervals,
+    mps_obj_value: float,
+) -> None:
+    m.addConstr(
+        milp_vars.plasmidness_score(network, intervals, var) == mps_obj_value,
+        name="fix_plasmidness_score",
+    )
