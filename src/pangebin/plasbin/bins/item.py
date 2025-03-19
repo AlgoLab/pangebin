@@ -1,7 +1,18 @@
 """Bins item."""
 
+from __future__ import annotations
+
+from pathlib import Path
+
+import yaml  # type: ignore[import-untyped]
+
 import pangebin.plasbin.milp.models as milp_models
 import pangebin.plasbin.milp.views as milp_views
+
+try:
+    from yaml import CDumper as Dumper
+except ImportError:
+    from yaml import Dumper
 
 
 class Stats:
@@ -16,7 +27,14 @@ class Stats:
     SUBKEY_MPS_STATS = str(milp_models.Names.MPS)
 
     @classmethod
-    def from_dict(cls, obj_dict: dict) -> "Stats":
+    def from_yaml(cls, yaml_filepath: Path) -> Stats:
+        """Create config instance from a YAML file."""
+        with Path(yaml_filepath).open("r") as file:
+            config_data = yaml.safe_load(file)
+        return cls.from_dict(config_data)
+
+    @classmethod
+    def from_dict(cls, obj_dict: dict) -> Stats:
         """Convert dict to object."""
         return cls(
             obj_dict[cls.KEY_CUMULATIVE_SEQUENCE_LENGTH],
@@ -86,6 +104,12 @@ class Stats:
                 self.SUBKEY_MPS_STATS: self.__mps_stats.to_dict(),
             },
         }
+
+    def to_yaml(self, yaml_filepath: Path) -> Path:
+        """Write to yaml."""
+        with yaml_filepath.open("w") as file:
+            yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
+        return yaml_filepath
 
 
 class FragmentNormCoverage:
