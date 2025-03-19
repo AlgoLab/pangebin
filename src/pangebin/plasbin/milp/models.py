@@ -17,6 +17,7 @@ class Names(StrEnum):
     MCF = "MCF"
     MGC = "MGC"
     MPS = "MPS"
+    MPS_PRIME = "MPS_PRIME"
 
 
 def mcf(
@@ -72,3 +73,22 @@ def mps_from_mgc(
         mgc_model.ObjVal,
     )
     return mgc_model, var
+
+
+def mps_prime_from_mps(
+    mps_model: gurobipy.Model,
+    mps_var: milp_vars.MaxPlasmidScore,
+    network: pb_network.Network,
+    intervals: gc_items.Intervals,
+) -> tuple[gurobipy.Model, milp_vars.MaxPlasmidScore]:
+    """Create MPS' model from MPS model."""
+    mps_model.ModelName = "Maximum Plasmidness Score'"
+    milp_objs.set_mps_prime_objective(mps_model, mps_var, network, intervals)
+    milp_consts.add_mps_prime_constraints_to_mps(
+        mps_model,
+        mps_var,
+        network,
+        intervals,
+        mps_model.ObjVal,
+    )
+    return mps_model, mps_var
