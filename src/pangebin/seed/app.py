@@ -54,6 +54,8 @@ def from_positive_gene_densities(
         "Extracting seed sequences with positive gene density.",
         debug,
     )
-    seed_io.to_tsv(seed_create.from_gene_density(gene_density_file), output_file)
+    with seed_io.Writer.open(output_file) as writer:
+        for sequence_id in seed_create.from_gene_density(gene_density_file):
+            writer.write_sequence(sequence_id)
     _LOGGER.info("Write seed sequence identifiers in file: %s", output_file)
     return output_file
