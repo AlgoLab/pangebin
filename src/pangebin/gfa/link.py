@@ -147,9 +147,7 @@ def link_line_or_its_reversed_from_link(
 
 
 def gfa_links(gfa: gfapy.Gfa) -> Iterator[Link]:
-    """Get GFA links.
-
-    Iterate over only one version of the link.
+    """Iterate over only one version of each link.
 
     Yields
     ------
@@ -182,7 +180,10 @@ def incoming_links(
                 ),
                 oriented_fragment,
             )
-            for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_L
+            for link_line in get_segment_line_by_name(
+                gfa,
+                oriented_fragment.identifier(),
+            ).dovetails_L
         )
     return (
         Link(
@@ -192,7 +193,10 @@ def incoming_links(
             ).to_reverse(),
             oriented_fragment,
         )
-        for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_R
+        for link_line in get_segment_line_by_name(
+            gfa,
+            oriented_fragment.identifier(),
+        ).dovetails_R
     )
 
 
@@ -218,7 +222,10 @@ def outgoing_links(
                     oriented_fragment.identifier(),
                 ),
             )
-            for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_R
+            for link_line in get_segment_line_by_name(
+                gfa,
+                oriented_fragment.identifier(),
+            ).dovetails_R
         )
     return (
         Link(
@@ -228,5 +235,8 @@ def outgoing_links(
                 oriented_fragment.identifier(),
             ).to_reverse(),
         )
-        for link_line in gfa.segments[oriented_fragment.identifier()].dovetails_L
+        for link_line in get_segment_line_by_name(
+            gfa,
+            oriented_fragment.identifier(),
+        ).dovetails_L
     )
