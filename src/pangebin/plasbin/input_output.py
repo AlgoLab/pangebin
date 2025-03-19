@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml  # type: ignore[import-untyped]
 
@@ -12,7 +12,9 @@ try:
 except ImportError:
     from yaml import Dumper
 
-import pangebin.plasbin.milp.models as milp_models
+
+if TYPE_CHECKING:
+    import pangebin.plasbin.milp.models as milp_models
 
 
 def gurobi_log_path(
@@ -27,15 +29,25 @@ def gurobi_log_path(
 class Manager:
     """PangeBin-Flow input/output manager."""
 
-    BINS_FILENAME = Path("bins.tsv")
+    __BIN_DIR_PREFIX = "bin"
+    __BIN_STATS_FILENAME = Path("bin_stats.yaml")
+    __BIN_SEQ_NORMCOV_FILENAME = Path("bin_seq_normcov.tsv")
 
     def __init__(self, config: Config) -> None:
         """Initialize object."""
         self.__config = config
 
-    def bins_path(self) -> Path:
-        """Get bins TSV file path."""
-        return self.__config.output_directory() / self.BINS_FILENAME
+    def bin_outdir(self, iteration: int) -> Path:
+        """Get bin output directory."""
+        return self.__config.output_directory() / f"{self.__BIN_DIR_PREFIX}_{iteration}"
+
+    def bin_stats_path(self, iteration: int) -> Path:
+        """Get bin stats YAML file path."""
+        return self.bin_outdir(iteration) / self.__BIN_STATS_FILENAME
+
+    def bin_seq_normcov_path(self, iteration: int) -> Path:
+        """Get bin stats YAML file path."""
+        return self.bin_outdir(iteration) / self.__BIN_SEQ_NORMCOV_FILENAME
 
     def config(self) -> Config:
         """Get config."""
@@ -45,7 +57,7 @@ class Manager:
 class Config:
     """PangeBin-Flow config class."""
 
-    DEFAULT_DIR = Path("./pangebin-flow")
+    DEFAULT_OUTPUT_DIR = Path("./pangebin-flow")
 
     KEY_OUTPUT_DIR = "output_directory"
 
@@ -62,10 +74,10 @@ class Config:
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
         """Convert dict to object."""
         return cls(
-            config_dict.get(cls.KEY_OUTPUT_DIR, cls.DEFAULT_DIR),
+            config_dict.get(cls.KEY_OUTPUT_DIR, cls.DEFAULT_OUTPUT_DIR),
         )
 
-    def __init__(self, output_directory: Path = DEFAULT_DIR) -> None:
+    def __init__(self, output_directory: Path = DEFAULT_OUTPUT_DIR) -> None:
         """Initialize object."""
         self.__output_directory = output_directory
 
