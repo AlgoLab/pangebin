@@ -147,7 +147,7 @@ class MaxCovFlow:
                     name=f"x_{oriented_fragment!s}",
                     vtype=gurobipy.GRB.CONTINUOUS,
                     lb=0.0,
-                    ub=1.0,
+                    ub=gurobipy.GRB.INFINITY,
                 ),
             )
             for oriented_fragment in network.oriented_fragments()
@@ -175,6 +175,7 @@ class MaxCovFlow:
                     name=f"f_{link_id}",
                     vtype=gurobipy.GRB.CONTINUOUS,
                     lb=0.0,
+                    ub=gurobipy.GRB.INFINITY,
                 ),
             )
             for link_id in self.__network_arc_ids(network)
@@ -192,6 +193,7 @@ class MaxCovFlow:
                     name=f"F_{link_id}",
                     vtype=gurobipy.GRB.CONTINUOUS,
                     lb=0.0,
+                    ub=gurobipy.GRB.INFINITY,
                 ),
             )
             for link_id in self.__network_arc_ids(network)
@@ -208,6 +210,7 @@ class MaxCovFlow:
                 model.addVar(
                     name=f"beta_{link_id}",
                     vtype=gurobipy.GRB.CONTINUOUS,
+                    lb=-gurobipy.GRB.INFINITY,
                     ub=0.0,
                 ),
             )
@@ -444,7 +447,7 @@ class MaxGC:
                     name=f"frag_gc_{self.__fmt_frag_gc(frag_id, interval)}",
                     vtype=gurobipy.GRB.CONTINUOUS,
                     lb=0.0,
-                    ub=1.0,
+                    ub=gurobipy.GRB.INFINITY,
                 ),
             )
             for frag_id in network.fragment_ids()
