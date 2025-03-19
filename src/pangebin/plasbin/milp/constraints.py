@@ -358,15 +358,16 @@ def _active_arcs_have_flow_at_least_total_flow(
 # ------------------------------------------------------------------------------------ #
 #                                          MGC                                         #
 # ------------------------------------------------------------------------------------ #
-def add_mgc_constraints(
+def add_mgc_constraints(  # noqa: PLR0913
     m: gurobipy.Model,
     var: milp_vars.MaxGC,
     network: pb_network.Network,
     intervals: gc_items.Intervals,
     coefficient: float,
+    mcf_obj_value: float,
 ) -> None:
     """Add MGC constraints."""
-    _coverage_score_lower_bound(m, var, network, coefficient, m.ObjVal)
+    _coverage_score_lower_bound(m, var, network, coefficient, mcf_obj_value)
     _exactly_one_interval_is_active(m, var, intervals)
     _define_frag_gc(m, var, network, intervals)
 
@@ -453,15 +454,23 @@ def _define_frag_gc(
 # ------------------------------------------------------------------------------------ #
 #                                          MPS                                         #
 # ------------------------------------------------------------------------------------ #
-def add_mps_constraints(
+def add_mps_constraints(  # noqa: PLR0913
     m: gurobipy.Model,
     var: milp_vars.MaxPlasmidScore,
     network: pb_network.Network,
     intervals: gc_items.Intervals,
     coefficient: float,
+    mgc_obj_value: float,
 ) -> None:
     """Add MPS constraints to MGC model."""
-    _gc_probability_score_lower_bound(m, var, network, intervals, coefficient, m.ObjVal)
+    _gc_probability_score_lower_bound(
+        m,
+        var,
+        network,
+        intervals,
+        coefficient,
+        mgc_obj_value,
+    )
 
 
 def _gc_probability_score_lower_bound(  # noqa: PLR0913
