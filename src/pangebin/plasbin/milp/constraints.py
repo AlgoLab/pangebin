@@ -26,9 +26,15 @@ def set_mcf_constraints(
     _active_arcs_implies_active_fragments(m, var, network)
     _active_fragments_imply_at_least_one_active_arc(m, var, network)
     _pos_flow_implies_active_vertices(m, var, network)
+    #
+    # Connectivity
+    #
     _subtree_depth_min_distance(m, var, network)
     _arcs_in_tree_are_active(m, var, network)
     _alpha_is_the_number_of_vertices_in_the_solution(m, var, network)
+    #
+    # Arc flow lower bound
+    #
     _active_arcs_have_flow_at_least_total_flow(m, var, network)
 
 
@@ -77,16 +83,7 @@ def _fragment_coverages_limit_cumulative_flows(
     """Fragment coverages limit cumulative flows."""
     m.addConstrs(
         (
-            milp_vars.incoming_flow(
-                gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD),
-                network,
-                var,
-            )
-            + milp_vars.incoming_flow(
-                gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE),
-                network,
-                var,
-            )
+            milp_vars.incoming_flow_forward_reverse(frag_id, network, var)
             <= network.coverage(frag_id)
             for frag_id in network.panasm_graph().segment_names
         ),
@@ -151,7 +148,7 @@ def _active_arcs_implies_active_fragments(
     for sink_arc in network.sink_arcs():
         m.addConstr(
             var.y_t(sink_arc) <= var.x(sink_arc[0]),
-            name=f"active_arc_{sink_arc[0]}_{sink_arc[1]}_implies_active_fragment_{sink_arc[1]}",
+            name=f"active_arc_{sink_arc[0]}_{sink_arc[1]}_implies_active_fragment_{sink_arc[0]}",
         )
 
 
@@ -164,18 +161,13 @@ def _active_fragments_imply_at_least_one_active_arc(
     """Active fragments imply at least one active arc."""
     m.addConstrs(
         (
-            var.x(frag_id)
+            var.x(frag)
             <= milp_vars.incoming_arcs_y(
-                gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD),
+                frag,
                 network,
                 var,
             )
-            + milp_vars.incoming_arcs_y(
-                gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE),
-                network,
-                var,
-            )
-            for frag_id in network.panasm_graph().segment_names
+            for frag in network.oriented_fragments()
         ),
         name="active_fragments_imply_at_least_one_active_arc",
     )
@@ -189,17 +181,17 @@ def _pos_flow_implies_active_vertices(
     """Positive flow implies the two incident vertices are in the component."""
     for source_arc in network.source_arcs():
         m.addConstr(
-            1 - var.y_s(source_arc) <= 1 - var.x(source_arc[1]),
+            1 - var.y_s(source_arc) >= 1 - var.x(source_arc[1]),
             name=f"pos_flow_implies_active_vertices_{source_arc[0]}_{source_arc[1]}",
         )
     for arc in network.link_arcs():
         m.addConstr(
-            1 - var.y(arc) <= var.x(arc.predecessor()) - var.x(arc.successor()),
+            1 - var.y(arc) >= var.x(arc.predecessor()) - var.x(arc.successor()),
             name=f"pos_flow_implies_active_vertices_{arc.predecessor()}_{arc.successor()}",
         )
     for sink_arc in network.sink_arcs():
         m.addConstr(
-            1 - var.y_t(sink_arc) <= var.x(sink_arc[0]) - 1,
+            1 - var.y_t(sink_arc) >= var.x(sink_arc[0]) - 1,
             name=f"pos_flow_implies_active_vertices_{sink_arc[0]}_{sink_arc[1]}",
         )
 
@@ -255,7 +247,7 @@ def _arcs_in_tree_are_active(
     m.addConstrs(
         (
             var.beta_s(source_arc)
-            <= -var.y_s(source_arc) * network.number_of_vertices()
+            >= -var.y_s(source_arc) * network.number_of_vertices()
             for source_arc in network.source_arcs()
         ),
         name="source_arcs_in_tree_are_active",
@@ -265,7 +257,7 @@ def _arcs_in_tree_are_active(
     #
     m.addConstrs(
         (
-            var.beta(arc) <= -var.y(arc) * network.number_of_vertices()
+            var.beta(arc) >= -var.y(arc) * network.number_of_vertices()
             for arc in network.link_arcs()
         ),
         name="Link_arcs_in_tree_are_active",
@@ -275,7 +267,7 @@ def _arcs_in_tree_are_active(
     #
     m.addConstrs(
         (
-            var.beta_t(sink_arc) <= -var.y_t(sink_arc) * network.number_of_vertices()
+            var.beta_t(sink_arc) >= -var.y_t(sink_arc) * network.number_of_vertices()
             for sink_arc in network.sink_arcs()
         ),
         name="sink_arcs_in_tree_are_active",
