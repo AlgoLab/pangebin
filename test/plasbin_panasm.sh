@@ -3,13 +3,13 @@
 # ------------------------------------------------------------------------------------ #
 # USAGE
 #
-# ./test/gc_prob_scores.sh {run|clean} test/<dataset> [--debug]
+# ./test/plasbin_panasm.sh {run|clean} test/<dataset> [--debug]
 # ------------------------------------------------------------------------------------ #
 
 command=$1
 dataset_dir=$2
 
-out_file="$dataset_dir/result/panassembly/gc_prob_scores.tsv"
+out_dir="$dataset_dir/result/plasbin"
 
 debug=""
 if [ "$3" == "--debug" ]; then
@@ -17,11 +17,18 @@ if [ "$3" == "--debug" ]; then
 fi
 
 run() {
-    local datadir="$dataset_dir/data"
-    local panassembly_datadir="$datadir/panassembly"
-    local panassembly_gfa="$panassembly_datadir/panassembly.gfa"
 
-    pangebin sub gc from-gfa $panassembly_gfa $out_file \
+    local datadir="$dataset_dir/data"
+
+    local panassembly_datadir="$datadir/panassembly"
+
+    local panassembly_gfa="$panassembly_datadir/panassembly.gfa"
+    local gc_scores="$panassembly_datadir/gc_scores.tsv"
+    local plasmidness="$panassembly_datadir/plasmidness.tsv"
+    local seeds="$panassembly_datadir/seeds.tsv"
+
+    pangebin sub plasbin $panassembly_gfa $gc_scores $plasmidness $seeds \
+        --outdir $out_dir \
         $debug
 }
 
@@ -30,10 +37,8 @@ run)
     run
     ;;
 clean)
-    echo "Cleaning $out_file"
-    rm "$out_file"
-    rmdir ${out_file%/*} 2>/dev/null
-    exit 0
+    echo "Cleaning $out_dir"
+    rm -rf "$out_dir"
     ;;
 *)
     echo "Unknown command '$command'"
