@@ -26,6 +26,8 @@ sequence_id  <interval_1>  <interval_2> ... <interval_n>
 <id_1>       <score_1>     <score_2>    ... <score_n>
 ```
 
+The intervals in the header are formatted like the following `<float>_<float>`, for example `0.0_0.1`.
+
 ## GC content intervals
 
 * [ ] Understand how to obtain them as for seed thresholds
