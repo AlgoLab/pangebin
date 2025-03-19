@@ -25,6 +25,12 @@ class Header(StrEnum):
         """Format interval."""
         return f"{interval[0]}_{interval[1]}"
 
+    @classmethod
+    def str_to_interval(cls, interval_str: str) -> tuple[float, float]:
+        """Parse interval."""
+        l_interval_str = interval_str.split("_")
+        return (float(l_interval_str[0]), float(l_interval_str[1]))
+
 
 class Writer:
     """GC probability scores TSV writer."""
@@ -83,6 +89,11 @@ class Reader:
     def __init__(self, csv_reader: _csv._reader) -> None:
         """Initialize object."""
         self.__csv_reader = csv_reader
+        self.__intervals: items.Intervals = self.__header_to_intervals()
+
+    def intervals(self) -> items.Intervals:
+        """Get intervals."""
+        return self.__intervals
 
     def __iter__(self) -> Iterator[items.SequenceProbabilityScores]:
         """Iterate sequence probability scores."""
@@ -91,3 +102,14 @@ class Reader:
                 row[0],
                 (float(item) for item in row[1:]),
             )
+
+    def __header_to_intervals(self) -> items.Intervals:
+        """Parse header."""
+        intervals = items.Intervals()
+        intervals_details = [
+            Header.str_to_interval(item) for item in next(self.__csv_reader)[1:]
+        ]
+        for interval in intervals_details:
+            intervals.append(interval[0])
+        intervals.append(intervals_details[-1][1])
+        return intervals
