@@ -5,6 +5,9 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+import pangebin.assembly.items as asm_items
+import pangebin.gfa.assembler.segment as gfa_asm_segment
+import pangebin.gfa.segment as gfa_segment
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
@@ -50,3 +53,8 @@ def normalized_coverage(path: GfaPath) -> float:
 def set_normalized_coverage(path: GfaPath, coverage: float) -> None:
     """Set normalized coverage."""
     path.set(Tag.NORMALIZED_COVERAGE, coverage)
+
+
+def name_to_assembler_id(name: str) -> asm_items.Identifier:
+    """Get assembler identifier from path name."""
+    return gfa_asm_segment.NamePrefix(gfa_segment.name_to_prefix(name)).to_assembler()

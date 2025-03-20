@@ -21,3 +21,11 @@ class NamePrefix(StrEnum):
                 return cls.UNICYCLER
             case asm_items.Identifier.SKESA:
                 return cls.SKESA
+
+    def to_assembler(self) -> asm_items.Identifier:
+        """Get assembler from prefix."""
+        match self:
+            case NamePrefix.UNICYCLER:
+                return asm_items.Identifier.UNICYCLER
+            case NamePrefix.SKESA:
+                return asm_items.Identifier.SKESA

@@ -18,7 +18,7 @@ import pangebin.plasbin.bins.input_output as bin_io
 import pangebin.plasbin.config as pb_cfg
 import pangebin.plasbin.create as pb_create
 import pangebin.plasbin.input_output as pb_io
-import pangebin.plasmidness as plm
+import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
 
 _LOGGER = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ def plasbin(
     with gc_io.Reader.open(gc_scores_tsv) as gc_scores_fin:
         intervals = gc_scores_fin.intervals()
         gc_scores = list(gc_scores_fin)
-    with plm.Reader.open(plasmidness_tsv) as plasmidness_fin:
+    with plm_io.Reader.open(plasmidness_tsv) as plasmidness_fin:
         plasmidness = list(plasmidness_fin)
     with seed_io.Reader.open(seeds_tsv) as seeds_fin:
         seeds = list(seeds_fin)
