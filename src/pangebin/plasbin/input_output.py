@@ -2,28 +2,21 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml  # type: ignore[import-untyped]
 
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
-
+import pangebin.plasbin.milp.input_output as milp_io
 
 if TYPE_CHECKING:
     import pangebin.plasbin.milp.models as milp_models
 
-
-def gurobi_log_path(
-    log_directory: Path,
-    iteration: int,
-    model: milp_models.Names,
-) -> Path:
-    """Get Gurobi log file path."""
-    return log_directory / f"{iteration}_{model}.log"
+try:
+    from yaml import CDumper as Dumper
+except ImportError:
+    from yaml import Dumper
 
 
 class Manager:
@@ -49,6 +42,20 @@ class Manager:
         """Get bin stats YAML file path."""
         return self.bin_outdir(iteration) / self.__BIN_SEQ_NORMCOV_FILENAME
 
+    def gurobi_log_path(self, iteration: int, model: milp_models.Names) -> Path:
+        """Get Gurobi log file path."""
+        return self.bin_outdir(iteration) / f"{model}.log"
+
+    def move_gurobi_logs(self, log_files: list[Path]) -> None:
+        """Move Gurobi log files to the bin directory."""
+        for log_file in log_files:
+            shutil.move(
+                log_file,
+                self.gurobi_log_path(
+                    *milp_io.Manager.attributes_from_gurobi_log_path(log_file),
+                ),
+            )
+
     def config(self) -> Config:
         """Get config."""
         return self.__config
@@ -57,7 +64,7 @@ class Manager:
 class Config:
     """PangeBin-Flow config class."""
 
-    DEFAULT_OUTPUT_DIR = Path("./pangebin-flow")
+    DEFAULT_OUTPUT_DIR = Path("./plasbin")
 
     KEY_OUTPUT_DIR = "output_directory"
 

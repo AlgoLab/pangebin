@@ -122,7 +122,7 @@ def plasbin(
     with seed_io.Reader.open(seeds_tsv) as seeds_fin:
         seeds = list(seeds_fin)
 
-    for k, (bin_stats, seq_normcovs) in enumerate(
+    for k, (bin_stats, seq_normcovs, log_files) in enumerate(
         pb_create.plasbin(
             gfa_io.from_file(panassembly_gfa),
             intervals,
@@ -141,3 +141,4 @@ def plasbin(
                     seq_normcov.identifier(),
                     seq_normcov.normalized_coverage(),
                 )
+        io_manager.move_gurobi_logs(log_files)
