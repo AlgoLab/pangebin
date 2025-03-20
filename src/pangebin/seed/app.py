@@ -11,6 +11,7 @@ from typing import Annotated
 
 import typer
 
+import pangebin.gfa.input_output as gfa_io
 import pangebin.logging as common_log
 import pangebin.seed.create as seed_create
 import pangebin.seed.input_output as seed_io
@@ -30,22 +31,15 @@ class FromGeneDensityArguments:
         help="Gene density file",
     )
 
-
-class IOOptions:
-    """Input/output options."""
-
-    __RICH_HELP_PANEL = "Input/Output options"
-
-    OUTPUT_FILE = typer.Argument(
+    OUTPUT_SEED_TSV = typer.Argument(
         help="Seed sequence output file",
-        rich_help_panel=__RICH_HELP_PANEL,
     )
 
 
 @APP.command(name="pos-gd")
 def from_positive_gene_densities(
     gene_density_file: Annotated[Path, FromGeneDensityArguments.GENE_DENSITY_FILE],
-    output_file: Annotated[Path, IOOptions.OUTPUT_FILE],
+    output_seed_tsv: Annotated[Path, FromGeneDensityArguments.OUTPUT_SEED_TSV],
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> Path:
     """Extract seed sequences with positive gene density."""
@@ -54,8 +48,69 @@ def from_positive_gene_densities(
         "Extracting seed sequences with positive gene density.",
         debug,
     )
-    with seed_io.Writer.open(output_file) as writer:
+    with seed_io.Writer.open(output_seed_tsv) as writer:
         for sequence_id in seed_create.from_gene_density(gene_density_file):
             writer.write_sequence(sequence_id)
-    _LOGGER.info("Write seed sequence identifiers in file: %s", output_file)
-    return output_file
+    _LOGGER.info("Write seed sequence identifiers in file: %s", output_seed_tsv)
+    return output_seed_tsv
+
+
+class FromContigsToFragmentSeedsArguments:
+    """From contigs to fragment seeds arguments."""
+
+    UNICYCLER_SEEDS_TSV = typer.Argument(
+        help="Unicycler seeds TSV file",
+    )
+
+    SKESA_SEEDS_TSV = typer.Argument(
+        help="SKESA seeds TSV file",
+    )
+
+    PANASSEMBLY_GFA = typer.Argument(
+        help="Pan-assembly GFA file",
+    )
+
+    OUTPUT_SEED_TSV = typer.Argument(
+        help="Seed sequence output file",
+    )
+
+
+@APP.command(name="ctgs-to-frags")
+def from_contigs_to_fragment_seeds(
+    unicycler_seeds_tsv: Annotated[
+        Path,
+        FromContigsToFragmentSeedsArguments.UNICYCLER_SEEDS_TSV,
+    ],
+    skesa_seeds_tsv: Annotated[
+        Path,
+        FromContigsToFragmentSeedsArguments.SKESA_SEEDS_TSV,
+    ],
+    panassembly_gfa: Annotated[
+        Path,
+        FromContigsToFragmentSeedsArguments.PANASSEMBLY_GFA,
+    ],
+    output_seed_tsv: Annotated[
+        Path,
+        FromContigsToFragmentSeedsArguments.OUTPUT_SEED_TSV,
+    ],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> Path:
+    """Extract seed sequences from contigs."""
+    common_log.init_logger(
+        _LOGGER,
+        "Extracting seed sequences from contigs.",
+        debug,
+    )
+    with (
+        seed_io.Reader.open(unicycler_seeds_tsv) as uni_seeds_fin,
+        seed_io.Reader.open(skesa_seeds_tsv) as skesa_seeds_fin,
+        seed_io.Writer.open(output_seed_tsv) as writer,
+    ):
+        for seed_fragment in seed_create.from_contigs_to_fragment_seeds(
+            iter(uni_seeds_fin),
+            iter(skesa_seeds_fin),
+            gfa_io.from_file(panassembly_gfa),
+        ):
+            writer.write_sequence(seed_fragment)
+    _LOGGER.info("Write seed sequence identifiers in file: %s", output_seed_tsv)
+    return output_seed_tsv
