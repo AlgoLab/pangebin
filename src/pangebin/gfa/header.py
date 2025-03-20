@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from enum import StrEnum
-
-import gfapy  # type: ignore[import-untyped]
+from typing import TYPE_CHECKING
 
 from pangebin.gfa.tag import FieldType
+
+if TYPE_CHECKING:
+    import gfapy  # type: ignore[import-untyped]
 
 
 class Tag(StrEnum):

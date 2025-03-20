@@ -57,12 +57,10 @@ class TagType(StrEnum):
     OCCURENCE_IN_PATH = FieldType.SIGNED_INT
     FROM_CONTIGS = FieldType.STRING
     CONTIG_PERCENTAGES = FieldType.INT_OR_FLOAT_ARRAY
-    # FIXME this tag is renamed
     SEGMENT_NATURE = FieldType.CHAR
     PANGENOME_PENALTY = FieldType.FLOAT
 
 
-# FIXME this tag is renamed
 class NatureTagValue(StrEnum):
     """Segment nature tag values.
 
