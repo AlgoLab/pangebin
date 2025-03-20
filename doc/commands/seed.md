@@ -17,9 +17,9 @@
   * [x] plasmid label if they are contained in the plasmid contig list file
   * [x] non-plasmid label if they are not contained in the plasmid contig list file
   * [x] assign gene density
-* [ ] For each threshold pair, compute the chromosone-plasmid difference (see paper)
-* [ ] Choose the threshold pair maximizing the chromosone-plasmid difference
-* [ ] Output the means and thresholds
+* [x] For each threshold pair, compute the chromosone-plasmid difference (see paper)
+* [x] Choose the threshold pair maximizing the chromosone-plasmid difference
+* [x] Output the means and thresholds
 
 ### Input file format
 

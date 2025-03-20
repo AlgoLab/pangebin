@@ -80,10 +80,9 @@ dataset_dir="test/SAMN16357463"
    ```
 
 7. Execute PlasBin-Flow modified for pan-assembly
-<!-- FIXME not good yet -->
 
    ```sh
-   ./test/plasbin.sh run $dataset_dir
+   ./test/plasbin_panasm.sh run $dataset_dir
    ```
 
 ## Going further into the details
