@@ -31,7 +31,7 @@ For pangenome segments:
 | `sn` | `A` (char)        |       $\{s, u, b\}$       | Nature of the segment, see below                   |
 | `pp` | `f` (float)       |    $\mathbb{R}_{>=0}$     | Pangenome penalty, see below                       |
 
-**Nature of the segment (`ns` tag):**
+**Segment nature (`sn` tag):**
 
 * `s` SKESA subcontig (from pangenome SKESA-Unicycler)
 * `u` Unicycler subcontig (from pangenome SKESA-Unicycler)
