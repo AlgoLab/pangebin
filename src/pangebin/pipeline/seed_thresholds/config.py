@@ -5,21 +5,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
-
 import pangebin.entrez as pg_entrez
 import pangebin.ground_truth.config as gt_cfg
 import pangebin.mapping.filter as map_filter
 import pangebin.seed.thresholds.config as seed_thr_cfg
 from pangebin import subprocess_lib
+from pangebin.yaml import YAMLInterface
 
 
-class Config:
+class Config(YAMLInterface):
     """Seed thresholds pipeline configuration."""
 
     KEY_GROUND_TRUTH_CFG = "ground_truth_cfg"
@@ -29,13 +23,6 @@ class Config:
     KEY_RESSOURCES_CFG = "ressources_cfg"
 
     DEFAULT_FILENAME = Path("pipeline_seed_thresholds_cfg.yaml")
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> Config:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
@@ -117,12 +104,6 @@ class Config:
             self.KEY_ENTREZ_CFG: self.__entrez_cfg.to_dict(),
             self.KEY_RESSOURCES_CFG: self.__ressource_cfg.to_dict(),
         }
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        with yaml_filepath.open("w") as yaml_file:
-            yaml.dump(self.to_dict(), yaml_file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath
 
 
 if __name__ == "__main__":

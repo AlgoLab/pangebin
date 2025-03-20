@@ -8,12 +8,8 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-import yaml  # type: ignore[import-untyped]
 
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
+from pangebin.yaml import YAMLInterface
 
 
 class TestItem:
@@ -60,7 +56,7 @@ class TestItem:
         )
 
 
-class Items:
+class Items(YAMLInterface):
     """Seed contig thresholds."""
 
     KEY_MEANS = "means"
@@ -69,13 +65,6 @@ class Items:
 
     KEY_LENGHT = "length"
     KEY_GENE_DENSITY = "gene_density"
-
-    @classmethod
-    def from_yaml(cls, file: Path) -> Items:
-        """Create object from yaml file."""
-        with file.open() as f_in:
-            dict_from_yaml = yaml.safe_load(f_in)
-        return cls.from_dict(dict_from_yaml)
 
     @classmethod
     def from_dict(cls, dict_from_yaml: dict) -> Items:
@@ -137,9 +126,3 @@ class Items:
                 for length, gene_density in self.__threshold_pairs
             ],
         }
-
-    def to_yaml(self, file: Path) -> Path:
-        """Convert to yaml file."""
-        with file.open("w") as f_out:
-            yaml.dump(self.to_dict(), f_out, Dumper, sort_keys=False)
-        return file

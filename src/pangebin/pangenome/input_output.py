@@ -5,12 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
+from pangebin.yaml import YAMLInterface
 
 
 class Manager:
@@ -48,7 +43,7 @@ class Manager:
         return self.__config
 
 
-class Config:
+class Config(YAMLInterface):
     """Pangenome IO config class."""
 
     DEFAULT_DIR = Path("./pangenome")
@@ -57,13 +52,6 @@ class Config:
     KEY_OUTPUT_DIR = "output_directory"
 
     NAME = "Pangenome IO config"
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> Config:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
@@ -96,10 +84,3 @@ class Config:
             self.KEY_MIXED_FASTA_PATH: self.__mixed_fasta_path,
             self.KEY_OUTPUT_DIR: self.__output_directory,
         }
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        yaml_filepath = Path(yaml_filepath)
-        with yaml_filepath.open("w") as file:
-            yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath

@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml  # type: ignore[import-untyped]
 
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
-import logging
-
 import pangebin.ground_truth.items as gt_items
+from pangebin.yaml import YAMLInterface
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -42,6 +38,7 @@ def plasmid_biosamples_from_file(
             yield gt_items.PlasmidBioSampleNCBI.from_dict(dict_from_yaml)
 
 
+# REFACTOR use Writer and Reader
 def plasmid_contigs_to_file(
     plasmid_contigs: Iterable[gt_items.PlasmidContig],
     out_file: Path,
@@ -62,6 +59,7 @@ def plasmid_contigs_to_file(
             f_out.write("\n")
 
 
+# REFACTOR use Writer and Reader
 def plasmid_contigs_from_file(file: Path) -> Iterator[gt_items.PlasmidContig]:
     """Get plasmid contigs from file.
 
@@ -80,6 +78,7 @@ def plasmid_contigs_from_file(file: Path) -> Iterator[gt_items.PlasmidContig]:
             yield gt_items.PlasmidContig.from_tsv_row(line)
 
 
+# REFACTOR use Writer and Reader
 def non_plasmid_contigs_to_file(
     non_plasmid_contigs: Iterable[gt_items.NonPlasmidContig],
     out_file: Path,
@@ -99,6 +98,7 @@ def non_plasmid_contigs_to_file(
             f_out.write("\n")
 
 
+# REFACTOR use Writer and Reader
 def non_plasmid_contigs_from_file(file: Path) -> Iterator[gt_items.NonPlasmidContig]:
     """Get non plasmid contigs from file.
 
@@ -156,19 +156,12 @@ class Manager:
         return self.__config
 
 
-class Config:
+class Config(YAMLInterface):
     """Ground truth IO configuration."""
 
     DEFAULT_OUTPUT_DIR = Path("./ground_truth")
 
     KEY_OUTPUT_DIR = "output_directory"
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> Config:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
@@ -190,10 +183,3 @@ class Config:
         return {
             self.KEY_OUTPUT_DIR: self.__output_directory,
         }
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        yaml_filepath = Path(yaml_filepath)
-        with yaml_filepath.open("w") as file:
-            yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath

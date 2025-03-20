@@ -2,18 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
+from pangebin.yaml import YAMLInterface
 
 
-class ThresholdRanges:
+class ThresholdRanges(YAMLInterface):
     """Threshold ranges."""
 
     KEY_LENGTH = "length"
@@ -29,13 +23,6 @@ class ThresholdRanges:
     DEFAULT_MIN_GENE_DENSITY = 0.01
     DEFAULT_MAX_GENE_DENSITY = 1.0
     DEFAULT_STEP_GENE_DENSITY = 0.01
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> ThresholdRanges:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, dict[str, Any]]) -> ThresholdRanges:
@@ -136,9 +123,3 @@ class ThresholdRanges:
                 self.KEY_STEP: self.__step_gene_density,
             },
         }
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        with Path(yaml_filepath).open("w") as file:
-            yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath

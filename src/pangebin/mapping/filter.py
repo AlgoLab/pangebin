@@ -2,20 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import yaml  # type: ignore[import-untyped]
 
 from pangebin.mapping import items
-
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
-
-import logging
+from pangebin.yaml import YAMLInterface
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -82,7 +76,7 @@ def filter_mapping_dataframe(
     return filtered_mappings_df
 
 
-class Config:
+class Config(YAMLInterface):
     """Standardize config class."""
 
     DEFAULT_MIN_LENGTH = 1
@@ -98,13 +92,6 @@ class Config:
     DEFAULT_YAML_FILE = Path("mapping_filter_config.yaml")
 
     NAME = "Mapping filter config"
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> Config:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
@@ -170,10 +157,3 @@ class Config:
             self.KEY_MIN_Q_COV: self.__min_q_cov,
             self.KEY_MIN_S_COV: self.__min_s_cov,
         }
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        yaml_filepath = Path(yaml_filepath)
-        with yaml_filepath.open("w") as file:
-            yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath

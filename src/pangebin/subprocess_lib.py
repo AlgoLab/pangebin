@@ -2,19 +2,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
-
-import yaml  # type: ignore[import-untyped]
-
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
 import logging
 import shutil
 import subprocess
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+from pangebin.yaml import YAMLInterface
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -90,7 +84,7 @@ class CommandFailedError(Exception):
         return f"{self.__cmd_str} command failed: {self.__called_proc_exc.stderr}"
 
 
-class RessourcesConfig:
+class RessourcesConfig(YAMLInterface):
     """Ressources config."""
 
     DEFAULT_MAX_CORES = 8
@@ -98,13 +92,6 @@ class RessourcesConfig:
 
     KEY_MAX_CORES = "max_number_of_cores"
     KEY_MAX_MEMORY = "max_memory"
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> RessourcesConfig:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> RessourcesConfig:
@@ -144,9 +131,3 @@ class RessourcesConfig:
             self.KEY_MAX_CORES: self.__max_cores,
             self.KEY_MAX_MEMORY: self.__max_memory,
         }
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        with yaml_filepath.open("w") as yaml_file:
-            yaml.dump(self.to_dict(), yaml_file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath

@@ -2,17 +2,11 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
-
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
-
-from enum import StrEnum
+from pangebin.yaml import YAMLInterface
 
 _PARENT_DIR = Path(__file__).resolve().parent
 
@@ -38,7 +32,7 @@ class NextflowProfile(StrEnum):
     CONDA = "conda"
 
 
-class Pangenome:
+class Pangenome(YAMLInterface):
     """Configuration for pangenome."""
 
     DEFAULT_RELEASE = "1.1.2"
@@ -54,13 +48,6 @@ class Pangenome:
     DEFAULT_YAML_FILE = Path("pangenome_config.yaml")
 
     NAME = "Pangenome config"
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> Pangenome:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Pangenome:
@@ -119,13 +106,6 @@ class Pangenome:
                 self.__supp_nfcore_pangenome_config_path,
             )
         return cfg_dict
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        yaml_filepath = Path(yaml_filepath)
-        with yaml_filepath.open("w") as file:
-            yaml.dump(self.to_dict(), file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath
 
 
 def fmt_nfcore_pan_cli(

@@ -2,24 +2,17 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-import yaml  # type: ignore[import-untyped]
-from Bio import Entrez
-
-try:
-    from yaml import CDumper as Dumper
-except ImportError:
-    from yaml import Dumper
-
 import logging
 
 import typer
+from Bio import Entrez
+
+from pangebin.yaml import YAMLInterface
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class Config:
+class Config(YAMLInterface):
     """NCBI Entrez configurations."""
 
     KEY_EMAIL = "email"
@@ -33,13 +26,6 @@ class Config:
     DEFAULT_API_KEY = None
     DEFAULT_MAX_TRIES = 3
     DEFAULT_SLEEP_BETWEEN_TRIES = 15
-
-    @classmethod
-    def from_yaml(cls, yaml_filepath: Path) -> Config:
-        """Create config instance from a YAML file."""
-        with Path(yaml_filepath).open("r") as file:
-            config_data = yaml.safe_load(file)
-        return cls.from_dict(config_data)
 
     @classmethod
     def from_dict(cls, config: dict) -> Config:
@@ -99,12 +85,6 @@ class Config:
             self.KEY_MAX_TRIES: self.max_tries(),
             self.KEY_SLEEP_BETWEEN_TRIES: self.sleep_between_tries(),
         }
-
-    def to_yaml(self, yaml_filepath: Path) -> Path:
-        """Write to yaml."""
-        with yaml_filepath.open("w") as yaml_file:
-            yaml.dump(self.to_dict(), yaml_file, Dumper=Dumper, sort_keys=False)
-        return yaml_filepath
 
 
 def set_entrez_config(config: Config) -> None:
