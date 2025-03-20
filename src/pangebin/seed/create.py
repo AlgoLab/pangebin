@@ -17,12 +17,12 @@ def from_gene_density(gene_density_file: Path) -> Iterator[str]:
 
 
 def from_contigs_to_fragment_seeds(
-    unicycler_seeds: Iterator[str],
     skesa_seeds: Iterator[str],
+    unicycler_seeds: Iterator[str],
     panassembly_gfa: gfapy.Gfa,
 ) -> Iterator[str]:
     """Iterate over fragments contained in seed contigs."""
-    seed_contigs = set(unicycler_seeds) | set(skesa_seeds)
+    seed_contigs = set(skesa_seeds) | set(unicycler_seeds)
     for fragment_line in panassembly_gfa.segments:
         fragment_contig_list = gfa_pan_segment.contig_list(fragment_line)
         if any((contig in seed_contigs) for contig in fragment_contig_list):

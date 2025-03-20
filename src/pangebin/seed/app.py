@@ -58,12 +58,12 @@ def from_positive_gene_densities(
 class FromContigsToFragmentSeedsArguments:
     """From contigs to fragment seeds arguments."""
 
-    UNICYCLER_SEEDS_TSV = typer.Argument(
-        help="Unicycler seeds TSV file",
-    )
-
     SKESA_SEEDS_TSV = typer.Argument(
         help="SKESA seeds TSV file",
+    )
+
+    UNICYCLER_SEEDS_TSV = typer.Argument(
+        help="Unicycler seeds TSV file",
     )
 
     PANASSEMBLY_GFA = typer.Argument(
@@ -77,13 +77,13 @@ class FromContigsToFragmentSeedsArguments:
 
 @APP.command(name="ctgs-to-frags")
 def from_contigs_to_fragment_seeds(
-    unicycler_seeds_tsv: Annotated[
-        Path,
-        FromContigsToFragmentSeedsArguments.UNICYCLER_SEEDS_TSV,
-    ],
     skesa_seeds_tsv: Annotated[
         Path,
         FromContigsToFragmentSeedsArguments.SKESA_SEEDS_TSV,
+    ],
+    unicycler_seeds_tsv: Annotated[
+        Path,
+        FromContigsToFragmentSeedsArguments.UNICYCLER_SEEDS_TSV,
     ],
     panassembly_gfa: Annotated[
         Path,
@@ -95,22 +95,22 @@ def from_contigs_to_fragment_seeds(
     ],
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> Path:
-    """Extract seed sequences from contigs."""
+    """Extract seed fragments from seed contigs."""
     common_log.init_logger(
         _LOGGER,
-        "Extracting seed sequences from contigs.",
+        "Extracting seed fragments from seed contigs.",
         debug,
     )
     with (
-        seed_io.Reader.open(unicycler_seeds_tsv) as uni_seeds_fin,
         seed_io.Reader.open(skesa_seeds_tsv) as skesa_seeds_fin,
+        seed_io.Reader.open(unicycler_seeds_tsv) as uni_seeds_fin,
         seed_io.Writer.open(output_seed_tsv) as writer,
     ):
         for seed_fragment in seed_create.from_contigs_to_fragment_seeds(
-            iter(uni_seeds_fin),
             iter(skesa_seeds_fin),
+            iter(uni_seeds_fin),
             gfa_io.from_file(panassembly_gfa),
         ):
             writer.write_sequence(seed_fragment)
-    _LOGGER.info("Write seed sequence identifiers in file: %s", output_seed_tsv)
+    _LOGGER.info("Write fragment seeds in file: %s", output_seed_tsv)
     return output_seed_tsv
