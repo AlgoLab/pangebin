@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
-    from pathlib import Path
 
 import logging
 
@@ -20,15 +19,6 @@ class Intervals:
     __MAX_FLOAT = 1.0
 
     __step_list: list[float]
-
-    @classmethod
-    def from_file(cls, file: Path) -> Intervals:
-        """Read intervals from file."""
-        intervals = cls()
-        with file.open() as f_in:
-            for line in f_in:
-                intervals.append(float(line))
-        return intervals
 
     def __init__(self, step_list: Iterable[float] | None = None) -> None:
         """Initialize object."""
@@ -72,12 +62,6 @@ class Intervals:
     def to_list(self) -> list[float]:
         """Convert to list."""
         return self.__step_list
-
-    def to_file(self, file: Path) -> None:
-        """Write intervals to file."""
-        with file.open("w") as f_out:
-            for increasing_steps in self.__step_list:
-                f_out.write(f"{increasing_steps}\n")
 
 
 class SequenceGCScores:

@@ -15,7 +15,60 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-class Header(StrEnum):
+class IntervalStepsHeader(StrEnum):
+    """Interval steps TSV header."""
+
+    INTERVAL_STEP = "Interval_step"
+
+
+class IntervalStepsWriter:
+    """Interval steps TSV writer."""
+
+    @classmethod
+    @contextmanager
+    def open(cls, file: Path) -> Generator[IntervalStepsWriter, None, None]:
+        """Open TSV file for writing."""
+        with file.open("w") as f_out:
+            writer = IntervalStepsWriter(csv.writer(f_out, delimiter="\t"))
+            yield writer
+
+    def __init__(self, csv_writer: _csv._writer) -> None:
+        """Initialize object."""
+        self.__csv_writer = csv_writer
+        self.__write_header()
+
+    def __write_header(self) -> None:
+        """Write header."""
+        self.__csv_writer.writerow([IntervalStepsHeader.INTERVAL_STEP])
+
+    def write_interval_step(self, interval_step: float) -> None:
+        """Write interval step."""
+        self.__csv_writer.writerow([interval_step])
+
+
+class IntervalStepsReader:
+    """Interval steps TSV reader."""
+
+    @classmethod
+    @contextmanager
+    def open(cls, file: Path) -> Generator[IntervalStepsReader, None, None]:
+        """Open TSV file for reading."""
+        with file.open() as f_in:
+            reader = IntervalStepsReader(csv.reader(f_in, delimiter="\t"))
+            yield reader
+
+    def __init__(self, csv_reader: _csv._reader) -> None:
+        """Initialize object."""
+        self.__csv_reader = csv_reader
+        next(self.__csv_reader)  # skip header
+
+    def __iter__(self) -> Iterator[float]:
+        """Iterate over the interval steps."""
+        for interval_step in self.__csv_reader:
+            yield float(interval_step[0])
+
+
+class ScoresHeader(StrEnum):
     """GC probability scores TSV header."""
 
     SEQUENCE_ID = "Sequence_ID"
@@ -32,7 +85,7 @@ class Header(StrEnum):
         return (float(l_interval_str[0]), float(l_interval_str[1]))
 
 
-class Writer:
+class ScoresWriter:
     """GC probability scores TSV writer."""
 
     @classmethod
@@ -41,10 +94,10 @@ class Writer:
         cls,
         intervals: items.Intervals,
         file: Path,
-    ) -> Generator[Writer, None, None]:
+    ) -> Generator[ScoresWriter, None, None]:
         """Open TSV file for writing."""
         with file.open("w") as f_out:
-            writer = Writer(csv.writer(f_out, delimiter="\t"))
+            writer = ScoresWriter(csv.writer(f_out, delimiter="\t"))
             writer.__write_header(intervals)
             yield writer
 
@@ -56,8 +109,8 @@ class Writer:
         """Write header."""
         self.__csv_writer.writerow(
             [
-                Header.SEQUENCE_ID,
-                *(Header.fmt_interval(interval) for interval in intervals),
+                ScoresHeader.SEQUENCE_ID,
+                *(ScoresHeader.fmt_interval(interval) for interval in intervals),
             ],
         )
 
@@ -71,15 +124,15 @@ class Writer:
         )
 
 
-class Reader:
+class ScoresReader:
     """GC probability scores TSV reader."""
 
     @classmethod
     @contextmanager
-    def open(cls, file: Path) -> Generator[Reader, None, None]:
+    def open(cls, file: Path) -> Generator[ScoresReader, None, None]:
         """Open TSV file for reading."""
         with file.open() as f_in:
-            reader = Reader(csv.reader(f_in, delimiter="\t"))
+            reader = ScoresReader(csv.reader(f_in, delimiter="\t"))
             yield reader
 
     def __init__(self, csv_reader: _csv._reader) -> None:
@@ -103,7 +156,7 @@ class Reader:
         """Parse header."""
         intervals = items.Intervals()
         intervals_details = [
-            Header.str_to_interval(item) for item in next(self.__csv_reader)[1:]
+            ScoresHeader.str_to_interval(item) for item in next(self.__csv_reader)[1:]
         ]
         for interval in intervals_details:
             intervals.append(interval[0])

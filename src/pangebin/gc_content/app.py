@@ -42,8 +42,8 @@ class ScoresOptions:
 
     _RICH_HELP_PANEL = "GFA GC content options"
 
-    GC_CONTENT_INTERVAL_FILE = typer.Option(
-        help="GC content intervals file",
+    GC_CONTENT_INTERVAL_TSV = typer.Option(
+        help="GC content intervals TSV file",
         rich_help_panel=_RICH_HELP_PANEL,
     )
 
@@ -60,10 +60,10 @@ def from_gfa(
         Path,
         GFAScoresArguments.GC_SCORES_TSV,
     ],
-    gc_content_interval_file: Annotated[
-        Path | None,
-        ScoresOptions.GC_CONTENT_INTERVAL_FILE,
-    ] = None,
+    gc_content_interval_tsv: Annotated[
+        Path,
+        ScoresOptions.GC_CONTENT_INTERVAL_TSV,
+    ] = DEFAULT_GC_CONTENT_INTERVAL_FILE,
     pseudo_count: Annotated[
         int,
         ScoresOptions.PSEUDO_COUNT,
@@ -82,19 +82,19 @@ def from_gfa(
         _LOGGER.error("Input GFA file does not exist: %s", gfa_file)
         raise typer.Exit(1)
 
-    if gc_content_interval_file is None:
-        gc_content_interval_file = DEFAULT_GC_CONTENT_INTERVAL_FILE
-
-    if not gc_content_interval_file.exists():
+    if not gc_content_interval_tsv.exists():
         _LOGGER.error(
             "GC content interval file does not exist: %s",
-            gc_content_interval_file,
+            gc_content_interval_tsv,
         )
         raise typer.Exit(1)
 
-    gc_content_intervals = items.Intervals.from_file(gc_content_interval_file)
+    with io.IntervalStepsReader.open(gc_content_interval_tsv) as interval_steps_reader:
+        gc_content_intervals = items.Intervals(
+            iter(interval_steps_reader),
+        )
 
-    with io.Writer.open(gc_content_intervals, gc_scores_tsv) as writer:
+    with io.ScoresWriter.open(gc_content_intervals, gc_scores_tsv) as writer:
         for sequence_gc_scores in create.gfa_file_to_gc_scores(
             gfa_file,
             gc_content_intervals,

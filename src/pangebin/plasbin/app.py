@@ -114,7 +114,7 @@ def plasbin(
         )
     )
 
-    with gc_io.Reader.open(gc_scores_tsv) as gc_scores_fin:
+    with gc_io.ScoresReader.open(gc_scores_tsv) as gc_scores_fin:
         intervals = gc_scores_fin.intervals()
         gc_scores = list(gc_scores_fin)
     with plm_io.Reader.open(plasmidness_tsv) as plasmidness_fin:
