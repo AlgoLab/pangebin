@@ -69,7 +69,12 @@ SUB_APP.command(rich_help_panel=_SubCMDTyperRichHelpPanel.MAIN)(pangenome_app.pa
 SUB_APP.command(rich_help_panel=_SubCMDTyperRichHelpPanel.MAIN)(
     panassembly_app.panassembly,
 )
-SUB_APP.command(rich_help_panel=_SubCMDTyperRichHelpPanel.MAIN)(plasbin_app.plasbin)
+SUB_APP.add_typer(
+    plasbin_app.APP,
+    name="plasbin",
+    help="Binning plasmids on an assembly or a pan-assembly graph.",
+    rich_help_panel=_SubCMDTyperRichHelpPanel.MAIN,
+)
 
 SUB_APP.add_typer(
     gc_content_app.APP,

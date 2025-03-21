@@ -22,18 +22,93 @@ from pangebin.plasbin.config import Config
 _LOGGER = logging.getLogger(__name__)
 
 
-def plasbin(  # noqa: PLR0913
-    panasm_graph: gfapy.Gfa,
+def plasbin_assembly(  # noqa: PLR0913
+    assembly_graph: gfapy.Gfa,
+    seed_contigs: Iterable[str],
     gc_intervals: gc_items.Intervals,
-    gc_scores: Iterable[gc_items.SequenceGCScores],
-    plasmidness: Iterable[tuple[str, float]],
-    seeds: Iterable[str],
+    contig_gc_scores: Iterable[gc_items.SequenceGCScores],
+    contig_plasmidness: Iterable[tuple[str, float]],
     config: Config,
     output_directory: Path = milp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
 ]:
-    """Bin fragments from a pan-assembly graph.
+    """Bin contigs of a standardized assembly graph.
+
+    Yields
+    ------
+    bins_item.Stats
+        Stats of the bin
+    iterator on bins_item.FragmentNormCoverage
+        Contigs and their normalized coverage in the bin
+    list of Path
+        Paths to the log files
+
+    Warning
+    -------
+    The GFA assembly graph will mute.
+    """
+    return plasbin(
+        pb_network.Network.from_asm_graph(
+            assembly_graph,
+            seed_contigs,
+            contig_gc_scores,
+            contig_plasmidness,
+        ),
+        gc_intervals,
+        config,
+        output_directory,
+    )
+
+
+def plasbin_panassembly(  # noqa: PLR0913
+    panasm_graph: gfapy.Gfa,
+    seed_fragments: Iterable[str],
+    gc_intervals: gc_items.Intervals,
+    fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
+    fragment_plasmidness: Iterable[tuple[str, float]],
+    config: Config,
+    output_directory: Path = milp_io.Manager.DEFAULT_OUTPUT_DIR,
+) -> Iterator[
+    tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
+]:
+    """Bin fragments of a pan-assembly graph.
+
+    Yields
+    ------
+    bins_item.Stats
+        Stats of the bin
+    iterator on bins_item.FragmentNormCoverage
+        Fragments and their normalized coverage in the bin
+    list of Path
+        Paths to the log files
+
+    Warning
+    -------
+    The GFA pan-assembly graph will mute.
+    """
+    return plasbin(
+        pb_network.Network.from_panasm_graph(
+            panasm_graph,
+            seed_fragments,
+            fragment_gc_scores,
+            fragment_plasmidness,
+        ),
+        gc_intervals,
+        config,
+        output_directory,
+    )
+
+
+def plasbin(
+    network: pb_network.Network,
+    gc_intervals: gc_items.Intervals,
+    config: Config,
+    output_directory: Path,
+) -> Iterator[
+    tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
+]:
+    """Bin DNA sequences of a GFA graph.
 
     Yields
     ------
@@ -46,11 +121,12 @@ def plasbin(  # noqa: PLR0913
 
     Warning
     -------
-    The pan-assembly graph can mute.
+    The GFA graph will mute.
     """
-    network = pb_network.Network(panasm_graph, seeds, gc_scores, plasmidness)
     gurobipy.setParam(gurobipy.GRB.Param.LogToConsole, 0)
+
     io_manager = milp_io.Manager(output_directory)
+
     with rich_prog.Progress(console=CONSOLE) as progress:
         remaining_seeds = len(network.seeds())
         binning_task = progress.add_task("Binning", total=remaining_seeds)
@@ -132,7 +208,7 @@ def plasbin(  # noqa: PLR0913
             )
             yield (
                 bins_item.Stats(
-                    cumulative_fragment_id_length(mps_vars.mcf_vars(), network),
+                    _cumulative_fragment_id_length(mps_vars.mcf_vars(), network),
                     milp_vars.total_flow_value(mps_vars.mcf_vars()),
                     milp_vars.active_gc_content_interval(
                         gc_intervals,
@@ -142,10 +218,10 @@ def plasbin(  # noqa: PLR0913
                     mgc_stats,
                     mps_stats,
                 ),
-                fragment_norm_coverages(mps_vars.mcf_vars(), network),
+                _fragment_norm_coverages(mps_vars.mcf_vars(), network),
                 log_files.copy(),
             )
-            update_network(network, mps_vars.mcf_vars())
+            _update_network(network, mps_vars.mcf_vars())
             bin_number += 1
 
             progress.update(
@@ -156,18 +232,18 @@ def plasbin(  # noqa: PLR0913
     _LOGGER.info("Find %u bins.", bin_number)
 
 
-def cumulative_fragment_id_length(
+def _cumulative_fragment_id_length(
     mcf_vars: milp_vars.MaxCovFlow,
     network: pb_network.Network,
 ) -> int:
     """Get cumulative fragment length."""
     return sum(
-        gfa_segment.length(network.panasm_graph().segment(frag_id))
+        gfa_segment.length(network.gfa_graph().segment(frag_id))
         for frag_id in milp_vars.active_fragments(network, mcf_vars)
     )
 
 
-def fragment_norm_coverages(
+def _fragment_norm_coverages(
     mcf_vars: milp_vars.MaxCovFlow,
     network: pb_network.Network,
 ) -> Iterator[bins_item.FragmentNormCoverage]:
@@ -187,7 +263,10 @@ def fragment_norm_coverages(
     )
 
 
-def update_network(network: pb_network.Network, mcf_vars: milp_vars.MaxCovFlow) -> None:
+def _update_network(
+    network: pb_network.Network,
+    mcf_vars: milp_vars.MaxCovFlow,
+) -> None:
     """Update network."""
     for frag_id in milp_vars.active_fragments(network, mcf_vars):
         network.reduce_coverage(

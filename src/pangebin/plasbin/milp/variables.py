@@ -243,7 +243,7 @@ def incoming_flow(
     in_flow_arcs = chain(
         (
             variables.f(link)
-            for link in gfa_link.incoming_links(network.panasm_graph(), fragment)
+            for link in gfa_link.incoming_links(network.gfa_graph(), fragment)
         ),
     )
     if fragment.identifier() in network.seeds():
@@ -265,7 +265,7 @@ def outgoing_flow(
             (
                 variables.f(link)
                 for link in gfa_link.outgoing_links(
-                    network.panasm_graph(),
+                    network.gfa_graph(),
                     fragment,
                 )
             ),
@@ -283,7 +283,7 @@ def incoming_arcs_y(
     in_y_arcs = chain(
         (
             variables.y(link)
-            for link in gfa_link.incoming_links(network.panasm_graph(), fragment)
+            for link in gfa_link.incoming_links(network.gfa_graph(), fragment)
         ),
     )
     if fragment.identifier() in network.seeds():
@@ -303,7 +303,7 @@ def incoming_beta(
     in_beta_arcs = chain(
         (
             variables.beta(link)
-            for link in gfa_link.incoming_links(network.panasm_graph(), fragment)
+            for link in gfa_link.incoming_links(network.gfa_graph(), fragment)
         ),
     )
     if fragment.identifier() in network.seeds():
@@ -325,7 +325,7 @@ def outgoing_beta(
             (
                 variables.beta(link)
                 for link in gfa_link.outgoing_links(
-                    network.panasm_graph(),
+                    network.gfa_graph(),
                     fragment,
                 )
             ),
@@ -355,7 +355,7 @@ def coverage_score(network: pb_network.Network, var: MaxCovFlow) -> gurobipy.Lin
         2
         * incoming_flow_forward_reverse(frag_id, network, var)
         / network.coverage(frag_id)
-        for frag_id in network.panasm_graph().segment_names
+        for frag_id in network.gfa_graph().segment_names
     )
 
 

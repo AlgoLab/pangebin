@@ -26,23 +26,23 @@ _LOGGER = logging.getLogger(__name__)
 APP = typer.Typer(rich_markup_mode="rich")
 
 
-class Arguments:
-    """PangeBin-flow arguments."""
+class AsmArguments:
+    """PangeBin-flow on assembly arguments."""
 
-    PANASSEMBLY_GFA = typer.Argument(
-        help="Pan-assembly GFA file",
+    ASSEMBLY_GFA = typer.Argument(
+        help="Assembly GFA file",
     )
 
-    GC_SCORES_TSV = typer.Argument(
-        help="TSV file with the sequences and their GC scores",
+    SEED_CONTIGS_TSV = typer.Argument(
+        help="TSV file with the seed contigs",
     )
 
-    PLASMIDNESS_TSV = typer.Argument(
-        help="TSV file with the sequences and their plasmidness scores",
+    CONTIG_GC_SCORES_TSV = typer.Argument(
+        help="TSV file with the contigs and their GC scores",
     )
 
-    SEEDS_TSV = typer.Argument(
-        help="TSV file with the seeds",
+    CONTIG_PLASMIDNESS_TSV = typer.Argument(
+        help="TSV file with the contigs and their plasmidness scores",
     )
 
 
@@ -79,12 +79,12 @@ class IOOptions:
     )
 
 
-@APP.command()
-def plasbin(
-    panassembly_gfa: Annotated[Path, Arguments.PANASSEMBLY_GFA],
-    gc_scores_tsv: Annotated[Path, Arguments.GC_SCORES_TSV],
-    plasmidness_tsv: Annotated[Path, Arguments.PLASMIDNESS_TSV],
-    seeds_tsv: Annotated[Path, Arguments.SEEDS_TSV],
+@APP.command("asm")
+def plasbin_assembly(
+    assembly_gfa: Annotated[Path, AsmArguments.ASSEMBLY_GFA],
+    seed_contigs_tsv: Annotated[Path, AsmArguments.SEED_CONTIGS_TSV],
+    contig_gc_scores_tsv: Annotated[Path, AsmArguments.CONTIG_GC_SCORES_TSV],
+    contig_plasmidness_tsv: Annotated[Path, AsmArguments.CONTIG_PLASMIDNESS_TSV],
     # MILP options
     mcf_coefficient: Annotated[
         float,
@@ -100,7 +100,7 @@ def plasbin(
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
     """PlasBin application."""
-    common_log.init_logger(_LOGGER, "Running PlasBin.", debug)
+    common_log.init_logger(_LOGGER, "Running PlasBin on assembly.", debug)
     outdir.mkdir(parents=True, exist_ok=True)
 
     io_manager = pb_io.Manager(pb_io.Config(output_directory=outdir))
@@ -114,21 +114,106 @@ def plasbin(
         )
     )
 
-    with gc_io.ScoresReader.open(gc_scores_tsv) as gc_scores_fin:
+    with gc_io.ScoresReader.open(contig_gc_scores_tsv) as gc_scores_fin:
         intervals = gc_scores_fin.intervals()
         gc_scores = list(gc_scores_fin)
-    with plm_io.Reader.open(plasmidness_tsv) as plasmidness_fin:
+    with plm_io.Reader.open(contig_plasmidness_tsv) as plasmidness_fin:
         plasmidness = list(plasmidness_fin)
-    with seed_io.Reader.open(seeds_tsv) as seeds_fin:
+    with seed_io.Reader.open(seed_contigs_tsv) as seeds_fin:
         seeds = list(seeds_fin)
 
     for k, (bin_stats, seq_normcovs, log_files) in enumerate(
-        pb_create.plasbin(
-            gfa_io.from_file(panassembly_gfa),
+        pb_create.plasbin_assembly(
+            gfa_io.from_file(assembly_gfa),
+            seeds,
             intervals,
             gc_scores,
             plasmidness,
+            milp_config,
+            io_manager.config().output_directory(),
+        ),
+    ):
+        io_manager.bin_outdir(k).mkdir(parents=True, exist_ok=True)
+        bin_stats.to_yaml(io_manager.bin_stats_path(k))
+        with bin_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
+            for seq_normcov in seq_normcovs:
+                fout.write_sequence_normcov(
+                    seq_normcov.identifier(),
+                    seq_normcov.normalized_coverage(),
+                )
+        io_manager.move_gurobi_logs(log_files)
+
+
+class PanasmArguments:
+    """PangeBin-flow on pan-assembly arguments."""
+
+    PANASSEMBLY_GFA = typer.Argument(
+        help="Pan-assembly GFA file",
+    )
+
+    SEED_FRAGMENTS_TSV = typer.Argument(
+        help="TSV file with the seed fragments",
+    )
+
+    FRAGMENT_GC_SCORES_TSV = typer.Argument(
+        help="TSV file with the fragments and their GC scores",
+    )
+
+    FRAGMENT_PLASMIDNESS_TSV = typer.Argument(
+        help="TSV file with the fragments and their plasmidness scores",
+    )
+
+
+@APP.command("panasm")
+def plasbin_panassembly(
+    panassembly_gfa: Annotated[Path, PanasmArguments.PANASSEMBLY_GFA],
+    seed_fragments_tsv: Annotated[Path, PanasmArguments.SEED_FRAGMENTS_TSV],
+    fragment_gc_scores_tsv: Annotated[Path, PanasmArguments.FRAGMENT_GC_SCORES_TSV],
+    fragment_plasmidness_tsv: Annotated[Path, PanasmArguments.FRAGMENT_PLASMIDNESS_TSV],
+    # MILP options
+    mcf_coefficient: Annotated[
+        float,
+        MILPOptions.MCF_COEFFICIENT,
+    ] = pb_cfg.Config.DEFAULT_GAMMA_MCF,
+    mgc_coefficient: Annotated[
+        float,
+        MILPOptions.MGC_COEFFICIENT,
+    ] = pb_cfg.Config.DEFAULT_GAMMA_MGC,
+    milp_cfg_yaml: Annotated[Path | None, MILPOptions.CONFIG_FILE] = None,
+    # IO options
+    outdir: Annotated[Path, IOOptions.OUTPUT_DIR] = pb_io.Config.DEFAULT_OUTPUT_DIR,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """PlasBin application."""
+    common_log.init_logger(_LOGGER, "Running PlasBin on pan-assembly.", debug)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    io_manager = pb_io.Manager(pb_io.Config(output_directory=outdir))
+
+    milp_config = (
+        pb_cfg.Config.from_yaml(milp_cfg_yaml)
+        if milp_cfg_yaml is not None
+        else pb_cfg.Config(
+            gamma_mcf=mcf_coefficient,
+            gamma_mgc=mgc_coefficient,
+        )
+    )
+
+    with gc_io.ScoresReader.open(fragment_gc_scores_tsv) as gc_scores_fin:
+        intervals = gc_scores_fin.intervals()
+        gc_scores = list(gc_scores_fin)
+    with plm_io.Reader.open(fragment_plasmidness_tsv) as plasmidness_fin:
+        plasmidness = list(plasmidness_fin)
+    with seed_io.Reader.open(seed_fragments_tsv) as seeds_fin:
+        seeds = list(seeds_fin)
+
+    for k, (bin_stats, seq_normcovs, log_files) in enumerate(
+        pb_create.plasbin_panassembly(
+            gfa_io.from_file(panassembly_gfa),
             seeds,
+            intervals,
+            gc_scores,
+            plasmidness,
             milp_config,
             io_manager.config().output_directory(),
         ),

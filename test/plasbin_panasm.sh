@@ -27,7 +27,7 @@ run() {
     local plasmidness="$panassembly_datadir/plasmidness.tsv"
     local seeds="$panassembly_datadir/seeds.tsv"
 
-    pangebin sub plasbin $panassembly_gfa $gc_scores $plasmidness $seeds \
+    pangebin sub plasbin panasm $panassembly_gfa $seeds $gc_scores $plasmidness \
         --outdir $out_dir \
         $debug
 }

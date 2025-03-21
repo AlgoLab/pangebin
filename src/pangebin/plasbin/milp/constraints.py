@@ -85,7 +85,7 @@ def _fragment_coverages_limit_cumulative_flows(
         (
             milp_vars.incoming_flow_forward_reverse(frag_id, network, var)
             <= network.coverage(frag_id)
-            for frag_id in network.panasm_graph().segment_names
+            for frag_id in network.gfa_graph().segment_names
         ),
         name="fragment_coverages_limit_cumulative_flows",
     )

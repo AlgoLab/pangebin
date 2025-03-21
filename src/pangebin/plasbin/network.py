@@ -6,10 +6,9 @@ import logging
 from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
+import pangebin.gfa.assembler.ops as gfa_asm_ops
 import pangebin.gfa.link as gfa_link
-import pangebin.gfa.panassembly.path as gfa_pan_path
-import pangebin.gfa.panassembly.segment as gfa_pan_segment
-import pangebin.gfa.path as gfa_path
+import pangebin.gfa.panassembly.ops as gfa_pan_ops
 import pangebin.gfa.segment as gfa_segment
 
 if TYPE_CHECKING:
@@ -26,24 +25,59 @@ class Network:
     SOURCE_VERTEX = "S"
     SINK_VERTEX = "T"
 
+    @classmethod
+    def from_asm_graph(
+        cls,
+        asm_graph: gfapy.Gfa,
+        seed_contigs: Iterable[str],
+        contig_gc_scores: Iterable[gc_items.SequenceGCScores],
+        contig_plasmidness: Iterable[tuple[str, float]],
+    ) -> Network:
+        """Create plasbin network graph from a standardized assembly graph."""
+        return cls(
+            asm_graph,
+            seed_contigs,
+            gfa_asm_ops.contig_coverages(asm_graph),
+            contig_gc_scores,
+            contig_plasmidness,
+        )
+
+    @classmethod
+    def from_panasm_graph(
+        cls,
+        panasm_graph: gfapy.Gfa,
+        seed_fragments: Iterable[str],
+        fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
+        fragment_plasmidness: Iterable[tuple[str, float]],
+    ) -> Network:
+        """Create plasbin network graph from pan-assembly graph."""
+        return cls(
+            panasm_graph,
+            seed_fragments,
+            gfa_pan_ops.fragment_max_contig_coverages(panasm_graph),
+            fragment_gc_scores,
+            fragment_plasmidness,
+        )
+
     def __init__(
         self,
-        panasm_graph: gfapy.Gfa,
+        gfa_graph: gfapy.Gfa,
         seeds: Iterable[str],
+        coverages: Iterable[tuple[str, float]],
         gc_scores: Iterable[gc_items.SequenceGCScores],
         plasmidness: Iterable[tuple[str, float]],
     ) -> None:
         """Initialize a plasbin network graph.
 
-        Pan-assembly graph enriched with:
+        GFA graph enriched with:
 
         * Source vertex
         * Sink vertex
         * Links from the source to seeds and from fragments to the sink
         """
-        self.__panasm_graph: gfapy.Gfa = panasm_graph
+        self.__gfa_graph: gfapy.Gfa = gfa_graph
         self.__seeds = set(seeds)
-        self.__coverages: dict[str, float] = dict(self.__init_coverages())
+        self.__coverages = dict(coverages)
         self.__gc_scores = {
             frag_gc_score.sequence_id(): frag_gc_score.probability_scores()
             for frag_gc_score in gc_scores
@@ -52,7 +86,7 @@ class Network:
 
     def number_of_fragments(self) -> int:
         """Get number of fragments."""
-        return len(self.__panasm_graph.segment_names)
+        return len(self.__gfa_graph.segment_names)
 
     def number_of_vertices(self) -> int:
         """Get number of vertices.
@@ -63,14 +97,14 @@ class Network:
 
     def fragment_ids(self) -> Iterator[str]:
         """Get fragment ids."""
-        return self.__panasm_graph.segment_names
+        return self.__gfa_graph.segment_names
 
     def oriented_fragments(self) -> Iterator[gfa_segment.OrientedFragment]:
         """Create oriented fragments."""
         return (
             fragment
             for oriented_fragments in gfa_segment.gfa_oriented_fragments(
-                self.__panasm_graph,
+                self.__gfa_graph,
             )
             for fragment in oriented_fragments
         )
@@ -91,7 +125,7 @@ class Network:
 
     def link_arcs(self) -> Iterator[gfa_link.Link]:
         """Create arcs between fragments."""
-        for link in gfa_link.gfa_links(self.__panasm_graph):
+        for link in gfa_link.gfa_links(self.__gfa_graph):
             yield link
             rev_link = link.to_reverse()
             if rev_link.predecessor() != link.predecessor():
@@ -106,22 +140,9 @@ class Network:
     #
     # Attributes
     #
-    def __init_coverages(self) -> Iterator[tuple[str, float]]:
-        # TODO generalize for gfa without paths
-        for segment in self.__panasm_graph.segments:
-            yield (
-                segment.name,
-                max(
-                    gfa_pan_path.normalized_coverage(
-                        gfa_path.get_path_line_by_name(self.__panasm_graph, ctg_id),
-                    )
-                    for ctg_id in gfa_pan_segment.contig_list(segment)
-                ),
-            )
-
-    def panasm_graph(self) -> gfapy.Gfa:
-        """Get pan-assembly graph."""
-        return self.__panasm_graph
+    def gfa_graph(self) -> gfapy.Gfa:
+        """Get the GFA graph."""
+        return self.__gfa_graph
 
     def seeds(self) -> set[str]:
         """Get seeds."""
@@ -166,7 +187,7 @@ class Network:
 
         if coverage_to_substrack == self.coverage(fragment_id):
             # XXX contig depedending of the frag are also removed, problem?
-            self.__panasm_graph.segment(fragment_id).disconnect()
+            self.__gfa_graph.segment(fragment_id).disconnect()
             if fragment_id in self.__seeds:
                 self.__seeds.remove(fragment_id)
             del self.__coverages[fragment_id]
