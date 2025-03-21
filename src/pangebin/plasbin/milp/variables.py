@@ -353,8 +353,11 @@ def coverage_score(network: pb_network.Network, var: MaxCovFlow) -> gurobipy.Lin
     """Get linear expression for coverage score."""
     return gurobipy.quicksum(
         2
-        * incoming_flow_forward_reverse(frag_id, network, var)
-        / network.coverage(frag_id)
+        * (
+            incoming_flow_forward_reverse(frag_id, network, var)
+            / network.coverage(frag_id)
+            - 0.5
+        )
         for frag_id in network.gfa_graph().segment_names
     )
 
