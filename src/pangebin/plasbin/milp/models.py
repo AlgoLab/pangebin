@@ -48,7 +48,7 @@ def mgc_from_mcf(
         network,
         intervals,
         coefficient,
-        mcf_model.ObjVal,
+        milp_vars.coverage_score(network, mcf_var).getValue(),
     )
     return mcf_model, var
 
@@ -70,7 +70,7 @@ def mps_from_mgc(
         network,
         intervals,
         coefficient,
-        mgc_model.ObjVal,
+        milp_vars.gc_probability_score(network, intervals, mgc_var).getValue(),
     )
     return mgc_model, var
 
@@ -89,6 +89,6 @@ def mps_prime_from_mps(
         mps_var,
         network,
         intervals,
-        mps_model.ObjVal,
+        milp_vars.plasmidness_score(network, intervals, mps_var).getValue(),
     )
     return mps_model, mps_var

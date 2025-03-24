@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+from itertools import chain
 from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.assembler.ops as gfa_asm_ops
 import pangebin.gfa.link as gfa_link
 import pangebin.gfa.panassembly.ops as gfa_pan_ops
+import pangebin.gfa.path as gfa_path
 import pangebin.gfa.segment as gfa_segment
 
 if TYPE_CHECKING:
@@ -109,19 +111,44 @@ class Network:
             for fragment in oriented_fragments
         )
 
+    def is_source_connected(self, fragment_id: str) -> bool:
+        """Check if the source goes into the corresponding oriented fragment."""
+        return fragment_id in self.__seeds
+
+    def is_sink_connected(self, fragment_id: str) -> bool:
+        """Check if the corresponding oriented fragment goes into the sink."""
+        return fragment_id in self.__seeds
+        # FIXME modify definition of sink arcs
+
+    def source_connected_fragment_ids(self) -> Iterator[str]:
+        """Get source connected fragment ids."""
+        return iter(self.__seeds)
+
+    def sink_connected_fragment_ids(self) -> Iterator[str]:
+        """Get sink connected fragment ids."""
+        return iter(self.__seeds)
+        # FIXME modify definition of sink arcs
+
     def source_arcs(
         self,
     ) -> Iterator[tuple[str, gfa_segment.OrientedFragment]]:
         """Create source to seed arcs."""
-        for seed in self.__seeds:
-            yield (
-                self.SOURCE_VERTEX,
-                gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.FORWARD),
-            )
-            yield (
-                self.SOURCE_VERTEX,
-                gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.REVERSE),
-            )
+        return chain(
+            (
+                (
+                    self.SOURCE_VERTEX,
+                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.FORWARD),
+                )
+                for seed in self.__seeds
+            ),
+            (
+                (
+                    self.SOURCE_VERTEX,
+                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.REVERSE),
+                )
+                for seed in self.__seeds
+            ),
+        )
 
     def link_arcs(self) -> Iterator[gfa_link.Link]:
         """Create arcs between fragments."""
@@ -135,7 +162,24 @@ class Network:
         self,
     ) -> Iterator[tuple[gfa_segment.OrientedFragment, str]]:
         """Create fragment to sink arcs."""
-        return ((fragment, self.SINK_VERTEX) for fragment in self.oriented_fragments())
+        # FIXME modify definition of sink arcs
+        # return ((fragment, self.SINK_VERTEX) for fragment in self.oriented_fragments())
+        return chain(
+            (
+                (
+                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.FORWARD),
+                    self.SINK_VERTEX,
+                )
+                for seed in self.__seeds
+            ),
+            (
+                (
+                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.REVERSE),
+                    self.SINK_VERTEX,
+                )
+                for seed in self.__seeds
+            ),
+        )
 
     #
     # Attributes
@@ -177,16 +221,36 @@ class Network:
 
     def reduce_coverage(self, fragment_id: str, coverage_to_substrack: float) -> None:
         """Reduce coverage."""
-        if coverage_to_substrack > self.coverage(fragment_id):
-            _crit_msg = (
-                f"Coverage to substrack {coverage_to_substrack}"
-                f" > fragment coverage {self.coverage(fragment_id)}"
-            )
-            _LOGGER.critical(_crit_msg)
-            raise ValueError(_crit_msg)
-
-        if coverage_to_substrack == self.coverage(fragment_id):
+        if coverage_to_substrack >= self.coverage(fragment_id):
+            # XXX All the references of a fragment is not deleted
+            # see https://github.com/ggonnella/gfapy/issues/33
+            # remove path
+            path_line: gfa_path.GfaPath
+            for path_line in list(self.__gfa_graph.paths):
+                if fragment_id in (
+                    seg_line.name for seg_line in path_line.segment_names
+                ):
+                    path_line.disconnect()
+            link_line: gfa_link.GfaLink
             # XXX contig depedending of the frag are also removed, problem?
+            for link_line in list(
+                gfa_segment.get_segment_line_by_name(
+                    self.__gfa_graph,
+                    fragment_id,
+                ).dovetails_L,
+            ):
+                link_line.disconnect()
+            for link_line in list(
+                gfa_segment.get_segment_line_by_name(
+                    self.__gfa_graph,
+                    fragment_id,
+                ).dovetails_R,
+            ):
+                # Arcs (v+, v+) were already disconnected in the previous loop
+                # FIXME verify everywhere if this repetition is problematic or not
+                link = gfa_link.Link.from_link_line(link_line)
+                if link.predecessor() != link.successor():
+                    link_line.disconnect()
             self.__gfa_graph.segment(fragment_id).disconnect()
             if fragment_id in self.__seeds:
                 self.__seeds.remove(fragment_id)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from itertools import chain
+from statistics import median
 from typing import TYPE_CHECKING
 
 import gurobipy
@@ -46,6 +47,10 @@ class MaxCovFlow:
         )
         self.__beta: dict[str, gurobipy.Var] = dict(
             self.__init_beta(model, network),
+        )
+        # FIXME new variable can be used in other model like GC
+        self.__frag: dict[str, gurobipy.Var] = dict(
+            self.__init_frag(model, network),
         )
 
     def x(self, fragment: gfa_segment.OrientedFragment) -> gurobipy.Var:
@@ -120,8 +125,13 @@ class MaxCovFlow:
         """Get beta_a variable, a in sink Arcs."""
         return self.__beta[self.__fmt_t_arcs(sink_arc)]
 
+    def frag(self, frag_id: str) -> gurobipy.Var:
+        """Get frag variable."""
+        return self.__frag[frag_id]
+
     def start_with_previous_values(self, variables: MaxCovFlow) -> None:
         """Set start variables values with previous result."""
+        # FIXME potentially var.X not set, fix everywhere?
         for key, var in self.__x.items():
             var.Start = variables.__x[key].X
         for key, var in self.__y.items():
@@ -217,6 +227,23 @@ class MaxCovFlow:
             for link_id in self.__network_arc_ids(network)
         )
 
+    def __init_frag(
+        self,
+        model: gurobipy.Model,
+        network: pb_network.Network,
+    ) -> Iterator[tuple[str, gurobipy.Var]]:
+        return (
+            (
+                frag_id,
+                model.addVar(
+                    name=f"frag_{frag_id}",
+                    vtype=gurobipy.GRB.CONTINUOUS,
+                    ub=1.0,
+                ),
+            )
+            for frag_id in network.fragment_ids()
+        )
+
     def __network_arc_ids(
         self,
         network: pb_network.Network,
@@ -246,7 +273,7 @@ def incoming_flow(
             for link in gfa_link.incoming_links(network.gfa_graph(), fragment)
         ),
     )
-    if fragment.identifier() in network.seeds():
+    if network.is_source_connected(fragment.identifier()):
         in_flow_arcs = chain(
             in_flow_arcs,
             iter((variables.f_s((network.SOURCE_VERTEX, fragment)),)),
@@ -260,18 +287,18 @@ def outgoing_flow(
     variables: MaxCovFlow,
 ) -> gurobipy.LinExpr:
     """Get linear expression for outgoing flow."""
-    return gurobipy.quicksum(
-        chain(
-            (
-                variables.f(link)
-                for link in gfa_link.outgoing_links(
-                    network.gfa_graph(),
-                    fragment,
-                )
-            ),
-            iter((variables.f_t((fragment, network.SINK_VERTEX)),)),
+    out_flow_arcs = chain(
+        (
+            variables.f(link)
+            for link in gfa_link.outgoing_links(network.gfa_graph(), fragment)
         ),
     )
+    if network.is_sink_connected(fragment.identifier()):
+        out_flow_arcs = chain(
+            out_flow_arcs,
+            iter((variables.f_t((fragment, network.SINK_VERTEX)),)),
+        )
+    return gurobipy.quicksum(out_flow_arcs)
 
 
 def incoming_arcs_y(
@@ -286,7 +313,7 @@ def incoming_arcs_y(
             for link in gfa_link.incoming_links(network.gfa_graph(), fragment)
         ),
     )
-    if fragment.identifier() in network.seeds():
+    if network.is_source_connected(fragment.identifier()):
         in_y_arcs = chain(
             in_y_arcs,
             iter((variables.y_s((network.SOURCE_VERTEX, fragment)),)),
@@ -306,7 +333,7 @@ def incoming_beta(
             for link in gfa_link.incoming_links(network.gfa_graph(), fragment)
         ),
     )
-    if fragment.identifier() in network.seeds():
+    if network.is_source_connected(fragment.identifier()):
         in_beta_arcs = chain(
             in_beta_arcs,
             iter((variables.beta_s((network.SOURCE_VERTEX, fragment)),)),
@@ -320,18 +347,18 @@ def outgoing_beta(
     variables: MaxCovFlow,
 ) -> gurobipy.LinExpr:
     """Get linear expression for outgoing beta."""
-    return gurobipy.quicksum(
-        chain(
-            (
-                variables.beta(link)
-                for link in gfa_link.outgoing_links(
-                    network.gfa_graph(),
-                    fragment,
-                )
-            ),
-            iter((variables.beta_t((fragment, network.SINK_VERTEX)),)),
+    out_beta_arcs = chain(
+        (
+            variables.beta(link)
+            for link in gfa_link.outgoing_links(network.gfa_graph(), fragment)
         ),
     )
+    if network.is_sink_connected(fragment.identifier()):
+        out_beta_arcs = chain(
+            out_beta_arcs,
+            iter((variables.beta_t((fragment, network.SINK_VERTEX)),)),
+        )
+    return gurobipy.quicksum(out_beta_arcs)
 
 
 def incoming_flow_forward_reverse(
@@ -351,39 +378,29 @@ def incoming_flow_forward_reverse(
 
 def coverage_score(network: pb_network.Network, var: MaxCovFlow) -> gurobipy.LinExpr:
     """Get linear expression for coverage score."""
+    # FIXME Test
+    median_frag_len = median(
+        gfa_segment.length(
+            gfa_segment.get_segment_line_by_name(network.gfa_graph(), frag_id),
+        )
+        for frag_id in network.seeds()
+    )
     return gurobipy.quicksum(
-        2
+        (
+            gfa_segment.length(
+                gfa_segment.get_segment_line_by_name(network.gfa_graph(), frag_id),
+            )
+            / median_frag_len
+        )
+        * 2
         * (
             incoming_flow_forward_reverse(frag_id, network, var)
             / network.coverage(frag_id)
             - 0.5
         )
-        for frag_id in network.gfa_graph().segment_names
-    )
-
-
-def active_fragments(
-    network: pb_network.Network,
-    variables: MaxCovFlow,
-) -> Iterator[str]:
-    """Get active fragments."""
-    return (
-        frag_id
         for frag_id in network.fragment_ids()
-        if variables.x(
-            gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD),
-        ).X
-        > 0
-        or variables.x(
-            gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE),
-        ).X
-        > 0
+        if frag_id in network.seeds()
     )
-
-
-def total_flow_value(variables: MaxCovFlow) -> float:
-    """Get total flow value."""
-    return variables.total_flow().X
 
 
 class MaxGC:
@@ -473,7 +490,11 @@ def gc_probability_score(
     return gurobipy.quicksum(
         network.gc_score(frag_id)[b] * var.frag_gc(frag_id, interval)
         for b, interval in enumerate(intervals)
-        for frag_id in network.fragment_ids()
+        for frag_id in network.seeds()
+        if gfa_segment.length(
+            gfa_segment.get_segment_line_by_name(network.gfa_graph(), frag_id),
+        )
+        > 1000  # FIXME objective modifications (seeds and parameter)
     )
 
 
@@ -483,7 +504,7 @@ def active_gc_content_interval(
 ) -> tuple[float, float]:
     """Get active GC content interval."""
     for interval in intervals:
-        if variables.gc(interval).X == 1:
+        if variables.gc(interval).X > 0:
             return interval
     _crt_msg = "Could not find active GC content interval"
     _LOGGER.critical(_crt_msg)

@@ -16,3 +16,18 @@
 ### Features
 
 * [ ] Verify parameters given in configs (through typer and configs API)
+
+## Remarks
+
+* Minimium flow:
+  * to adress non-0 flow issue
+  * how to interpret dp? (why so low?)
+  * when the MipGap is to high, the total flow always equal to the mininum flow: big loop
+
+From log gurobi:
+
+```log
+Warning: Model contains large matrix coefficient range
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+```

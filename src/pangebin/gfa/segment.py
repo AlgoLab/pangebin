@@ -143,6 +143,7 @@ def get_segment_line_by_name(gfa: gfapy.Gfa, name: str) -> GfaSegment:
         Invalid segment name
 
     """
+    # REFACTOR simplify using gfa.segment() method
     line: gfapy.Line | None = gfa.line(str(name))
     if line is None or line.record_type != gfa_line.Type.SEGMENT:
         _err_msg = f"Invalid segment name: {name}, line is {line}"

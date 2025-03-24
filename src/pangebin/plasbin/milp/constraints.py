@@ -18,6 +18,7 @@ def set_mcf_constraints(
     network: pb_network.Network,
 ) -> None:
     """MCF constraints."""
+    # FIXME active arc implies active arc (should not do this normally...)
     _exactly_one_active_source_arc(m, var, network)
     _arc_capacities_limit_arc_flows(m, var, network)
     _fragment_coverages_limit_cumulative_flows(m, var, network)
@@ -36,6 +37,12 @@ def set_mcf_constraints(
     # Arc flow lower bound
     #
     _active_arcs_have_flow_at_least_total_flow(m, var, network)
+    #
+    # Plasmid property
+    #
+    # REFACTOR magic values should be in config
+    _total_flow_is_strictly_positive(m, var, 0.0001)
+    _minimum_cumulative_length(m, var, network, 1000)
 
 
 def _exactly_one_active_source_arc(
@@ -115,12 +122,12 @@ def _total_flow_value(
     """Set the total flow equals the source outgoing flow and the sink incoming flow."""
     m.addConstr(
         var.total_flow()
-        == gurobipy.quicksum(var.f_s(link) for link in network.source_arcs()),
+        == gurobipy.quicksum(var.f_s(s_w) for s_w in network.source_arcs()),
         name="total_flow_equals_source_outgoing_flow",
     )
     m.addConstr(
         var.total_flow()
-        == gurobipy.quicksum(var.f_t(link) for link in network.sink_arcs()),
+        == gurobipy.quicksum(var.f_t(u_t) for u_t in network.sink_arcs()),
         name="total_flow_equals_sink_incoming_flow",
     )
 
@@ -296,7 +303,9 @@ def _active_arcs_have_flow_at_least_total_flow(
     network: pb_network.Network,
 ) -> None:
     """Active links have flow at least total flow."""
-    max_seed_cov = max(network.coverage(frag_id) for frag_id in network.seeds())
+    max_seed_cov = max(
+        network.coverage(frag_id) for frag_id in network.source_connected_fragment_ids()
+    )
     m.addConstrs(
         (
             const
@@ -355,6 +364,48 @@ def _active_arcs_have_flow_at_least_total_flow(
     )
 
 
+def _total_flow_is_strictly_positive(
+    m: gurobipy.Model,
+    var: milp_vars.MaxCovFlow,
+    epsilon_total_flow: float,
+) -> None:
+    """Total flow is strictly positive."""
+    # FIXME new constraint
+    m.addConstr(
+        var.total_flow() >= epsilon_total_flow,
+        name="total_flow_is_strictly_positive",
+    )
+
+
+def _minimum_cumulative_length(
+    m: gurobipy.Model,
+    var: milp_vars.MaxCovFlow,
+    network: pb_network.Network,
+    minimum_cumulative_length: int,
+) -> None:
+    """Minimum cumulative length."""
+    # FIXME new constraints
+    for frag_id in network.fragment_ids():
+        frag_f = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD)
+        frag_r = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE)
+        m.addConstr(
+            var.x(frag_f) <= var.frag(frag_id),
+            name=f"forward_extremity_actives_fragment_{frag_id}",
+        )
+        m.addConstr(
+            var.x(frag_r) <= var.frag(frag_id),
+            name=f"reverse_extremity_actives_fragment_{frag_id}",
+        )
+    m.addConstr(
+        minimum_cumulative_length
+        <= gurobipy.quicksum(
+            var.frag(frag_id) * gfa_segment.length(network.gfa_graph().segment(frag_id))
+            for frag_id in network.fragment_ids()
+        ),
+        name="minimum_cumulative_length",
+    )
+
+
 # ------------------------------------------------------------------------------------ #
 #                                          MGC                                         #
 # ------------------------------------------------------------------------------------ #
@@ -380,8 +431,9 @@ def _coverage_score_lower_bound(
     previous_coverage_score: float,
 ) -> None:
     """Coverage score lower bound."""
+    # FIXME be carefull when previous_coverage_score is < 0
     m.addConstr(
-        coefficient * previous_coverage_score
+        previous_coverage_score - (1 - coefficient) * abs(previous_coverage_score)
         <= milp_vars.coverage_score(network, var.mcf_vars()),
         name="coverage_score_lower_bound",
     )
@@ -482,8 +534,10 @@ def _gc_probability_score_lower_bound(  # noqa: PLR0913
     previous_gc_probability_score: float,
 ) -> None:
     """GC probability score lower bound."""
+    # FIXME be carefull when previous_gc_probability_score is < 0
     m.addConstr(
-        coefficient * previous_gc_probability_score
+        previous_gc_probability_score
+        - (1 - coefficient) * abs(previous_gc_probability_score)
         <= milp_vars.gc_probability_score(network, intervals, var.mgc_vars()),
         name="gc_probability_score_lower_bound",
     )
