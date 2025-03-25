@@ -18,7 +18,6 @@ def set_mcf_constraints(
     network: pb_network.Network,
 ) -> None:
     """MCF constraints."""
-    # FIXME active arc implies active arc (should not do this normally...)
     _exactly_one_active_source_arc(m, var, network)
     _arc_capacities_limit_arc_flows(m, var, network)
     _fragment_coverages_limit_cumulative_flows(m, var, network)
@@ -41,8 +40,12 @@ def set_mcf_constraints(
     # Plasmid property
     #
     # REFACTOR magic values should be in config
+    # HACK MCF: + minimum flow value constraint
     _total_flow_is_strictly_positive(m, var, 0.0001)
+    # HACK MCF: + min cumulatie len constraint
     _minimum_cumulative_length(m, var, network, 1000)
+    # HACK MCF: + cicularity constraint
+    # _same_source_and_sink(m, var, network)
 
 
 def _exactly_one_active_source_arc(
@@ -55,6 +58,24 @@ def _exactly_one_active_source_arc(
         gurobipy.quicksum(var.y_s(a) for a in network.source_arcs()) == 1,
         name="exactly_one_out_source_link",
     )
+
+
+def _same_source_and_sink(
+    m: gurobipy.Model,
+    var: milp_vars.MaxCovFlow,
+    network: pb_network.Network,
+) -> None:
+    source = network.SOURCE_VERTEX
+    sink = network.SINK_VERTEX
+    for frag_id in network.seeds():
+        frag_f = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD)
+        frag_r = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE)
+        m.addConstr(
+            var.y_s((source, frag_f)) == var.y_t((frag_f, sink)),
+        )
+        m.addConstr(
+            var.y_s((source, frag_r)) == var.y_t((frag_r, sink)),
+        )
 
 
 def _arc_capacities_limit_arc_flows(
@@ -370,7 +391,6 @@ def _total_flow_is_strictly_positive(
     epsilon_total_flow: float,
 ) -> None:
     """Total flow is strictly positive."""
-    # FIXME new constraint
     m.addConstr(
         var.total_flow() >= epsilon_total_flow,
         name="total_flow_is_strictly_positive",
@@ -384,7 +404,7 @@ def _minimum_cumulative_length(
     minimum_cumulative_length: int,
 ) -> None:
     """Minimum cumulative length."""
-    # FIXME new constraints
+    # DOCU note that the repetition is not considered
     for frag_id in network.fragment_ids():
         frag_f = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD)
         frag_r = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE)
@@ -431,11 +451,16 @@ def _coverage_score_lower_bound(
     previous_coverage_score: float,
 ) -> None:
     """Coverage score lower bound."""
-    # FIXME be carefull when previous_coverage_score is < 0
+    # # DOCU be carefull when previous_coverage_score is < 0
+    # m.addConstr(
+    #     previous_coverage_score - (1 - coefficient) * abs(previous_coverage_score)
+    #     <= milp_vars.coverage_score(network, var.mcf_vars()),
+    #     name="coverage_score_lower_bound",
+    # )
+    # HACK MGC: fix instead the total flow
     m.addConstr(
-        previous_coverage_score - (1 - coefficient) * abs(previous_coverage_score)
-        <= milp_vars.coverage_score(network, var.mcf_vars()),
-        name="coverage_score_lower_bound",
+        coefficient * previous_coverage_score <= var.mcf_vars().total_flow(),
+        name="total_flow_lower_bound",
     )
 
 
@@ -534,7 +559,7 @@ def _gc_probability_score_lower_bound(  # noqa: PLR0913
     previous_gc_probability_score: float,
 ) -> None:
     """GC probability score lower bound."""
-    # FIXME be carefull when previous_gc_probability_score is < 0
+    # DOCU be carefull when previous_gc_probability_score is < 0
     m.addConstr(
         previous_gc_probability_score
         - (1 - coefficient) * abs(previous_gc_probability_score)
@@ -564,7 +589,54 @@ def _fix_plasmidness_score(
     intervals: gc_items.Intervals,
     mps_obj_value: float,
 ) -> None:
+    # FIXME numerical problem can occur
+    # Warning: max constraint violation (9.5055e-06) exceeds tolerance
     m.addConstr(
-        milp_vars.plasmidness_score(network, intervals, var) == mps_obj_value,
+        milp_vars.plasmidness_score(network, intervals, var) >= mps_obj_value,
         name="fix_plasmidness_score",
     )
+
+
+# ------------------------------------------------------------------------------------ #
+#                                       Multiobj                                       #
+# ------------------------------------------------------------------------------------ #
+def set_multiobj_constraints(
+    m: gurobipy.Model,
+    var: milp_vars.MaxPlasmidScore,
+    network: pb_network.Network,
+    intervals: gc_items.Intervals,
+) -> None:
+    """MCF constraints."""
+    _exactly_one_active_source_arc(m, var.mcf_vars(), network)
+    _arc_capacities_limit_arc_flows(m, var.mcf_vars(), network)
+    _fragment_coverages_limit_cumulative_flows(m, var.mcf_vars(), network)
+    _flow_conservation(m, var.mcf_vars(), network)
+    _total_flow_value(m, var.mcf_vars(), network)
+    _active_arcs_implies_active_fragments(m, var.mcf_vars(), network)
+    _active_fragments_imply_at_least_one_active_arc(m, var.mcf_vars(), network)
+    _pos_flow_implies_active_vertices(m, var.mcf_vars(), network)
+    #
+    # Connectivity
+    #
+    _subtree_depth_min_distance(m, var.mcf_vars(), network)
+    _arcs_in_tree_are_active(m, var.mcf_vars(), network)
+    _alpha_is_the_number_of_vertices_in_the_solution(m, var.mcf_vars(), network)
+    #
+    # Arc flow lower bound
+    #
+    _active_arcs_have_flow_at_least_total_flow(m, var.mcf_vars(), network)
+    #
+    # Plasmid property
+    #
+    # REFACTOR magic values should be in config
+    # HACK MULTIOBJ: + minimum flow value constraint
+    _total_flow_is_strictly_positive(m, var.mcf_vars(), 0.0001)
+    # HACK MULTIOBJ: + min cumulative length constraint
+    _minimum_cumulative_length(m, var.mcf_vars(), network, 1000)
+    # HACK MULTIOBJ + cicularity constraint
+    _same_source_and_sink(m, var.mcf_vars(), network)
+    #
+    # GC content
+    #
+    _exactly_one_interval_is_active(m, var.mgc_vars(), intervals)
+    _define_frag_gc(m, var.mgc_vars(), network, intervals)

@@ -14,6 +14,7 @@ import logging
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
+import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.milp.variables as milp_vars
 import pangebin.plasbin.network as pb_network
@@ -22,9 +23,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
 _LOGGER = logging.getLogger(__name__)
-
-
-# TODO move all result method here from milp_vars module
 
 
 def active_fragments(
@@ -51,15 +49,30 @@ def active_fragments(
     _LOGGER.debug("Number of active fragments: %d", _number_of_active_fragments)
 
 
-class MaxCovFlow:
-    """Maximum Coverage Flow results."""
+def active_gc_content_interval(
+    intervals: gc_items.Intervals,
+    variables: milp_vars.MaxGC,
+) -> tuple[float, float]:
+    """Get active GC content interval."""
+    for interval in intervals:
+        if variables.gc(interval).X > 0:
+            return interval
+    _crt_msg = "Could not find active GC content interval"
+    _LOGGER.critical(_crt_msg)
+    raise ValueError(_crt_msg)
+
+
+class Pangebin:
+    """Pangebin results."""
 
     @classmethod
     def from_optimal_variables(
         cls,
         network: pb_network.Network,
-        var: milp_vars.MaxCovFlow,
-    ) -> MaxCovFlow:
+        intervals: gc_items.Intervals,
+        mcf_var: milp_vars.MaxCovFlow,
+        mgc_var: milp_vars.MaxGC,
+    ) -> Pangebin:
         """Get result from variable values."""
         return cls(
             (
@@ -68,21 +81,24 @@ class MaxCovFlow:
                     milp_vars.incoming_flow_forward_reverse(
                         frag_id,
                         network,
-                        var,
+                        mcf_var,
                     ).getValue(),
                 )
-                for frag_id in active_fragments(network, var)
+                for frag_id in active_fragments(network, mcf_var)
             ),
-            var.total_flow().X,
+            mcf_var.total_flow().X,
+            active_gc_content_interval(intervals, mgc_var),
         )
 
     def __init__(
         self,
         fragments_incoming_flow: Iterable[tuple[str, float]],
         total_flow: float,
+        gc_interval: tuple[float, float],
     ) -> None:
         self.__frags_incoming_flow = dict(fragments_incoming_flow)
         self.__total_flow = total_flow
+        self.__gc_interval = gc_interval
 
     def fragments_incoming_flow(self) -> Iterator[tuple[str, float]]:
         """Get fragments incoming flow."""
@@ -99,3 +115,7 @@ class MaxCovFlow:
     def total_flow(self) -> float:
         """Get total flow value."""
         return self.__total_flow
+
+    def gc_interval(self) -> tuple[float, float]:
+        """Get GC interval."""
+        return self.__gc_interval

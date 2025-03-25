@@ -50,8 +50,22 @@ def set_mps_prime_objective(
 ) -> None:
     """MPS' objective."""
     m.setObjective(
-        network.number_of_fragments()
-        * milp_vars.coverage_score(network, var.mcf_vars())
-        + milp_vars.gc_probability_score(network, intervals, var.mgc_vars()),
+        milp_vars.coverage_score(network, var.mcf_vars()),
+        gurobipy.GRB.MAXIMIZE,
+    )
+
+
+def set_multiobjective(
+    m: gurobipy.Model,
+    var: milp_vars.MaxPlasmidScore,
+    network: pb_network.Network,
+    intervals: gc_items.Intervals,
+) -> None:
+    """Multiobjective."""
+    # TODO multiobj plasbin''
+    m.setObjective(
+        var.mcf_vars().total_flow()
+        + milp_vars.gc_probability_score(network, intervals, var.mgc_vars())
+        + milp_vars.plasmidness_score(network, intervals, var),
         gurobipy.GRB.MAXIMIZE,
     )

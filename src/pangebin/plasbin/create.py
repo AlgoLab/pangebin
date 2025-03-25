@@ -125,8 +125,9 @@ def plasbin(
     The GFA graph will mute.
     """
     gurobipy.setParam(gurobipy.GRB.Param.LogToConsole, 0)
-    # FIXME use config MILP
-    gurobipy.setParam(gurobipy.GRB.Param.MIPGap, 0.05)
+    # HACK Gurobi: params
+    # REFACTOR use Gurobi Config and rename other config
+    gurobipy.setParam(gurobipy.GRB.Param.MIPGap, 0.0)
 
     io_manager = milp_io.Manager(output_directory)
 
@@ -167,6 +168,93 @@ def plasbin(
     _LOGGER.info("Find %u bins.", bin_number)
 
 
+def plasbin_multiobj(  # noqa: PLR0913
+    asm_graph: gfapy.Gfa,
+    seed_fragments: Iterable[str],
+    gc_intervals: gc_items.Intervals,
+    fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
+    fragment_plasmidness: Iterable[tuple[str, float]],
+    config: Config,
+    output_directory: Path = milp_io.Manager.DEFAULT_OUTPUT_DIR,
+) -> Iterator[
+    tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
+]:
+    """Bin fragments of a GFA assembly graph using multi objective."""
+    network = pb_network.Network.from_asm_graph(
+        asm_graph,
+        seed_fragments,
+        fragment_gc_scores,
+        fragment_plasmidness,
+    )
+    log_files: list[Path] = []
+
+    gurobipy.setParam(gurobipy.GRB.Param.LogToConsole, 0)
+    # TODO use config MILP
+    gurobipy.setParam(gurobipy.GRB.Param.MIPGap, 0.0)
+
+    io_manager = milp_io.Manager(output_directory)
+
+    with rich_prog.Progress(console=CONSOLE) as progress:
+        remaining_seeds = len(network.seeds())
+        binning_task = progress.add_task("Binning", total=remaining_seeds)
+
+        bin_number = 0
+        is_feasible = True
+        while network.seeds() and is_feasible:
+            result = None
+
+            m, var = milp_models.multiobjective(network, gc_intervals)
+            log_files.append(
+                io_manager.gurobi_log_path(bin_number, milp_models.Names.MCF),
+            )
+            m.Params.LogFile = str(log_files[-1])
+            m.optimize()
+            if m.Status == gurobipy.GRB.OPTIMAL:
+                milp_result_values = milp_results.Pangebin.from_optimal_variables(
+                    network,
+                    gc_intervals,
+                    var.mcf_vars(),
+                    var.mgc_vars(),
+                )
+                result = (
+                    bins_item.Stats(
+                        _cumulative_fragment_id_length(
+                            milp_result_values.active_fragments(),
+                            network,
+                        ),
+                        milp_result_values.total_flow(),
+                        milp_result_values.gc_interval(),
+                        milp_views.MCFStats(0),
+                        milp_views.MGCStats(0, 0),
+                        milp_views.MPSStats(0, 0, 0),
+                    ),
+                    milp_result_values,
+                    log_files.copy(),
+                )
+
+            if result is not None:
+                bin_stats, milp_result_values, log_files = result
+                yield (
+                    bin_stats,
+                    _fragment_norm_coverages(milp_result_values),
+                    log_files,
+                )
+                _update_network(network, milp_result_values)
+                bin_number += 1
+
+                progress.update(
+                    binning_task,
+                    advance=(remaining_seeds - len(network.seeds())),
+                )
+                remaining_seeds = len(network.seeds())
+            else:
+                # REFACTOR rename this boolean while condition
+                is_feasible = False
+                progress.update(binning_task, advance=remaining_seeds)
+
+    _LOGGER.info("Find %u bins.", bin_number)
+
+
 # REFACTOR return other than None
 def _hierarchical_binning(
     network: pb_network.Network,
@@ -174,14 +262,7 @@ def _hierarchical_binning(
     config: Config,
     io_manager: milp_io.Manager,
     bin_number: int,
-) -> (
-    tuple[
-        bins_item.Stats,
-        milp_results.MaxCovFlow,  # TODO change to MPSPrime result?
-        list[Path],
-    ]
-    | None
-):
+) -> tuple[bins_item.Stats, milp_results.Pangebin, list[Path]] | None:
     log_files: list[Path] = []
     #
     # MCF model
@@ -202,7 +283,8 @@ def _hierarchical_binning(
     #
     # MGC model
     #
-    mcf_vars.start_with_previous_values(mcf_vars)
+    # BUG User mip start violoates constraint while should not
+    # mcf_vars.start_with_previous_values(mcf_vars)
     mgc_model, mgc_vars = milp_models.mgc_from_mcf(
         mcf_model,
         mcf_vars,
@@ -226,7 +308,8 @@ def _hierarchical_binning(
     #
     # MPS model
     #
-    mgc_vars.start_with_previous_values(mgc_vars)
+    # BUG User mip start violoates constraint while should not
+    # mgc_vars.start_with_previous_values(mgc_vars)
     mps_model, mps_vars = milp_models.mps_from_mgc(
         mgc_model,
         mgc_vars,
@@ -251,7 +334,8 @@ def _hierarchical_binning(
     #
     # MPS' model
     #
-    mps_vars.start_with_previous_values(mps_vars)
+    # BUG User mip start violoates constraint while should not
+    # mps_vars.start_with_previous_values(mps_vars)
     mps_prime_model, _ = milp_models.mps_prime_from_mps(
         mps_model,
         mps_vars,
@@ -277,13 +361,12 @@ def _hierarchical_binning(
         mps_obj_val,
     )
 
-    milp_result_values = milp_results.MaxCovFlow.from_optimal_variables(
+    milp_result_values = milp_results.Pangebin.from_optimal_variables(
         network,
+        gc_intervals,
         mps_vars.mcf_vars(),
+        mps_vars.mgc_vars(),
     )
-
-    # FIXME X varattibute reset before update network
-    # TODO result object to avoid side issues
     return (
         bins_item.Stats(
             _cumulative_fragment_id_length(
@@ -291,10 +374,7 @@ def _hierarchical_binning(
                 network,
             ),
             milp_result_values.total_flow(),
-            milp_vars.active_gc_content_interval(
-                gc_intervals,
-                mps_vars.mgc_vars(),  # TODO use milp_results
-            ),
+            milp_result_values.gc_interval(),
             mcf_stats,
             mgc_stats,
             mps_stats,
@@ -316,7 +396,7 @@ def _cumulative_fragment_id_length(
 
 
 def _fragment_norm_coverages(
-    milp_result_values: milp_results.MaxCovFlow,
+    milp_result_values: milp_results.Pangebin,
 ) -> Iterable[bins_item.FragmentNormCoverage]:
     """Get fragment normalized coverages."""
     return (
@@ -330,7 +410,7 @@ def _fragment_norm_coverages(
 
 def _update_network(
     network: pb_network.Network,
-    milp_result_values: milp_results.MaxCovFlow,
+    milp_result_values: milp_results.Pangebin,
 ) -> None:
     """Update network."""
     for frag_id, incoming_flow in milp_result_values.fragments_incoming_flow():

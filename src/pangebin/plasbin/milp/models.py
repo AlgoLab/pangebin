@@ -48,7 +48,7 @@ def mgc_from_mcf(
         network,
         intervals,
         coefficient,
-        milp_vars.coverage_score(network, mcf_var).getValue(),
+        mcf_model.ObjVal,
     )
     return mcf_model, var
 
@@ -70,7 +70,7 @@ def mps_from_mgc(
         network,
         intervals,
         coefficient,
-        milp_vars.gc_probability_score(network, intervals, mgc_var).getValue(),
+        mgc_model.ObjVal,
     )
     return mgc_model, var
 
@@ -89,6 +89,25 @@ def mps_prime_from_mps(
         mps_var,
         network,
         intervals,
-        milp_vars.plasmidness_score(network, intervals, mps_var).getValue(),
+        mps_model.ObjVal,  # BUG numerical value approx when .GetValue
     )
     return mps_model, mps_var
+
+
+def multiobjective(
+    network: pb_network.Network,
+    intervals: gc_items.Intervals,
+) -> tuple[gurobipy.Model, milp_vars.MaxPlasmidScore]:
+    """Multiobjective."""
+    m = gurobipy.Model("Multiobjective Flow")
+    var = milp_vars.MaxPlasmidScore(
+        milp_vars.MaxGC(
+            m,
+            milp_vars.MaxCovFlow(m, network),
+            network,
+            intervals,
+        ),
+    )
+    milp_objs.set_multiobjective(m, var, network, intervals)
+    milp_consts.set_multiobj_constraints(m, var, network, intervals)
+    return m, var

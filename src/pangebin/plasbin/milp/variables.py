@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from itertools import chain
-from statistics import median
 from typing import TYPE_CHECKING
 
 import gurobipy
@@ -48,7 +47,7 @@ class MaxCovFlow:
         self.__beta: dict[str, gurobipy.Var] = dict(
             self.__init_beta(model, network),
         )
-        # FIXME new variable can be used in other model like GC
+        # TODO use new variable frag in MGC and MPS models
         self.__frag: dict[str, gurobipy.Var] = dict(
             self.__init_frag(model, network),
         )
@@ -131,7 +130,6 @@ class MaxCovFlow:
 
     def start_with_previous_values(self, variables: MaxCovFlow) -> None:
         """Set start variables values with previous result."""
-        # FIXME potentially var.X not set, fix everywhere?
         for key, var in self.__x.items():
             var.Start = variables.__x[key].X
         for key, var in self.__y.items():
@@ -378,26 +376,38 @@ def incoming_flow_forward_reverse(
 
 def coverage_score(network: pb_network.Network, var: MaxCovFlow) -> gurobipy.LinExpr:
     """Get linear expression for coverage score."""
-    # FIXME Test
-    median_frag_len = median(
-        gfa_segment.length(
-            gfa_segment.get_segment_line_by_name(network.gfa_graph(), frag_id),
-        )
-        for frag_id in network.seeds()
+    # HACK MCF: Tests on coverage score
+    # max_seed_cov = max(network.coverage(frag_id) for frag_id in network.seeds())
+    # return gurobipy.quicksum(
+    #     (network.coverage(frag_id) / max_seed_cov)
+    #     * 2
+    #     * (
+    #         incoming_flow_forward_reverse(frag_id, network, var)
+    #         / network.coverage(frag_id)
+    #         - 0.5
+    #     )
+    #     for frag_id in network.fragment_ids()
+    #     if frag_id in network.seeds()
+    # )
+    # DOCU super rapide
+
+    max_frag_len = max(
+        gfa_segment.length(network.gfa_graph().segment(frag_id))
+        for frag_id in network.fragment_ids()
+        if frag_id in network.seeds()
     )
     return gurobipy.quicksum(
-        (
-            gfa_segment.length(
-                gfa_segment.get_segment_line_by_name(network.gfa_graph(), frag_id),
-            )
-            / median_frag_len
-        )
-        * 2
-        * (
-            incoming_flow_forward_reverse(frag_id, network, var)
-            / network.coverage(frag_id)
-            - 0.5
-        )
+        (gfa_segment.length(network.gfa_graph().segment(frag_id)) / max_frag_len)
+        * incoming_flow_forward_reverse(frag_id, network, var)
+        - network.coverage(frag_id) * var.frag(frag_id)
+        # -math.exp(
+        #     (med_frag_len - gfa_segment.length(network.gfa_graph().segment(frag_id)))
+        #     / med_frag_len,
+        # )
+        # * (
+        #     network.coverage(frag_id) * var.frag(frag_id)
+        #     - incoming_flow_forward_reverse(frag_id, network, var)
+        # )
         for frag_id in network.fragment_ids()
         if frag_id in network.seeds()
     )
@@ -494,21 +504,8 @@ def gc_probability_score(
         if gfa_segment.length(
             gfa_segment.get_segment_line_by_name(network.gfa_graph(), frag_id),
         )
-        > 1000  # FIXME objective modifications (seeds and parameter)
+        > 1000  # HACK MGC: obj modifications (seeds and parameter)
     )
-
-
-def active_gc_content_interval(
-    intervals: gc_items.Intervals,
-    variables: MaxGC,
-) -> tuple[float, float]:
-    """Get active GC content interval."""
-    for interval in intervals:
-        if variables.gc(interval).X > 0:
-            return interval
-    _crt_msg = "Could not find active GC content interval"
-    _LOGGER.critical(_crt_msg)
-    raise ValueError(_crt_msg)
 
 
 class MaxPlasmidScore:
@@ -550,7 +547,15 @@ def plasmidness_score(
     var: MaxPlasmidScore,
 ) -> gurobipy.LinExpr:
     """Get linear expression for plasmidness score."""
-    return gurobipy.quicksum(
-        network.plasmidness(frag_id) * fragment_gc_sum(frag_id, intervals, var)
+    max_frag_len = max(
+        gfa_segment.length(network.gfa_graph().segment(frag_id))
         for frag_id in network.fragment_ids()
+        if frag_id in network.seeds()
+    )  # HACK MPS: coeff in obj
+    return gurobipy.quicksum(
+        (gfa_segment.length(network.gfa_graph().segment(frag_id)) / max_frag_len)
+        * network.plasmidness(frag_id)
+        * var.mcf_vars().frag(frag_id)
+        for frag_id in network.fragment_ids()
+        if frag_id in network.seeds()  # HACK MPS: only seeds in plm score
     )

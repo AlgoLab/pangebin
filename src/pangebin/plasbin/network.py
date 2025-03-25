@@ -117,8 +117,9 @@ class Network:
 
     def is_sink_connected(self, fragment_id: str) -> bool:
         """Check if the corresponding oriented fragment goes into the sink."""
+        # return True
+        # HACK modify definition of sink arcs
         return fragment_id in self.__seeds
-        # FIXME modify definition of sink arcs
 
     def source_connected_fragment_ids(self) -> Iterator[str]:
         """Get source connected fragment ids."""
@@ -126,8 +127,9 @@ class Network:
 
     def sink_connected_fragment_ids(self) -> Iterator[str]:
         """Get sink connected fragment ids."""
+        # return self.fragment_ids()
+        # HACK modify definition of sink arcs
         return iter(self.__seeds)
-        # FIXME modify definition of sink arcs
 
     def source_arcs(
         self,
@@ -162,7 +164,7 @@ class Network:
         self,
     ) -> Iterator[tuple[gfa_segment.OrientedFragment, str]]:
         """Create fragment to sink arcs."""
-        # FIXME modify definition of sink arcs
+        # HACK modify definition of sink arcs
         # return ((fragment, self.SINK_VERTEX) for fragment in self.oriented_fragments())
         return chain(
             (
@@ -226,6 +228,7 @@ class Network:
             # see https://github.com/ggonnella/gfapy/issues/33
             # remove path
             path_line: gfa_path.GfaPath
+            # Use list constructor to avoid concurrent modification
             for path_line in list(self.__gfa_graph.paths):
                 if fragment_id in (
                     seg_line.name for seg_line in path_line.segment_names
