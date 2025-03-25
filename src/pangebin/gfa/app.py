@@ -16,6 +16,7 @@ import pangebin.gfa.header as gfa_header
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.gfa.segment as gfa_segment
+import pangebin.gfa.views as gfa_views
 import pangebin.logging as common_log
 from pangebin.gfa import iter as gfa_iter
 
@@ -155,3 +156,26 @@ def is_standardized(
         _LOGGER.info("GFA is standardized.")
     else:
         _LOGGER.info("GFA is not standardized.")
+
+
+class PrintStatsArgs:
+    """Argument for printing GFA stats."""
+
+    GFA_FILE = typer.Argument(
+        help="GFA file path",
+    )
+
+
+@APP.command()
+def stats(
+    gfa_path: Annotated[Path, PrintStatsArgs.GFA_FILE],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Print GFA stats."""
+    common_log.init_logger(_LOGGER, "Printing GFA stats.", debug)
+
+    if not gfa_path.exists():
+        _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
+        raise typer.Exit(1)
+
+    gfa_views.print_stats(gfa_path)
