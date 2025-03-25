@@ -80,7 +80,7 @@ class SeedArguments:
 
 
 @APP.command()
-def seed(
+def seeds(
     pbf_seeds_file: Annotated[
         Path,
         SeedArguments.PBF_SEEDS_FILE,

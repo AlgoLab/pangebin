@@ -85,6 +85,29 @@ dataset_dir="test/SAMN16357463"
    ./test/plasbin_panasm.sh run $dataset_dir
    ```
 
+## Pangebin-PlasBin-flow conversion
+
+### Use PlasBin-flow inputs to Pangebin
+
+```sh
+# pbf : PlasBin-flow
+# pg : Pangebin
+# Convert plasmidness
+pangebin utils pbf-comp plm pbf_plasmidness.tsv pg_plasmidness.tsv
+# Convert seeds
+pangebin utils pbf-comp seeds pbf_seeds.tsv pg_seeds.tsv
+# Recompute GC contents
+pangebin sub gc from-gfa graph.gfa pg_gc_scores.tsv
+# Run Pangebin on assembly graph
+pangebin sub plasbin asm graph.gfa pg_seeds.tsv pg_gc_scores.tsv pg_plasmidness.tsv --outdir pg_outdir
+```
+
+### Convert Pangebin outputs to PlasBin-flow output
+
+```sh
+pangebin utils pbf-comp bins pg_outdir pbf_bins.tsv
+```
+
 ## Going further into the details
 
 Understanding GFA tags system:
