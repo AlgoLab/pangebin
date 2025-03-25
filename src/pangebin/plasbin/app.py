@@ -133,7 +133,7 @@ def plasbin_assembly(
             io_manager.config().output_directory(),
         ),
     ):
-        io_manager.bin_outdir(k).mkdir(parents=True, exist_ok=True)
+        io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
         bin_stats.to_yaml(io_manager.bin_stats_path(k))
         with bin_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
             for seq_normcov in seq_normcovs:
@@ -218,7 +218,72 @@ def plasbin_panassembly(
             io_manager.config().output_directory(),
         ),
     ):
-        io_manager.bin_outdir(k).mkdir(parents=True, exist_ok=True)
+        io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
+        bin_stats.to_yaml(io_manager.bin_stats_path(k))
+        with bin_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
+            for seq_normcov in seq_normcovs:
+                fout.write_sequence_normcov(
+                    seq_normcov.identifier(),
+                    seq_normcov.normalized_coverage(),
+                )
+        io_manager.move_gurobi_logs(log_files)
+
+
+@APP.command("multiobj")
+def plasbin_multiobj(
+    assembly_gfa: Annotated[Path, AsmArguments.ASSEMBLY_GFA],
+    seed_contigs_tsv: Annotated[Path, AsmArguments.SEED_CONTIGS_TSV],
+    contig_gc_scores_tsv: Annotated[Path, AsmArguments.CONTIG_GC_SCORES_TSV],
+    contig_plasmidness_tsv: Annotated[Path, AsmArguments.CONTIG_PLASMIDNESS_TSV],
+    # MILP options
+    mcf_coefficient: Annotated[
+        float,
+        MILPOptions.MCF_COEFFICIENT,
+    ] = pb_cfg.Config.DEFAULT_GAMMA_MCF,
+    mgc_coefficient: Annotated[
+        float,
+        MILPOptions.MGC_COEFFICIENT,
+    ] = pb_cfg.Config.DEFAULT_GAMMA_MGC,
+    milp_cfg_yaml: Annotated[Path | None, MILPOptions.CONFIG_FILE] = None,
+    # IO options
+    outdir: Annotated[Path, IOOptions.OUTPUT_DIR] = pb_io.Config.DEFAULT_OUTPUT_DIR,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """PlasBin multiobj application."""
+    common_log.init_logger(_LOGGER, "Running PlasBin multiobj on assembly.", debug)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    io_manager = pb_io.Manager(pb_io.Config(output_directory=outdir))
+
+    milp_config = (
+        pb_cfg.Config.from_yaml(milp_cfg_yaml)
+        if milp_cfg_yaml is not None
+        else pb_cfg.Config(
+            gamma_mcf=mcf_coefficient,
+            gamma_mgc=mgc_coefficient,
+        )
+    )
+
+    with gc_io.ScoresReader.open(contig_gc_scores_tsv) as gc_scores_fin:
+        intervals = gc_scores_fin.intervals()
+        gc_scores = list(gc_scores_fin)
+    with plm_io.Reader.open(contig_plasmidness_tsv) as plasmidness_fin:
+        plasmidness = list(plasmidness_fin)
+    with seed_io.Reader.open(seed_contigs_tsv) as seeds_fin:
+        seeds = list(seeds_fin)
+
+    for k, (bin_stats, seq_normcovs, log_files) in enumerate(
+        pb_create.plasbin_multiobj(
+            gfa_io.from_file(assembly_gfa),
+            seeds,
+            intervals,
+            gc_scores,
+            plasmidness,
+            milp_config,
+            io_manager.config().output_directory(),
+        ),
+    ):
+        io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
         bin_stats.to_yaml(io_manager.bin_stats_path(k))
         with bin_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
             for seq_normcov in seq_normcovs:

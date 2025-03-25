@@ -13,6 +13,8 @@ import typer
 
 import pangebin.logging as common_log
 import pangebin.pbf_comp.input_output as comp_io
+import pangebin.pbf_comp.ops as comp_ops
+import pangebin.plasbin.input_output as pb_io
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
 
@@ -56,7 +58,7 @@ def plasmidness(
         for sequence_id, plasmidness in pbf_plasmidness_fin:
             pg_plasmidness_fout.write_sequence_plasmidness(
                 sequence_id,
-                2 * plasmidness - 1,
+                comp_ops.pbf_to_pg_plasmidness(plasmidness),
             )
     _LOGGER.info(
         "PlasBin-flow plasmidness file %s converted to Pangebin plasmidness file %s",
@@ -109,3 +111,37 @@ def seed(
         pbf_seeds_file,
         pg_seeds_tsv,
     )
+
+
+class BinArguments:
+    """Convert bins file arguments."""
+
+    PG_BINS_PARENT_DIR = typer.Argument(
+        help="Pangebin bins parent directory",
+    )
+
+    PBF_BIN_INFO_TSV = typer.Argument(
+        help="PlasBin-flow bin info TSV file",
+    )
+
+
+@APP.command()
+def bins(
+    pg_bins_parent_dir: Annotated[
+        Path,
+        BinArguments.PG_BINS_PARENT_DIR,
+    ],
+    pbf_bin_info_tsv: Annotated[
+        Path,
+        BinArguments.PBF_BIN_INFO_TSV,
+    ],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Convert PlasBin-flow bin info TSV file to PangeBin bins."""
+    common_log.init_logger(_LOGGER, "Converting PlasBin-flow bin info TSV file.", debug)
+    io_manager = pb_io.Manager(pb_io.Config(output_directory=pg_bins_parent_dir))
+    with comp_io.PBFBinsWriter.open(pbf_bin_info_tsv) as pbf_bin_info_fout:
+        for k in range(io_manager.number_of_bins()):
+            pbf_bin_info_fout.write_bin_line(
+                comp_ops.pg_bin_dir_to_pbf_bininfo(io_manager, k),
+            )

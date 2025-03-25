@@ -24,21 +24,21 @@ class Manager:
         """Initialize object."""
         self.__config = config
 
-    def bin_outdir(self, iteration: int) -> Path:
+    def bin_directory(self, iteration: int) -> Path:
         """Get bin output directory."""
         return self.__config.output_directory() / f"{self.__BIN_DIR_PREFIX}_{iteration}"
 
     def bin_stats_path(self, iteration: int) -> Path:
         """Get bin stats YAML file path."""
-        return self.bin_outdir(iteration) / self.__BIN_STATS_FILENAME
+        return self.bin_directory(iteration) / self.__BIN_STATS_FILENAME
 
     def bin_seq_normcov_path(self, iteration: int) -> Path:
         """Get bin stats YAML file path."""
-        return self.bin_outdir(iteration) / self.__BIN_SEQ_NORMCOV_FILENAME
+        return self.bin_directory(iteration) / self.__BIN_SEQ_NORMCOV_FILENAME
 
     def gurobi_log_path(self, iteration: int, model: milp_models.Names) -> Path:
         """Get Gurobi log file path."""
-        return self.bin_outdir(iteration) / f"{model}.log"
+        return self.bin_directory(iteration) / f"{model}.log"
 
     def move_gurobi_logs(self, log_files: list[Path]) -> None:
         """Move Gurobi log files to the bin directory."""
@@ -49,6 +49,12 @@ class Manager:
                     *milp_io.Manager.attributes_from_gurobi_log_path(log_file),
                 ),
             )
+
+    def number_of_bins(self) -> int:
+        """Get number of bins."""
+        return len(
+            list(self.__config.output_directory().glob(f"{self.__BIN_DIR_PREFIX}_*")),
+        )
 
     def config(self) -> Config:
         """Get config."""
