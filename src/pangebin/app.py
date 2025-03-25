@@ -17,6 +17,7 @@ import pangebin.ground_truth.app as gt_app
 import pangebin.mapping.app as mapping_app
 import pangebin.panassembly.app as panassembly_app
 import pangebin.pangenome.app as pangenome_app
+import pangebin.pbf_comp.app as pbf_comp_app
 import pangebin.pipeline.app as pipeline_app
 import pangebin.pipeline.seed_thresholds.app as pipe_seed_thr_app
 import pangebin.plasbin.app as plasbin_app
@@ -118,6 +119,11 @@ UTILS_APP.add_typer(
     mapping_app.APP,
     name="map",
     help="Mapping operations.",
+)
+UTILS_APP.add_typer(
+    pbf_comp_app.APP,
+    name="pbf-comp",
+    help="PlasBin-flow conversion.",
 )
 
 
