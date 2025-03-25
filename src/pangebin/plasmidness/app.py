@@ -83,3 +83,6 @@ def from_contigs_to_fragment_plasmidness(
             writer.write_sequence_plasmidness(frag_id, frag_plasmidness)
     _LOGGER.info("Write fragments plasmidness in file: %s", output_plasmidness_tsv)
     return output_plasmidness_tsv
+
+
+# TODO from gene density
