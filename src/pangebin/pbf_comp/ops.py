@@ -2,7 +2,7 @@
 
 import pangebin.pbf_comp.items as pbf_items
 import pangebin.plasbin.bins.input_output as bin_io
-import pangebin.plasbin.bins.item as bin_item
+import pangebin.plasbin.bins.items as bin_item
 import pangebin.plasbin.input_output as pb_io
 
 

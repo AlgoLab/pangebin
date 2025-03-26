@@ -10,7 +10,7 @@ import rich.progress as rich_prog
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
-import pangebin.plasbin.bins.item as bins_item
+import pangebin.plasbin.bins.items as bins_item
 import pangebin.plasbin.milp.input_output as milp_io
 import pangebin.plasbin.milp.models as milp_models
 import pangebin.plasbin.milp.results as milp_results
