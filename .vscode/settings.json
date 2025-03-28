@@ -23,7 +23,9 @@
     "files.exclude": {
         "**/__pycache__": true,
         ".mypy_cache": true,
-        ".pytest_cache": true
+        ".pytest_cache": true,
+        ".nextflow": true,
+        ".ruff_cache": true
     },
     "ltex.checkFrequency": "manual",
     "markdownlint.config": {
@@ -33,17 +35,11 @@
         "--config-file=${workspaceFolder}/mypy.ini",
         "--exclude=${workspaceFolder}/tests"
     ],
-    "mypy-type-checker.preferDaemon": false,
     "python.analysis.diagnosticSeverityOverrides": {
         "reportUndefinedVariable": "none"
     },
     "python.analysis.extraPaths": [],
     "python.analysis.typeCheckingMode": "off",
-    "python.testing.pytestArgs": [
-        "--config-file=${workspaceFolder}/pytest.ini"
-    ],
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
     "todo-tree.filtering.excludeGlobs": [
         "**/node_modules",
         "**/.vscode/settings.json",
