@@ -5,38 +5,92 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import pangebin.plasbin.milp.objectives as milp_objs
+import pangebin.plasbin.network as pb_network
 from pangebin.yaml import YAMLInterface
 
 
-class Config(YAMLInterface):
-    """PangeBin-flow config class."""
+class Binning(YAMLInterface):
+    """PangeBin-flow binning config class."""
 
+    DEFAULT_SINK_ARCS_DOMAIN = pb_network.SinkArcsDomain.ALL
+    DEFAULT_MIN_FLOW = 0.0001
+    DEFAULT_MIN_CUMULATIVE_LENGTH = 1000
+    # TODO CLI circular
+    DEFAULT_CIRCULAR = False
+    DEFAULT_OBJ_FUN_DOMAIN = milp_objs.ObjectiveFunctionDomain.ALL
     DEFAULT_GAMMA_MCF = 0.9
     DEFAULT_GAMMA_MGC = 0.9
 
+    KEY_SINK_ARC_DEFINITION = "sink_arc_definition"
+    KEY_MIN_FLOW = "min_flow"
+    KEY_MIN_CUMULATIVE_LENGTH = "min_cumulative_len"
+    KEY_CIRCULAR = "circular"
+    KEY_OBJ_FUN_DOMAIN = "obj_fun_domain"
     KEY_GAMMA_MCF = "gamma_mcf"
     KEY_GAMMA_MGC = "gamma_mgc"
 
-    DEFAULT_YAML_FILE = Path("pangebin_flow_config.yaml")
+    DEFAULT_YAML_FILE = Path("binning_config.yaml")
 
-    NAME = "PangeBin-flow config"
+    NAME = "PangeBin-flow binning config"
 
     @classmethod
-    def from_dict(cls, config_dict: dict[str, Any]) -> Config:
+    def from_dict(cls, config_dict: dict[str, Any]) -> Binning:
         """Convert dict to object."""
         return cls(
+            config_dict.get(
+                cls.KEY_SINK_ARC_DEFINITION,
+                cls.DEFAULT_SINK_ARCS_DOMAIN,
+            ),
+            config_dict.get(cls.KEY_MIN_FLOW, cls.DEFAULT_MIN_FLOW),
+            config_dict.get(
+                cls.KEY_MIN_CUMULATIVE_LENGTH,
+                cls.DEFAULT_MIN_CUMULATIVE_LENGTH,
+            ),
+            config_dict.get(cls.KEY_CIRCULAR, cls.DEFAULT_CIRCULAR),
+            config_dict.get(cls.KEY_OBJ_FUN_DOMAIN, cls.DEFAULT_OBJ_FUN_DOMAIN),
             config_dict.get(cls.KEY_GAMMA_MCF, cls.DEFAULT_GAMMA_MCF),
             config_dict.get(cls.KEY_GAMMA_MGC, cls.DEFAULT_GAMMA_MGC),
         )
 
     def __init__(
         self,
+        sink_arcs_domain: pb_network.SinkArcsDomain = DEFAULT_SINK_ARCS_DOMAIN,
+        min_flow: float = DEFAULT_MIN_FLOW,
+        min_cumulative_len: int = DEFAULT_MIN_CUMULATIVE_LENGTH,
+        circular: bool = DEFAULT_CIRCULAR,  # noqa: FBT001
+        obj_fun_domain: milp_objs.ObjectiveFunctionDomain = DEFAULT_OBJ_FUN_DOMAIN,
         gamma_mcf: float = DEFAULT_GAMMA_MCF,
         gamma_mgc: float = DEFAULT_GAMMA_MGC,
     ) -> None:
         """Initialize object."""
+        self.__sink_arcs_domain = sink_arcs_domain
+        self.__min_flow = min_flow
+        self.__min_cumulative_len = min_cumulative_len
+        self.__circular = circular
+        self.__obj_fun_domain = obj_fun_domain
         self.__gamma_mcf = gamma_mcf
         self.__gamma_mgc = gamma_mgc
+
+    def sink_arcs_domain(self) -> pb_network.SinkArcsDomain:
+        """Get sink arcs domain."""
+        return self.__sink_arcs_domain
+
+    def min_flow(self) -> float:
+        """Get min flow."""
+        return self.__min_flow
+
+    def min_cumulative_len(self) -> int:
+        """Get min cumulative length."""
+        return self.__min_cumulative_len
+
+    def circular(self) -> bool:
+        """Get circular."""
+        return self.__circular
+
+    def obj_fun_domain(self) -> milp_objs.ObjectiveFunctionDomain:
+        """Get objective function domain."""
+        return self.__obj_fun_domain
 
     def gamma_mcf(self) -> float:
         """Get gamma mcf."""
@@ -49,6 +103,16 @@ class Config(YAMLInterface):
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict."""
         return {
+            self.KEY_SINK_ARC_DEFINITION: str(self.__sink_arcs_domain),
+            self.KEY_MIN_FLOW: self.__min_flow,
+            self.KEY_MIN_CUMULATIVE_LENGTH: self.__min_cumulative_len,
+            self.KEY_CIRCULAR: self.__circular,
+            self.KEY_OBJ_FUN_DOMAIN: str(self.__obj_fun_domain),
             self.KEY_GAMMA_MCF: self.__gamma_mcf,
             self.KEY_GAMMA_MGC: self.__gamma_mgc,
         }
+
+
+if __name__ == "__main__":
+    default_config = Binning()
+    default_config.to_yaml(Binning.DEFAULT_YAML_FILE)
