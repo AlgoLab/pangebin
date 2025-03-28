@@ -14,6 +14,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
+import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.milp.variables as milp_vars
 import pangebin.plasbin.network as pb_network
 
@@ -69,6 +70,10 @@ class Pangebin:
                 for frag_id in active_fragments(network, mcf_var)
             ),
             mcf_var.total_flow().X,
+            sum(
+                gfa_segment.length(network.gfa_graph().segment(frag_id))
+                for frag_id in active_fragments(network, mcf_var)
+            ),
             active_gc_content_interval(intervals, mgc_var),
         )
 
@@ -76,10 +81,12 @@ class Pangebin:
         self,
         fragments_incoming_flow: Iterable[tuple[str, float]],
         total_flow: float,
+        cumulative_length: int,
         gc_interval: tuple[float, float],
     ) -> None:
         self.__frags_incoming_flow = dict(fragments_incoming_flow)
         self.__total_flow = total_flow
+        self.__cumulative_length = cumulative_length
         self.__gc_interval = gc_interval
 
     def fragments_incoming_flow(self) -> Iterator[tuple[str, float]]:
@@ -101,6 +108,10 @@ class Pangebin:
     def total_flow(self) -> float:
         """Get total flow value."""
         return self.__total_flow
+
+    def cumulative_length(self) -> int:
+        """Get cumulative length."""
+        return self.__cumulative_length
 
     def gc_interval(self) -> tuple[float, float]:
         """Get GC interval."""

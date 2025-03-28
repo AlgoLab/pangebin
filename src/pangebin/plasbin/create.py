@@ -9,7 +9,6 @@ import gurobipy
 import rich.progress as rich_prog
 
 import pangebin.gc_content.items as gc_items
-import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.bins.items as bins_item
 import pangebin.plasbin.milp.config as milp_config
 import pangebin.plasbin.milp.input_output as milp_io
@@ -229,10 +228,7 @@ def plasbin_multiobj(  # noqa: PLR0913
                 )
                 result = (
                     bins_item.Stats(
-                        _cumulative_fragment_id_length(
-                            milp_result_values.active_fragments(),
-                            network,
-                        ),
+                        milp_result_values.cumulative_length(),
                         milp_result_values.total_flow(),
                         milp_result_values.gc_interval(),
                         milp_views.MCFStats(0.0, 0),
@@ -398,10 +394,7 @@ def _hierarchical_binning(
     )
     return (
         bins_item.Stats(
-            _cumulative_fragment_id_length(
-                milp_result_values.active_fragments(),
-                network,
-            ),
+            milp_result_values.cumulative_length(),
             milp_result_values.total_flow(),
             milp_result_values.gc_interval(),
             mcf_stats,
@@ -410,17 +403,6 @@ def _hierarchical_binning(
         ),
         milp_result_values,
         log_files.copy(),
-    )
-
-
-def _cumulative_fragment_id_length(
-    active_fragments: Iterable[str],
-    network: pb_network.Network,
-) -> int:
-    """Get cumulative fragment length."""
-    return sum(
-        gfa_segment.length(network.gfa_graph().segment(frag_id))
-        for frag_id in active_fragments
     )
 
 
