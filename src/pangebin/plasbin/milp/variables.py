@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from itertools import chain
 from typing import TYPE_CHECKING
 
@@ -15,8 +14,6 @@ import pangebin.plasbin.network as pb_network
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MaxCovFlow:
@@ -127,21 +124,6 @@ class MaxCovFlow:
     def frag(self, frag_id: str) -> gurobipy.Var:
         """Get frag variable."""
         return self.__frag[frag_id]
-
-    def start_with_previous_values(self, variables: MaxCovFlow) -> None:
-        """Set start variables values with previous result."""
-        for key, var in self.__x.items():
-            var.Start = variables.__x[key].X
-        for key, var in self.__y.items():
-            var.Start = variables.__y[key].X
-        for key, var in self.__f.items():
-            var.Start = variables.__f[key].X
-        self.__total_flow.Start = variables.__total_flow.X
-        for key, var in self.__pos_f.items():
-            var.Start = variables.__pos_f[key].X
-        self.__alpha.Start = variables.__alpha.X
-        for key, var in self.__beta.items():
-            var.Start = variables.__beta[key].X
 
     def __init_x(
         self,
@@ -365,51 +347,8 @@ def incoming_flow_forward_reverse(
     variables: MaxCovFlow,
 ) -> gurobipy.LinExpr:
     """Get linear expression for incoming flow both of the forward and the reverse."""
-    frag_f = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD)
-    frag_r = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE)
-    return incoming_flow(frag_f, network, variables) + incoming_flow(
-        frag_r,
-        network,
-        variables,
-    )
-
-
-def coverage_score(network: pb_network.Network, var: MaxCovFlow) -> gurobipy.LinExpr:
-    """Get linear expression for coverage score."""
-    # HACK MCF: Tests on coverage score
-    # max_seed_cov = max(network.coverage(frag_id) for frag_id in network.seeds())
-    # return gurobipy.quicksum(
-    #     (network.coverage(frag_id) / max_seed_cov)
-    #     * 2
-    #     * (
-    #         incoming_flow_forward_reverse(frag_id, network, var)
-    #         / network.coverage(frag_id)
-    #         - 0.5
-    #     )
-    #     for frag_id in network.fragment_ids()
-    #     if frag_id in network.seeds()
-    # )
-    # DOCU super rapide
-
-    max_frag_len = max(
-        gfa_segment.length(network.gfa_graph().segment(frag_id))
-        for frag_id in network.fragment_ids()
-        if frag_id in network.seeds()
-    )
     return gurobipy.quicksum(
-        (gfa_segment.length(network.gfa_graph().segment(frag_id)) / max_frag_len)
-        * incoming_flow_forward_reverse(frag_id, network, var)
-        - network.coverage(frag_id) * var.frag(frag_id)
-        # -math.exp(
-        #     (med_frag_len - gfa_segment.length(network.gfa_graph().segment(frag_id)))
-        #     / med_frag_len,
-        # )
-        # * (
-        #     network.coverage(frag_id) * var.frag(frag_id)
-        #     - incoming_flow_forward_reverse(frag_id, network, var)
-        # )
-        for frag_id in network.fragment_ids()
-        if frag_id in network.seeds()
+        incoming_flow(frag, network, variables) for frag in network.to_oriented(frag_id)
     )
 
 
@@ -439,14 +378,6 @@ class MaxGC:
     def frag_gc(self, frag_id: str, interval: tuple[float, float]) -> gurobipy.Var:
         """Get fragment GC variable."""
         return self.__frag_gc[self.__fmt_frag_gc(frag_id, interval)]
-
-    def start_with_previous_values(self, variables: MaxGC) -> None:
-        """Set start variables values with previous result."""
-        variables.mcf_vars().start_with_previous_values(self.mcf_vars())
-        for key, var in self.__gc.items():
-            var.Start = variables.__gc[key].X
-        for key, var in self.__frag_gc.items():
-            var.Start = variables.__frag_gc[key].X
 
     def __init_gc(
         self,
@@ -491,23 +422,6 @@ class MaxGC:
         return f"{frag_id}_{self.__fmt_interval(interval)}"
 
 
-def gc_probability_score(
-    network: pb_network.Network,
-    intervals: gc_items.Intervals,
-    var: MaxGC,
-) -> gurobipy.LinExpr:
-    """Get linear expression for GC probability score."""
-    return gurobipy.quicksum(
-        network.gc_score(frag_id)[b] * var.frag_gc(frag_id, interval)
-        for b, interval in enumerate(intervals)
-        for frag_id in network.seeds()
-        if gfa_segment.length(
-            gfa_segment.get_segment_line_by_name(network.gfa_graph(), frag_id),
-        )
-        > 1000  # HACK MGC: obj modifications (seeds and parameter)
-    )
-
-
 class MaxPlasmidScore:
     """Max plasmid score variables."""
 
@@ -522,40 +436,3 @@ class MaxPlasmidScore:
     def mgc_vars(self) -> MaxGC:
         """Get MGC variables."""
         return self.__mgc_vars
-
-    def start_with_previous_values(self, variables: MaxPlasmidScore) -> None:
-        """Set start variables values with previous result."""
-        self.mcf_vars().start_with_previous_values(variables.mcf_vars())
-        self.mgc_vars().start_with_previous_values(variables.mgc_vars())
-
-
-def fragment_gc_sum(
-    frag_id: str,
-    intervals: gc_items.Intervals,
-    var: MaxPlasmidScore,
-) -> gurobipy.LinExpr:
-    """Get linear expression for fragment GC sum."""
-    mgc_vars = var.mgc_vars()
-    return gurobipy.quicksum(
-        mgc_vars.frag_gc(frag_id, interval) for interval in intervals
-    )
-
-
-def plasmidness_score(
-    network: pb_network.Network,
-    intervals: gc_items.Intervals,
-    var: MaxPlasmidScore,
-) -> gurobipy.LinExpr:
-    """Get linear expression for plasmidness score."""
-    max_frag_len = max(
-        gfa_segment.length(network.gfa_graph().segment(frag_id))
-        for frag_id in network.fragment_ids()
-        if frag_id in network.seeds()
-    )  # HACK MPS: coeff in obj
-    return gurobipy.quicksum(
-        (gfa_segment.length(network.gfa_graph().segment(frag_id)) / max_frag_len)
-        * network.plasmidness(frag_id)
-        * var.mcf_vars().frag(frag_id)
-        for frag_id in network.fragment_ids()
-        if frag_id in network.seeds()  # HACK MPS: only seeds in plm score
-    )

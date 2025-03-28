@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import logging
-from itertools import chain
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
@@ -18,7 +17,12 @@ if TYPE_CHECKING:
 
     import gfapy  # type: ignore[import-untyped]
 
-_LOGGER = logging.getLogger(__name__)
+
+class SinkArcsDomain(StrEnum):
+    """Sink arcs definition."""
+
+    ALL = "all"
+    SEEDS = "seeds"
 
 
 class Network:
@@ -34,6 +38,7 @@ class Network:
         seed_contigs: Iterable[str],
         contig_gc_scores: Iterable[gc_items.SequenceGCScores],
         contig_plasmidness: Iterable[tuple[str, float]],
+        sink_arcs_definition: SinkArcsDomain,
     ) -> Network:
         """Create plasbin network graph from a standardized assembly graph."""
         return cls(
@@ -42,6 +47,7 @@ class Network:
             gfa_asm_ops.contig_coverages(asm_graph),
             contig_gc_scores,
             contig_plasmidness,
+            sink_arcs_definition,
         )
 
     @classmethod
@@ -51,6 +57,7 @@ class Network:
         seed_fragments: Iterable[str],
         fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
         fragment_plasmidness: Iterable[tuple[str, float]],
+        sink_arcs_definition: SinkArcsDomain,
     ) -> Network:
         """Create plasbin network graph from pan-assembly graph."""
         return cls(
@@ -59,15 +66,17 @@ class Network:
             gfa_pan_ops.fragment_max_contig_coverages(panasm_graph),
             fragment_gc_scores,
             fragment_plasmidness,
+            sink_arcs_definition,
         )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         gfa_graph: gfapy.Gfa,
         seeds: Iterable[str],
         coverages: Iterable[tuple[str, float]],
         gc_scores: Iterable[gc_items.SequenceGCScores],
         plasmidness: Iterable[tuple[str, float]],
+        sink_arcs_definition: SinkArcsDomain,
     ) -> None:
         """Initialize a plasbin network graph.
 
@@ -85,6 +94,16 @@ class Network:
             for frag_gc_score in gc_scores
         }
         self.__plasmidness = dict(plasmidness)
+        self.__sink_arc_gen_fn = (
+            self.fragment_ids
+            if sink_arcs_definition == SinkArcsDomain.ALL
+            else self.seeds
+        )
+        self.__is_sink_connected_fn = (
+            (lambda _: True)
+            if sink_arcs_definition == SinkArcsDomain.ALL
+            else (lambda frag_id: frag_id in self.__seeds)
+        )
 
     def number_of_fragments(self) -> int:
         """Get number of fragments."""
@@ -111,45 +130,48 @@ class Network:
             for fragment in oriented_fragments
         )
 
+    def to_oriented(
+        self,
+        fragment_id: str,
+    ) -> tuple[gfa_segment.OrientedFragment, gfa_segment.OrientedFragment]:
+        """Give the two oriented fragments corresponding to the fragment id.
+
+        Returns
+        -------
+        OrientedFragment
+            Forward fragment
+        OrientedFragment
+            Reverse fragment
+        """
+        return (
+            gfa_segment.OrientedFragment(fragment_id, gfa_segment.Orientation.FORWARD),
+            gfa_segment.OrientedFragment(fragment_id, gfa_segment.Orientation.REVERSE),
+        )
+
     def is_source_connected(self, fragment_id: str) -> bool:
         """Check if the source goes into the corresponding oriented fragment."""
         return fragment_id in self.__seeds
 
     def is_sink_connected(self, fragment_id: str) -> bool:
         """Check if the corresponding oriented fragment goes into the sink."""
-        # return True
-        # HACK modify definition of sink arcs
-        return fragment_id in self.__seeds
+        return self.__is_sink_connected_fn(fragment_id)
 
     def source_connected_fragment_ids(self) -> Iterator[str]:
         """Get source connected fragment ids."""
         return iter(self.__seeds)
 
-    def sink_connected_fragment_ids(self) -> Iterator[str]:
+    def sink_connected_fragment_ids(self) -> Iterator[str] | Iterable[str]:
         """Get sink connected fragment ids."""
-        # return self.fragment_ids()
-        # HACK modify definition of sink arcs
-        return iter(self.__seeds)
+        return self.__sink_arc_gen_fn()
 
     def source_arcs(
         self,
     ) -> Iterator[tuple[str, gfa_segment.OrientedFragment]]:
         """Create source to seed arcs."""
-        return chain(
-            (
-                (
-                    self.SOURCE_VERTEX,
-                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.FORWARD),
-                )
-                for seed in self.__seeds
-            ),
-            (
-                (
-                    self.SOURCE_VERTEX,
-                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.REVERSE),
-                )
-                for seed in self.__seeds
-            ),
+        return (
+            (self.SOURCE_VERTEX, frag)
+            for seed in self.__seeds
+            for frag in self.to_oriented(seed)
         )
 
     def link_arcs(self) -> Iterator[gfa_link.Link]:
@@ -164,24 +186,7 @@ class Network:
         self,
     ) -> Iterator[tuple[gfa_segment.OrientedFragment, str]]:
         """Create fragment to sink arcs."""
-        # HACK modify definition of sink arcs
-        # return ((fragment, self.SINK_VERTEX) for fragment in self.oriented_fragments())
-        return chain(
-            (
-                (
-                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.FORWARD),
-                    self.SINK_VERTEX,
-                )
-                for seed in self.__seeds
-            ),
-            (
-                (
-                    gfa_segment.OrientedFragment(seed, gfa_segment.Orientation.REVERSE),
-                    self.SINK_VERTEX,
-                )
-                for seed in self.__seeds
-            ),
-        )
+        return ((fragment, self.SINK_VERTEX) for fragment in self.oriented_fragments())
 
     #
     # Attributes
@@ -235,7 +240,6 @@ class Network:
                 ):
                     path_line.disconnect()
             link_line: gfa_link.GfaLink
-            # XXX contig depedending of the frag are also removed, problem?
             for link_line in list(
                 gfa_segment.get_segment_line_by_name(
                     self.__gfa_graph,

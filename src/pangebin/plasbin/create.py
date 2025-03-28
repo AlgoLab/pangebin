@@ -11,14 +11,15 @@ import rich.progress as rich_prog
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.bins.items as bins_item
+import pangebin.plasbin.milp.config as milp_config
 import pangebin.plasbin.milp.input_output as milp_io
 import pangebin.plasbin.milp.models as milp_models
+import pangebin.plasbin.milp.objectives as milp_objs
 import pangebin.plasbin.milp.results as milp_results
-import pangebin.plasbin.milp.variables as milp_vars
 import pangebin.plasbin.milp.views as milp_views
 import pangebin.plasbin.network as pb_network
 from pangebin.logging import CONSOLE
-from pangebin.plasbin.config import Config
+from pangebin.plasbin.config import Binning
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +30,8 @@ def plasbin_assembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     contig_gc_scores: Iterable[gc_items.SequenceGCScores],
     contig_plasmidness: Iterable[tuple[str, float]],
-    config: Config,
+    config: Binning,
+    gurobi_config: milp_config.Gurobi,
     output_directory: Path = milp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
@@ -55,9 +57,11 @@ def plasbin_assembly(  # noqa: PLR0913
             seed_contigs,
             contig_gc_scores,
             contig_plasmidness,
+            config.sink_arcs_domain(),
         ),
         gc_intervals,
         config,
+        gurobi_config,
         output_directory,
     )
 
@@ -68,7 +72,8 @@ def plasbin_panassembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
     fragment_plasmidness: Iterable[tuple[str, float]],
-    config: Config,
+    config: Binning,
+    gurobi_config: milp_config.Gurobi,
     output_directory: Path = milp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
@@ -94,9 +99,11 @@ def plasbin_panassembly(  # noqa: PLR0913
             seed_fragments,
             fragment_gc_scores,
             fragment_plasmidness,
+            config.sink_arcs_domain(),
         ),
         gc_intervals,
         config,
+        gurobi_config,
         output_directory,
     )
 
@@ -104,7 +111,8 @@ def plasbin_panassembly(  # noqa: PLR0913
 def plasbin(
     network: pb_network.Network,
     gc_intervals: gc_items.Intervals,
-    config: Config,
+    config: Binning,
+    gurobi_config: milp_config.Gurobi,
     output_directory: Path,
 ) -> Iterator[
     tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
@@ -125,9 +133,7 @@ def plasbin(
     The GFA graph will mute.
     """
     gurobipy.setParam(gurobipy.GRB.Param.LogToConsole, 0)
-    # HACK Gurobi: params
-    # REFACTOR use Gurobi Config and rename other config
-    gurobipy.setParam(gurobipy.GRB.Param.MIPGap, 0.0)
+    milp_config.configurate_global_gurobi(gurobi_config)
 
     io_manager = milp_io.Manager(output_directory)
 
@@ -174,7 +180,8 @@ def plasbin_multiobj(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
     fragment_plasmidness: Iterable[tuple[str, float]],
-    config: Config,
+    config: Binning,
+    gurobi_config: milp_config.Gurobi,
     output_directory: Path = milp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[bins_item.Stats, Iterable[bins_item.FragmentNormCoverage], list[Path]]
@@ -185,12 +192,12 @@ def plasbin_multiobj(  # noqa: PLR0913
         seed_fragments,
         fragment_gc_scores,
         fragment_plasmidness,
+        config.sink_arcs_domain(),
     )
     log_files: list[Path] = []
 
     gurobipy.setParam(gurobipy.GRB.Param.LogToConsole, 0)
-    # TODO use config MILP
-    gurobipy.setParam(gurobipy.GRB.Param.MIPGap, 0.0)
+    milp_config.configurate_global_gurobi(gurobi_config)
 
     io_manager = milp_io.Manager(output_directory)
 
@@ -203,7 +210,11 @@ def plasbin_multiobj(  # noqa: PLR0913
         while network.seeds() and is_feasible:
             result = None
 
-            m, var = milp_models.multiobjective(network, gc_intervals)
+            m, var = milp_models.multiobjective(
+                network,
+                gc_intervals,
+                config.obj_fun_domain(),
+            )
             log_files.append(
                 io_manager.gurobi_log_path(bin_number, milp_models.Names.MCF),
             )
@@ -224,9 +235,9 @@ def plasbin_multiobj(  # noqa: PLR0913
                         ),
                         milp_result_values.total_flow(),
                         milp_result_values.gc_interval(),
-                        milp_views.MCFStats(0),
-                        milp_views.MGCStats(0, 0),
-                        milp_views.MPSStats(0, 0, 0),
+                        milp_views.MCFStats(0.0, 0),
+                        milp_views.MGCStats(0.0, 0, 0),
+                        milp_views.MPSStats(0.0, 0, 0, 0),
                     ),
                     milp_result_values,
                     log_files.copy(),
@@ -259,7 +270,7 @@ def plasbin_multiobj(  # noqa: PLR0913
 def _hierarchical_binning(
     network: pb_network.Network,
     gc_intervals: gc_items.Intervals,
-    config: Config,
+    config: Binning,
     io_manager: milp_io.Manager,
     bin_number: int,
 ) -> tuple[bins_item.Stats, milp_results.Pangebin, list[Path]] | None:
@@ -267,7 +278,13 @@ def _hierarchical_binning(
     #
     # MCF model
     #
-    mcf_model, mcf_vars = milp_models.mcf(network)
+    mcf_model, mcf_vars = milp_models.mcf(
+        network,
+        config.min_flow(),
+        config.min_cumulative_len(),
+        config.circular(),
+        config.obj_fun_domain(),
+    )
     log_files.append(
         io_manager.gurobi_log_path(bin_number, milp_models.Names.MCF),
     )
@@ -278,16 +295,16 @@ def _hierarchical_binning(
         return None
 
     mcf_stats = milp_views.MCFStats(
-        milp_vars.coverage_score(network, mcf_vars).getValue(),
+        mcf_vars.total_flow().X,
+        milp_objs.coverage_score(network, mcf_vars, config.obj_fun_domain()).getValue(),
     )
     #
     # MGC model
     #
-    # BUG User mip start violoates constraint while should not
-    # mcf_vars.start_with_previous_values(mcf_vars)
     mgc_model, mgc_vars = milp_models.mgc_from_mcf(
         mcf_model,
         mcf_vars,
+        config.obj_fun_domain(),
         network,
         gc_intervals,
         config.gamma_mgc(),
@@ -302,20 +319,29 @@ def _hierarchical_binning(
         return None
 
     mgc_stats = milp_views.MGCStats(
-        milp_vars.coverage_score(network, mgc_vars.mcf_vars()).getValue(),
-        milp_vars.gc_probability_score(network, gc_intervals, mgc_vars).getValue(),
+        mgc_vars.mcf_vars().total_flow().X,
+        milp_objs.coverage_score(
+            network,
+            mgc_vars.mcf_vars(),
+            config.obj_fun_domain(),
+        ).getValue(),
+        milp_objs.gc_score(
+            network,
+            gc_intervals,
+            mgc_vars,
+            config.obj_fun_domain(),
+        ).getValue(),
     )
     #
     # MPS model
     #
-    # BUG User mip start violoates constraint while should not
-    # mgc_vars.start_with_previous_values(mgc_vars)
     mps_model, mps_vars = milp_models.mps_from_mgc(
         mgc_model,
         mgc_vars,
         network,
         gc_intervals,
         config.gamma_mgc(),
+        config.obj_fun_domain(),
     )
     log_files.append(
         io_manager.gurobi_log_path(bin_number, milp_models.Names.MPS),
@@ -326,21 +352,19 @@ def _hierarchical_binning(
     if mps_model.Status != gurobipy.GRB.OPTIMAL:
         return None
 
-    mps_obj_val = milp_vars.plasmidness_score(
+    mps_obj_val = milp_objs.plasmidness_score(
         network,
-        gc_intervals,
         mps_vars,
+        config.obj_fun_domain(),
     ).getValue()
     #
     # MPS' model
     #
-    # BUG User mip start violoates constraint while should not
-    # mps_vars.start_with_previous_values(mps_vars)
     mps_prime_model, _ = milp_models.mps_prime_from_mps(
         mps_model,
         mps_vars,
         network,
-        gc_intervals,
+        config.obj_fun_domain(),
     )
     log_files.append(
         io_manager.gurobi_log_path(bin_number, milp_models.Names.MPS_PRIME),
@@ -352,15 +376,20 @@ def _hierarchical_binning(
         return None
 
     mps_stats = milp_views.MPSStats(
-        milp_vars.coverage_score(network, mps_vars.mcf_vars()).getValue(),
-        milp_vars.gc_probability_score(
+        mps_vars.mcf_vars().total_flow().X,
+        milp_objs.coverage_score(
+            network,
+            mps_vars.mcf_vars(),
+            config.obj_fun_domain(),
+        ).getValue(),
+        milp_objs.gc_score(
             network,
             gc_intervals,
             mps_vars.mgc_vars(),
+            config.obj_fun_domain(),
         ).getValue(),
         mps_obj_val,
     )
-
     milp_result_values = milp_results.Pangebin.from_optimal_variables(
         network,
         gc_intervals,

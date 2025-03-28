@@ -11,11 +11,9 @@ This module unfortunately copy these values but ensure their validity.
 from __future__ import annotations
 
 import logging
-from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
-import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.milp.variables as milp_vars
 import pangebin.plasbin.network as pb_network
 
@@ -30,23 +28,7 @@ def active_fragments(
     variables: milp_vars.MaxCovFlow,
 ) -> Iterator[str]:
     """Get active fragments."""
-    # BUG tmp print
-    _number_of_active_fragments = 0
-    for frag_id in network.fragment_ids():
-        is_active = False
-        frag_f = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.FORWARD)
-        frag_r = gfa_segment.OrientedFragment(frag_id, gfa_segment.Orientation.REVERSE)
-        # OPTIMIZE can I use a conditionnal rather than catching the exception?
-        with suppress(AttributeError):
-            if variables.x(frag_f).X > 0:
-                is_active = True
-        with suppress(AttributeError):
-            if variables.x(frag_r).X > 0:
-                is_active = True
-        if is_active:
-            _number_of_active_fragments += 1
-            yield frag_id
-    _LOGGER.debug("Number of active fragments: %d", _number_of_active_fragments)
+    return (f_id for f_id in network.fragment_ids() if variables.frag(f_id).X > 0)
 
 
 def active_gc_content_interval(
@@ -107,6 +89,10 @@ class Pangebin:
     def fragment_incoming_flow(self, frag_id: str) -> float:
         """Get fragment incoming flow."""
         return self.__frags_incoming_flow[frag_id]
+
+    def number_of_active_fragments(self) -> int:
+        """Get number of active fragments."""
+        return len(self.__frags_incoming_flow)
 
     def active_fragments(self) -> Iterator[str]:
         """Get active fragments."""

@@ -18,6 +18,9 @@ import pangebin.plasbin.bins.input_output as bin_io
 import pangebin.plasbin.config as pb_cfg
 import pangebin.plasbin.create as pb_create
 import pangebin.plasbin.input_output as pb_io
+import pangebin.plasbin.milp.config as milp_cfg
+import pangebin.plasbin.milp.objectives as milp_objs
+import pangebin.plasbin.network as pb_network
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
 
@@ -46,23 +49,75 @@ class AsmArguments:
     )
 
 
-class MILPOptions:
-    """MILP options."""
+class BinningOptions:
+    """Binning options."""
 
-    _RICH_HELP_PANEL = "MILP options"
+    _RICH_HELP_PANEL = "Binning options"
 
-    MCF_COEFFICIENT = typer.Option(
-        help="MCF coefficient",
+    SINK_ARCS_DOMAIN = typer.Option(
+        help="Sink arcs domain",
         rich_help_panel=_RICH_HELP_PANEL,
     )
 
-    MGC_COEFFICIENT = typer.Option(
-        help="MGC coefficient",
+    MIN_FLOW = typer.Option(
+        help="Minimum flow",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    MIN_CUMULATIVE_LENGTH = typer.Option(
+        help="Minimum cumulative length",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    CIRCULAR = typer.Option(
+        help="The flow is circular",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    OBJ_FUN_DOMAIN = typer.Option(
+        help="Objective function domain",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    GAMMA_MCF = typer.Option(
+        help="Gamma MCF coefficient",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    GAMMA_MGC = typer.Option(
+        help="Gamma MGC coefficient",
         rich_help_panel=_RICH_HELP_PANEL,
     )
 
     CONFIG_FILE = typer.Option(
-        "--milp-cfg",
+        "--bin-cfg",
+        help="The configuration file path",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+
+class GurobiOptions:
+    """Gurobi solver options."""
+
+    _RICH_HELP_PANEL = "Gurobi solver options"
+
+    MIP_GAP = typer.Option(
+        help="MIP gap",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    TIME_LIMIT = typer.Option(
+        help="Time limit",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    THREADS = typer.Option(
+        help="Threads",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    CONFIG_FILE = typer.Option(
+        "--gurobi-cfg",
         help="The configuration file path",
         rich_help_panel=_RICH_HELP_PANEL,
     )
@@ -85,16 +140,50 @@ def plasbin_assembly(
     seed_contigs_tsv: Annotated[Path, AsmArguments.SEED_CONTIGS_TSV],
     contig_gc_scores_tsv: Annotated[Path, AsmArguments.CONTIG_GC_SCORES_TSV],
     contig_plasmidness_tsv: Annotated[Path, AsmArguments.CONTIG_PLASMIDNESS_TSV],
-    # MILP options
-    mcf_coefficient: Annotated[
+    # Binning options
+    sink_arcs_domain: Annotated[
+        pb_network.SinkArcsDomain,
+        BinningOptions.SINK_ARCS_DOMAIN,
+    ] = pb_cfg.Binning.DEFAULT_SINK_ARCS_DOMAIN,
+    min_flow: Annotated[
         float,
-        MILPOptions.MCF_COEFFICIENT,
-    ] = pb_cfg.Config.DEFAULT_GAMMA_MCF,
-    mgc_coefficient: Annotated[
+        BinningOptions.MIN_FLOW,
+    ] = pb_cfg.Binning.DEFAULT_MIN_FLOW,
+    min_cumulative_len: Annotated[
+        int,
+        BinningOptions.MIN_CUMULATIVE_LENGTH,
+    ] = pb_cfg.Binning.DEFAULT_MIN_CUMULATIVE_LENGTH,
+    circular: Annotated[
+        bool,
+        BinningOptions.CIRCULAR,
+    ] = pb_cfg.Binning.DEFAULT_CIRCULAR,
+    obj_fun_domain: Annotated[
+        milp_objs.ObjectiveFunctionDomain,
+        BinningOptions.OBJ_FUN_DOMAIN,
+    ] = pb_cfg.Binning.DEFAULT_OBJ_FUN_DOMAIN,
+    gamma_mcf: Annotated[
         float,
-        MILPOptions.MGC_COEFFICIENT,
-    ] = pb_cfg.Config.DEFAULT_GAMMA_MGC,
-    milp_cfg_yaml: Annotated[Path | None, MILPOptions.CONFIG_FILE] = None,
+        BinningOptions.GAMMA_MCF,
+    ] = pb_cfg.Binning.DEFAULT_GAMMA_MCF,
+    gamma_mgc: Annotated[
+        float,
+        BinningOptions.GAMMA_MGC,
+    ] = pb_cfg.Binning.DEFAULT_GAMMA_MGC,
+    binning_cfg_yaml: Annotated[Path | None, BinningOptions.CONFIG_FILE] = None,
+    # Gurobi options
+    mip_gap: Annotated[
+        float | None,
+        GurobiOptions.MIP_GAP,
+    ] = milp_cfg.Gurobi.DEFAULT_MIP_GAP,
+    time_limit: Annotated[
+        float | None,
+        GurobiOptions.TIME_LIMIT,
+    ] = milp_cfg.Gurobi.DEFAULT_TIME_LIMIT,
+    threads: Annotated[
+        int | None,
+        GurobiOptions.THREADS,
+    ] = milp_cfg.Gurobi.DEFAULT_THREADS,
+    gurobi_cfg_yaml: Annotated[Path | None, GurobiOptions.CONFIG_FILE] = None,
     # IO options
     outdir: Annotated[Path, IOOptions.OUTPUT_DIR] = pb_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
@@ -105,13 +194,24 @@ def plasbin_assembly(
 
     io_manager = pb_io.Manager(pb_io.Config(output_directory=outdir))
 
-    milp_config = (
-        pb_cfg.Config.from_yaml(milp_cfg_yaml)
-        if milp_cfg_yaml is not None
-        else pb_cfg.Config(
-            gamma_mcf=mcf_coefficient,
-            gamma_mgc=mgc_coefficient,
+    binning_config = (
+        pb_cfg.Binning.from_yaml(binning_cfg_yaml)
+        if binning_cfg_yaml is not None
+        else pb_cfg.Binning(
+            sink_arcs_domain=sink_arcs_domain,
+            min_flow=min_flow,
+            min_cumulative_len=min_cumulative_len,
+            circular=circular,
+            obj_fun_domain=obj_fun_domain,
+            gamma_mcf=gamma_mcf,
+            gamma_mgc=gamma_mgc,
         )
+    )
+
+    gurobi_config = (
+        milp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
+        if gurobi_cfg_yaml is not None
+        else milp_cfg.Gurobi(mip_gap=mip_gap, time_limit=time_limit, threads=threads)
     )
 
     with gc_io.ScoresReader.open(contig_gc_scores_tsv) as gc_scores_fin:
@@ -129,7 +229,8 @@ def plasbin_assembly(
             intervals,
             gc_scores,
             plasmidness,
-            milp_config,
+            binning_config,
+            gurobi_config,
             io_manager.config().output_directory(),
         ),
     ):
@@ -170,16 +271,50 @@ def plasbin_panassembly(
     seed_fragments_tsv: Annotated[Path, PanasmArguments.SEED_FRAGMENTS_TSV],
     fragment_gc_scores_tsv: Annotated[Path, PanasmArguments.FRAGMENT_GC_SCORES_TSV],
     fragment_plasmidness_tsv: Annotated[Path, PanasmArguments.FRAGMENT_PLASMIDNESS_TSV],
-    # MILP options
-    mcf_coefficient: Annotated[
+    # Binning options
+    sink_arcs_domain: Annotated[
+        pb_network.SinkArcsDomain,
+        BinningOptions.SINK_ARCS_DOMAIN,
+    ] = pb_cfg.Binning.DEFAULT_SINK_ARCS_DOMAIN,
+    min_flow: Annotated[
         float,
-        MILPOptions.MCF_COEFFICIENT,
-    ] = pb_cfg.Config.DEFAULT_GAMMA_MCF,
-    mgc_coefficient: Annotated[
+        BinningOptions.MIN_FLOW,
+    ] = pb_cfg.Binning.DEFAULT_MIN_FLOW,
+    min_cumulative_len: Annotated[
+        int,
+        BinningOptions.MIN_CUMULATIVE_LENGTH,
+    ] = pb_cfg.Binning.DEFAULT_MIN_CUMULATIVE_LENGTH,
+    circular: Annotated[
+        bool,
+        BinningOptions.CIRCULAR,
+    ] = pb_cfg.Binning.DEFAULT_CIRCULAR,
+    obj_fun_domain: Annotated[
+        milp_objs.ObjectiveFunctionDomain,
+        BinningOptions.OBJ_FUN_DOMAIN,
+    ] = pb_cfg.Binning.DEFAULT_OBJ_FUN_DOMAIN,
+    gamma_mcf: Annotated[
         float,
-        MILPOptions.MGC_COEFFICIENT,
-    ] = pb_cfg.Config.DEFAULT_GAMMA_MGC,
-    milp_cfg_yaml: Annotated[Path | None, MILPOptions.CONFIG_FILE] = None,
+        BinningOptions.GAMMA_MCF,
+    ] = pb_cfg.Binning.DEFAULT_GAMMA_MCF,
+    gamma_mgc: Annotated[
+        float,
+        BinningOptions.GAMMA_MGC,
+    ] = pb_cfg.Binning.DEFAULT_GAMMA_MGC,
+    binning_cfg_yaml: Annotated[Path | None, BinningOptions.CONFIG_FILE] = None,
+    # Gurobi options
+    mip_gap: Annotated[
+        float | None,
+        GurobiOptions.MIP_GAP,
+    ] = milp_cfg.Gurobi.DEFAULT_MIP_GAP,
+    time_limit: Annotated[
+        float | None,
+        GurobiOptions.TIME_LIMIT,
+    ] = milp_cfg.Gurobi.DEFAULT_TIME_LIMIT,
+    threads: Annotated[
+        int | None,
+        GurobiOptions.THREADS,
+    ] = milp_cfg.Gurobi.DEFAULT_THREADS,
+    gurobi_cfg_yaml: Annotated[Path | None, GurobiOptions.CONFIG_FILE] = None,
     # IO options
     outdir: Annotated[Path, IOOptions.OUTPUT_DIR] = pb_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
@@ -190,14 +325,27 @@ def plasbin_panassembly(
 
     io_manager = pb_io.Manager(pb_io.Config(output_directory=outdir))
 
-    milp_config = (
-        pb_cfg.Config.from_yaml(milp_cfg_yaml)
-        if milp_cfg_yaml is not None
-        else pb_cfg.Config(
-            gamma_mcf=mcf_coefficient,
-            gamma_mgc=mgc_coefficient,
+    binning_config = (
+        pb_cfg.Binning.from_yaml(binning_cfg_yaml)
+        if binning_cfg_yaml is not None
+        else pb_cfg.Binning(
+            sink_arcs_domain=sink_arcs_domain,
+            min_flow=min_flow,
+            min_cumulative_len=min_cumulative_len,
+            circular=circular,
+            obj_fun_domain=obj_fun_domain,
+            gamma_mcf=gamma_mcf,
+            gamma_mgc=gamma_mgc,
         )
     )
+    _LOGGER.debug("Binning config:\n%s", binning_config.to_dict())
+
+    gurobi_config = (
+        milp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
+        if gurobi_cfg_yaml is not None
+        else milp_cfg.Gurobi(mip_gap=mip_gap, time_limit=time_limit, threads=threads)
+    )
+    _LOGGER.debug("Gurobi config:\n%s", gurobi_config.to_dict())
 
     with gc_io.ScoresReader.open(fragment_gc_scores_tsv) as gc_scores_fin:
         intervals = gc_scores_fin.intervals()
@@ -214,7 +362,8 @@ def plasbin_panassembly(
             intervals,
             gc_scores,
             plasmidness,
-            milp_config,
+            binning_config,
+            gurobi_config,
             io_manager.config().output_directory(),
         ),
     ):
@@ -235,16 +384,50 @@ def plasbin_multiobj(
     seed_contigs_tsv: Annotated[Path, AsmArguments.SEED_CONTIGS_TSV],
     contig_gc_scores_tsv: Annotated[Path, AsmArguments.CONTIG_GC_SCORES_TSV],
     contig_plasmidness_tsv: Annotated[Path, AsmArguments.CONTIG_PLASMIDNESS_TSV],
-    # MILP options
-    mcf_coefficient: Annotated[
+    # Binning options
+    sink_arcs_domain: Annotated[
+        pb_network.SinkArcsDomain,
+        BinningOptions.SINK_ARCS_DOMAIN,
+    ] = pb_cfg.Binning.DEFAULT_SINK_ARCS_DOMAIN,
+    min_flow: Annotated[
         float,
-        MILPOptions.MCF_COEFFICIENT,
-    ] = pb_cfg.Config.DEFAULT_GAMMA_MCF,
-    mgc_coefficient: Annotated[
+        BinningOptions.MIN_FLOW,
+    ] = pb_cfg.Binning.DEFAULT_MIN_FLOW,
+    min_cumulative_len: Annotated[
+        int,
+        BinningOptions.MIN_CUMULATIVE_LENGTH,
+    ] = pb_cfg.Binning.DEFAULT_MIN_CUMULATIVE_LENGTH,
+    circular: Annotated[
+        bool,
+        BinningOptions.CIRCULAR,
+    ] = pb_cfg.Binning.DEFAULT_CIRCULAR,
+    obj_fun_domain: Annotated[
+        milp_objs.ObjectiveFunctionDomain,
+        BinningOptions.OBJ_FUN_DOMAIN,
+    ] = pb_cfg.Binning.DEFAULT_OBJ_FUN_DOMAIN,
+    gamma_mcf: Annotated[
         float,
-        MILPOptions.MGC_COEFFICIENT,
-    ] = pb_cfg.Config.DEFAULT_GAMMA_MGC,
-    milp_cfg_yaml: Annotated[Path | None, MILPOptions.CONFIG_FILE] = None,
+        BinningOptions.GAMMA_MCF,
+    ] = pb_cfg.Binning.DEFAULT_GAMMA_MCF,
+    gamma_mgc: Annotated[
+        float,
+        BinningOptions.GAMMA_MGC,
+    ] = pb_cfg.Binning.DEFAULT_GAMMA_MGC,
+    binning_cfg_yaml: Annotated[Path | None, BinningOptions.CONFIG_FILE] = None,
+    # Gurobi options
+    mip_gap: Annotated[
+        float | None,
+        GurobiOptions.MIP_GAP,
+    ] = milp_cfg.Gurobi.DEFAULT_MIP_GAP,
+    time_limit: Annotated[
+        float | None,
+        GurobiOptions.TIME_LIMIT,
+    ] = milp_cfg.Gurobi.DEFAULT_TIME_LIMIT,
+    threads: Annotated[
+        int | None,
+        GurobiOptions.THREADS,
+    ] = milp_cfg.Gurobi.DEFAULT_THREADS,
+    gurobi_cfg_yaml: Annotated[Path | None, GurobiOptions.CONFIG_FILE] = None,
     # IO options
     outdir: Annotated[Path, IOOptions.OUTPUT_DIR] = pb_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
@@ -255,13 +438,24 @@ def plasbin_multiobj(
 
     io_manager = pb_io.Manager(pb_io.Config(output_directory=outdir))
 
-    milp_config = (
-        pb_cfg.Config.from_yaml(milp_cfg_yaml)
-        if milp_cfg_yaml is not None
-        else pb_cfg.Config(
-            gamma_mcf=mcf_coefficient,
-            gamma_mgc=mgc_coefficient,
+    binning_config = (
+        pb_cfg.Binning.from_yaml(binning_cfg_yaml)
+        if binning_cfg_yaml is not None
+        else pb_cfg.Binning(
+            sink_arcs_domain=sink_arcs_domain,
+            min_flow=min_flow,
+            min_cumulative_len=min_cumulative_len,
+            circular=circular,
+            obj_fun_domain=obj_fun_domain,
+            gamma_mcf=gamma_mcf,
+            gamma_mgc=gamma_mgc,
         )
+    )
+
+    gurobi_config = (
+        milp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
+        if gurobi_cfg_yaml is not None
+        else milp_cfg.Gurobi(mip_gap=mip_gap, time_limit=time_limit, threads=threads)
     )
 
     with gc_io.ScoresReader.open(contig_gc_scores_tsv) as gc_scores_fin:
@@ -279,7 +473,8 @@ def plasbin_multiobj(
             intervals,
             gc_scores,
             plasmidness,
-            milp_config,
+            binning_config,
+            gurobi_config,
             io_manager.config().output_directory(),
         ),
     ):
