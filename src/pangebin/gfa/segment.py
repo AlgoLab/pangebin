@@ -87,10 +87,20 @@ class OrientedFragment:
     def from_segment_line(
         cls,
         segment_line: GfaSegment,
-        orientation: Orientation = Orientation.FORWARD,
+        orientation: Orientation,
     ) -> OrientedFragment:
         """Get oriented fragment from segment line, by default the forward."""
         return cls(segment_line.name, orientation)
+
+    @classmethod
+    def from_segment_line_to_forward(cls, segment_line: GfaSegment) -> OrientedFragment:
+        """Get forward fragment from segment line."""
+        return cls.from_segment_line(segment_line, Orientation.FORWARD)
+
+    @classmethod
+    def from_segment_line_to_reverse(cls, segment_line: GfaSegment) -> OrientedFragment:
+        """Get reverse fragment from segment line."""
+        return cls.from_segment_line(segment_line, Orientation.REVERSE)
 
     def __init__(self, identifier: str, orientation: Orientation) -> None:
         """Initialize object."""

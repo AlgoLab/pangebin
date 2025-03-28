@@ -468,25 +468,21 @@ def add_assembly_links_to_pangenome(
             raise err from err
 
         if assembler_link.predecessor().is_forward():
-            pred_frag = gfa_segment.OrientedFragment(
-                path_from_contig.segment_names[-1].name,
-                gfa_segment.Orientation.FORWARD,
+            pred_frag = gfa_segment.OrientedFragment.from_segment_line_to_forward(
+                path_from_contig.segment_names[-1],
             )
         else:
-            pred_frag = gfa_segment.OrientedFragment(
-                path_from_contig.segment_names[0].name,
-                gfa_segment.Orientation.REVERSE,
+            pred_frag = gfa_segment.OrientedFragment.from_segment_line_to_reverse(
+                path_from_contig.segment_names[0],
             )
 
         if assembler_link.successor().is_forward():
-            succ_frag = gfa_segment.OrientedFragment(
-                path_to_contig.segment_names[0].name,
-                gfa_segment.Orientation.FORWARD,
+            succ_frag = gfa_segment.OrientedFragment.from_segment_line_to_forward(
+                path_to_contig.segment_names[0],
             )
         else:
-            succ_frag = gfa_segment.OrientedFragment(
-                path_to_contig.segment_names[-1].name,
-                gfa_segment.Orientation.REVERSE,
+            succ_frag = gfa_segment.OrientedFragment.from_segment_line_to_reverse(
+                path_to_contig.segment_names[-1],
             )
 
         new_panassembly_link = gfa_link.Link(pred_frag, succ_frag)
