@@ -111,7 +111,7 @@ class MGCStats(MCFStats):
         self.__gc_score = gc_score
 
     def gc_score(self) -> float:
-        """GC probability score."""
+        """GC score."""
         return self.__gc_score
 
     def to_dict(self) -> dict:

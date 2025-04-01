@@ -55,7 +55,7 @@ def gc_score(
     gc_vars: pb_lp_var.GCIntervals,
     obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
 ) -> gurobipy.LinExpr:
-    """Get linear expression for GC probability score."""
+    """Get linear expression for GC score."""
     frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gurobipy.quicksum(
         network.gc_score(frag_id)[b] * gc_vars.frag_gc(frag_id, interval)

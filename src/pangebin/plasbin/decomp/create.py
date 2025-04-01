@@ -13,9 +13,9 @@ import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.config as pb_cfg
 import pangebin.plasbin.decomp.milp.input_output as lp_io
 import pangebin.plasbin.decomp.milp.models as lp_mod
-import pangebin.plasbin.decomp.milp.results as lp_res
 import pangebin.plasbin.decomp.milp.views as lp_views
 import pangebin.plasbin.milp.config as pb_lp_cfg
+import pangebin.plasbin.milp.results as pb_lp_res
 import pangebin.plasbin.network as net
 from pangebin.logging import CONSOLE
 
@@ -215,7 +215,7 @@ def _hierarchical_binning(
     config: pb_cfg.Binning,
     io_manager: lp_io.Manager,
     bin_number: int,
-) -> tuple[lp_views.StatsContainer, lp_res.Pangebin, list[Path]] | None:
+) -> tuple[lp_views.StatsContainer, pb_lp_res.Pangebin, list[Path]] | None:
     log_files: list[Path] = []
     #
     # MCF model
@@ -302,7 +302,7 @@ def _hierarchical_binning(
         config.obj_fun_domain(),
     )
 
-    milp_result_values = lp_res.Pangebin.from_optimal_variables(
+    milp_result_values = pb_lp_res.Pangebin.from_optimal_variables(
         network,
         gc_intervals,
         mps_vars.flow(),
@@ -330,7 +330,7 @@ def _run_model(
 
 
 def _fragment_norm_coverages(
-    milp_result_values: lp_res.Pangebin,
+    milp_result_values: pb_lp_res.Pangebin,
     circular: bool,  # noqa: FBT001
 ) -> tuple[Iterable[bins_items.FragmentNormCoverage], float]:
     """Get fragment normalized coverages."""
@@ -350,7 +350,7 @@ def _fragment_norm_coverages(
 
 def _update_network(
     network: net.Network,
-    milp_result_values: lp_res.Pangebin,
+    milp_result_values: pb_lp_res.Pangebin,
 ) -> None:
     """Update network."""
     for frag_id, incoming_flow in milp_result_values.fragments_incoming_flow():
