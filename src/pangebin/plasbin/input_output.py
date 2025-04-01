@@ -1,23 +1,23 @@
-"""PangeBin-Flow input-output module."""
+"""PangeBin-flow input-output module."""
 
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-import pangebin.plasbin.milp.input_output as milp_io
+import typer
+
 from pangebin.yaml import YAMLInterface
-
-if TYPE_CHECKING:
-    import pangebin.plasbin.milp.models as milp_models
 
 
 class Manager:
-    """PangeBin-Flow input/output manager."""
+    """PangeBin-flow input/output manager."""
 
     __BIN_DIR_PREFIX = "bin"
     __BIN_STATS_FILENAME = Path("bin_stats.yaml")
+    __MILP_STATS_FILENAME = Path("milp_stats.yaml")
     __BIN_SEQ_NORMCOV_FILENAME = Path("bin_seq_normcov.tsv")
 
     def __init__(self, config: Config) -> None:
@@ -32,21 +32,29 @@ class Manager:
         """Get bin stats YAML file path."""
         return self.bin_directory(iteration) / self.__BIN_STATS_FILENAME
 
+    def milp_stats_path(self, iteration: int) -> Path:
+        """Get MILP stats YAML file path."""
+        return self.bin_directory(iteration) / self.__MILP_STATS_FILENAME
+
     def bin_seq_normcov_path(self, iteration: int) -> Path:
         """Get bin stats YAML file path."""
         return self.bin_directory(iteration) / self.__BIN_SEQ_NORMCOV_FILENAME
 
-    def gurobi_log_path(self, iteration: int, model: milp_models.Names) -> Path:
+    def gurobi_log_path(self, iteration: int, model_name: str) -> Path:
         """Get Gurobi log file path."""
-        return self.bin_directory(iteration) / f"{model}.log"
+        return self.bin_directory(iteration) / f"{model_name}.log"
 
-    def move_gurobi_logs(self, log_files: list[Path]) -> None:
+    def move_gurobi_logs(
+        self,
+        log_files: list[Path],
+        fn_log_file_to_iteration_and_model_name: Callable[[Path], tuple[int, str]],
+    ) -> None:
         """Move Gurobi log files to the bin directory."""
         for log_file in log_files:
             shutil.move(
                 log_file,
                 self.gurobi_log_path(
-                    *milp_io.Manager.attributes_from_gurobi_log_path(log_file),
+                    *fn_log_file_to_iteration_and_model_name(log_file),
                 ),
             )
 
@@ -62,13 +70,13 @@ class Manager:
 
 
 class Config(YAMLInterface):
-    """PangeBin-Flow config class."""
+    """PangeBin-flow config class."""
 
     DEFAULT_OUTPUT_DIR = Path("./plasbin")
 
     KEY_OUTPUT_DIR = "output_directory"
 
-    NAME = "PangeBin-Flow IO config"
+    NAME = "PangeBin-flow IO config"
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
@@ -90,3 +98,14 @@ class Config(YAMLInterface):
         return {
             self.KEY_OUTPUT_DIR: self.__output_directory,
         }
+
+
+class IOOptions:
+    """Input-output options."""
+
+    _RICH_HELP_PANEL = "Input/Output options"
+
+    OUTPUT_DIR = typer.Option(
+        help="Output directory",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )

@@ -1,4 +1,7 @@
-"""PangeBin-flow MILP constraints."""
+"""PangeBin-flow MILP constraints library.
+
+The following constraint function serve as base bricks to compose MILP models.
+"""
 
 from __future__ import annotations
 
@@ -8,60 +11,21 @@ import gurobipy
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
-import pangebin.plasbin.milp.objectives as milp_objs
-import pangebin.plasbin.milp.variables as milp_vars
-import pangebin.plasbin.network as pb_network
+import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.network as net
 
 
-def set_mcf_constraints(  # noqa: PLR0913
+def active_fragments_active_one_of_their_orientations(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
-    min_flow: float,
-    min_cumulative_len: int,
-    circular: bool,  # noqa: FBT001
+    sub_v_vars: pb_lp_var.SubVertices,
+    sub_f_vars: pb_lp_var.SubFragments,
+    network: net.Network,
 ) -> None:
-    """MCF constraints."""
-    _active_fragment_equivalent_to_at_least_one_active_extremity(m, var, network)
-    _exactly_one_active_source_arc(m, var, network)
-    _arc_capacities_limit_arc_flows(m, var, network)
-    _fragment_coverages_limit_cumulative_flows(m, var, network)
-    _flow_conservation(m, var, network)
-    _total_flow_value(m, var, network)
-    _active_arcs_implies_active_fragments(m, var, network)
-    _active_fragments_imply_at_least_one_active_arc(m, var, network)
-    _pos_flow_implies_active_vertices(m, var, network)
-    #
-    # Connectivity
-    #
-    _subtree_depth_min_distance(m, var, network)
-    _arcs_in_tree_are_active(m, var, network)
-    _alpha_is_the_number_of_vertices_in_the_solution(m, var, network)
-    #
-    # Arc flow lower bound
-    #
-    _active_arcs_have_flow_at_least_total_flow(m, var, network)
-    #
-    # Plasmid property
-    #
-    # REFACTOR magic values should be in config
-    # DOCU MCF: + minimum flow value constraint
-    _total_flow_is_strictly_positive(m, var, min_flow)
-    # DOCU MCF: + min cumulatie len constraint
-    _minimum_cumulative_length(m, var, network, min_cumulative_len)
-    if circular:
-        _circularity(m, var, network)
-
-
-def _active_fragment_equivalent_to_at_least_one_active_extremity(
-    m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
-) -> None:
+    """Active fragment equivalent to at least one active extremity constraint."""
     # DOCU MCF: + active fragment equivalent to at least one active extremity
     m.addConstrs(
         (
-            var.x(frag) <= var.frag(frag_id)
+            sub_v_vars.x(frag) <= sub_f_vars.x(frag_id)
             for frag_id in network.fragment_ids()
             for frag in network.to_oriented(frag_id)
         ),
@@ -69,37 +33,40 @@ def _active_fragment_equivalent_to_at_least_one_active_extremity(
     )
     m.addConstrs(
         (
-            2 * var.frag(frag_id)
-            <= gurobipy.quicksum(var.x(frag) for frag in network.to_oriented(frag_id))
+            sub_f_vars.x(frag_id)
+            <= gurobipy.quicksum(
+                sub_v_vars.x(frag) for frag in network.to_oriented(frag_id)
+            )
             for frag_id in network.fragment_ids()
         ),
         name="active_fragment_implies_active_extremity",
     )
 
 
-def _exactly_one_active_source_arc(
+def exactly_one_active_source_arc(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    network: net.Network,
 ) -> None:
     """Exactly one out source arc constraint."""
     m.addConstr(
-        gurobipy.quicksum(var.y_s(a) for a in network.source_arcs()) == 1,
+        gurobipy.quicksum(sub_arc_vars.s(a) for a in network.source_arcs()) == 1,
         name="exactly_one_out_source_link",
     )
 
 
-def _circularity(
+def circularity(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    network: net.Network,
 ) -> None:
+    """Circularity constraint."""
     # DOCU MCF: + circularity
     source = network.SOURCE_VERTEX
     sink = network.SINK_VERTEX
     m.addConstrs(
         (
-            var.y_s((source, frag)) == var.y_t((frag, sink))
+            sub_arc_vars.s((source, frag)) == sub_arc_vars.t((frag, sink))
             for seed in network.seeds()
             for frag in network.to_oriented(seed)
         ),
@@ -107,10 +74,11 @@ def _circularity(
     )
 
 
-def _arc_capacities_limit_arc_flows(
+def arc_capacities_limit_arc_flows(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    flow_vars: pb_lp_var.Flow,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    network: net.Network,
 ) -> None:
     """Arc capacities limit arc flows."""
     m.addConstrs(
@@ -118,12 +86,15 @@ def _arc_capacities_limit_arc_flows(
             const
             for const in chain(
                 (
-                    var.f_s(a) <= network.cap_s(a) * var.y_s(a)
+                    flow_vars.s(a) <= network.cap_s(a) * sub_arc_vars.s(a)
                     for a in network.source_arcs()
                 ),
-                (var.f(a) <= network.cap(a) * var.y(a) for a in network.link_arcs()),
                 (
-                    var.f_t(a) <= network.cap_t(a) * var.y_t(a)
+                    flow_vars.l(a) <= network.cap(a) * sub_arc_vars.l(a)
+                    for a in network.link_arcs()
+                ),
+                (
+                    flow_vars.t(a) <= network.cap_t(a) * sub_arc_vars.t(a)
                     for a in network.sink_arcs()
                 ),
             )
@@ -132,15 +103,15 @@ def _arc_capacities_limit_arc_flows(
     )
 
 
-def _fragment_coverages_limit_cumulative_flows(
+def fragment_coverages_limit_cumulative_flows(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    flow_vars: pb_lp_var.Flow,
+    network: net.Network,
 ) -> None:
     """Fragment coverages limit cumulative flows."""
     m.addConstrs(
         (
-            milp_vars.incoming_flow_forward_reverse(frag_id, network, var)
+            flow_vars.incoming_forward_reverse(network, frag_id)
             <= network.coverage(frag_id)
             for frag_id in network.gfa_graph().segment_names
         ),
@@ -148,124 +119,124 @@ def _fragment_coverages_limit_cumulative_flows(
     )
 
 
-def _flow_conservation(
+def flow_conservation(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    flow_vars: pb_lp_var.Flow,
+    network: net.Network,
 ) -> None:
     """Flow conservation."""
     m.addConstrs(
         (
-            milp_vars.incoming_flow(fragment, network, var)
-            == milp_vars.outgoing_flow(fragment, network, var)
+            flow_vars.incoming(network, fragment)
+            == flow_vars.outgoing(network, fragment)
             for fragment in network.oriented_fragments()
         ),
         name="flow_conservation",
     )
 
 
-def _total_flow_value(
+def total_flow_value(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    flow_vars: pb_lp_var.Flow,
+    network: net.Network,
 ) -> None:
     """Set the total flow equals the source outgoing flow and the sink incoming flow."""
     m.addConstr(
-        var.total_flow()
-        == gurobipy.quicksum(var.f_s(s_w) for s_w in network.source_arcs()),
+        flow_vars.total()
+        == gurobipy.quicksum(flow_vars.s(s_w) for s_w in network.source_arcs()),
         name="total_flow_equals_source_outgoing_flow",
     )
     m.addConstr(
-        var.total_flow()
-        == gurobipy.quicksum(var.f_t(u_t) for u_t in network.sink_arcs()),
+        flow_vars.total()
+        == gurobipy.quicksum(flow_vars.t(u_t) for u_t in network.sink_arcs()),
         name="total_flow_equals_sink_incoming_flow",
     )
 
 
-def _active_arcs_implies_active_fragments(
+def active_arcs_implies_active_fragments(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_v_vars: pb_lp_var.SubVertices,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    network: net.Network,
 ) -> None:
     """Active arcs implies active fragments."""
     for source_arc in network.source_arcs():
         m.addConstr(
-            var.y_s(source_arc) <= var.x(source_arc[1]),
+            sub_arc_vars.s(source_arc) <= sub_v_vars.x(source_arc[1]),
             name=f"active_arc_{source_arc[0]}_{source_arc[1]}_implies_active_fragment_{source_arc[1]}",
         )
     for arc in network.link_arcs():
         m.addConstr(
-            var.y(arc) <= var.x(arc.predecessor()),
+            sub_arc_vars.l(arc) <= sub_v_vars.x(arc.predecessor()),
             name=f"active_arc_{arc}_implies_active_fragment_{arc.predecessor()}",
         )
         m.addConstr(
-            var.y(arc) <= var.x(arc.successor()),
+            sub_arc_vars.l(arc) <= sub_v_vars.x(arc.successor()),
             name=f"active_arc_{arc}_implies_active_fragment_{arc.successor()}",
         )
     for sink_arc in network.sink_arcs():
         m.addConstr(
-            var.y_t(sink_arc) <= var.x(sink_arc[0]),
+            sub_arc_vars.t(sink_arc) <= sub_v_vars.x(sink_arc[0]),
             name=f"active_arc_{sink_arc[0]}_{sink_arc[1]}_implies_active_fragment_{sink_arc[0]}",
         )
 
 
 # REFACTOR Potentially useless constraint
-def _active_fragments_imply_at_least_one_active_arc(
+def active_fragments_imply_at_least_one_active_arc(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_v_vars: pb_lp_var.SubVertices,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    network: net.Network,
 ) -> None:
     """Active fragments imply at least one active arc."""
     m.addConstrs(
         (
-            var.x(frag)
-            <= milp_vars.incoming_arcs_y(
-                frag,
-                network,
-                var,
-            )
+            sub_v_vars.x(frag) <= sub_arc_vars.incoming(network, frag)
             for frag in network.oriented_fragments()
         ),
         name="active_fragments_imply_at_least_one_active_arc",
     )
 
 
-def _pos_flow_implies_active_vertices(
+def active_arcs_imply_vertices_in_same_component(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_v_vars: pb_lp_var.SubVertices,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    network: net.Network,
 ) -> None:
-    """Positive flow implies the two incident vertices are in the component."""
+    """Active arcs imply vertices in the same connected component."""
+    # REFACTOR potentially redondant with active_fragments_imply_at_least_one_active_arc
     for source_arc in network.source_arcs():
         m.addConstr(
-            1 - var.y_s(source_arc) >= 1 - var.x(source_arc[1]),
-            name=f"pos_flow_implies_active_vertices_{source_arc[0]}_{source_arc[1]}",
+            1 - sub_arc_vars.s(source_arc) >= 1 - sub_v_vars.x(source_arc[1]),
+            name=f"active_arcs_imply_vertices_in_same_component_{source_arc[0]}_{source_arc[1]}",
         )
     for arc in network.link_arcs():
         m.addConstr(
-            1 - var.y(arc) >= var.x(arc.predecessor()) - var.x(arc.successor()),
-            name=f"pos_flow_implies_active_vertices_{arc.predecessor()}_{arc.successor()}",
+            1 - sub_arc_vars.l(arc)
+            >= sub_v_vars.x(arc.predecessor()) - sub_v_vars.x(arc.successor()),
+            name=f"active_arcs_imply_vertices_in_same_component_{arc.predecessor()}_{arc.successor()}",
         )
     for sink_arc in network.sink_arcs():
         m.addConstr(
-            1 - var.y_t(sink_arc) >= var.x(sink_arc[0]) - 1,
-            name=f"pos_flow_implies_active_vertices_{sink_arc[0]}_{sink_arc[1]}",
+            1 - sub_arc_vars.t(sink_arc) >= sub_v_vars.x(sink_arc[0]) - 1,
+            name=f"active_arcs_imply_vertices_in_same_component_{sink_arc[0]}_{sink_arc[1]}",
         )
 
 
-def _subtree_depth_min_distance(
+def subtree_depth_min_distance(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    ccomp_vars: pb_lp_var.ConnectedComponent,
+    network: net.Network,
 ) -> None:
     """Subtree depth min distance."""
     #
     # For the source
     #
     m.addConstr(
-        var.alpha()
+        ccomp_vars.alpha()
         + gurobipy.quicksum(
-            var.beta_s(source_arcs) for source_arcs in network.source_arcs()
+            ccomp_vars.beta_s(source_arcs) for source_arcs in network.source_arcs()
         )
         <= 1,
         name="source_subtree_depth_min_distance",
@@ -275,8 +246,8 @@ def _subtree_depth_min_distance(
     #
     m.addConstrs(
         (
-            milp_vars.outgoing_beta(fragment, network, var)
-            - milp_vars.incoming_beta(fragment, network, var)
+            ccomp_vars.outgoing_beta(network, fragment)
+            - ccomp_vars.incoming_beta(network, fragment)
             <= 1
             for fragment in network.oriented_fragments()
         ),
@@ -286,16 +257,19 @@ def _subtree_depth_min_distance(
     # For the sink
     #
     m.addConstr(
-        -gurobipy.quicksum(var.beta_t(sink_arcs) for sink_arcs in network.sink_arcs())
+        -gurobipy.quicksum(
+            ccomp_vars.beta_t(sink_arcs) for sink_arcs in network.sink_arcs()
+        )
         <= 1,
         name="sink_subtree_depth_min_distance",
     )
 
 
-def _arcs_in_tree_are_active(
+def arcs_in_tree_are_active(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    ccomp_vars: pb_lp_var.ConnectedComponent,
+    network: net.Network,
 ) -> None:
     """Arcs in tree are active."""
     #
@@ -303,8 +277,8 @@ def _arcs_in_tree_are_active(
     #
     m.addConstrs(
         (
-            var.beta_s(source_arc)
-            >= -var.y_s(source_arc) * network.number_of_vertices()
+            ccomp_vars.beta_s(source_arc)
+            >= -sub_arc_vars.s(source_arc) * network.number_of_vertices()
             for source_arc in network.source_arcs()
         ),
         name="source_arcs_in_tree_are_active",
@@ -314,7 +288,7 @@ def _arcs_in_tree_are_active(
     #
     m.addConstrs(
         (
-            var.beta(arc) >= -var.y(arc) * network.number_of_vertices()
+            ccomp_vars.beta(arc) >= -sub_arc_vars.l(arc) * network.number_of_vertices()
             for arc in network.link_arcs()
         ),
         name="Link_arcs_in_tree_are_active",
@@ -324,33 +298,37 @@ def _arcs_in_tree_are_active(
     #
     m.addConstrs(
         (
-            var.beta_t(sink_arc) >= -var.y_t(sink_arc) * network.number_of_vertices()
+            ccomp_vars.beta_t(sink_arc)
+            >= -sub_arc_vars.t(sink_arc) * network.number_of_vertices()
             for sink_arc in network.sink_arcs()
         ),
         name="sink_arcs_in_tree_are_active",
     )
 
 
-def _alpha_is_the_number_of_vertices_in_the_solution(
+def alpha_is_the_number_of_vertices_in_the_solution(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_v_vars: pb_lp_var.SubVertices,
+    ccomp_vars: pb_lp_var.ConnectedComponent,
+    network: net.Network,
 ) -> None:
     """Alpha is the number of vertices in the solution connected subgraph."""
     m.addConstr(
-        var.alpha()
+        ccomp_vars.alpha()
         == 2
         + gurobipy.quicksum(
-            var.x(fragment) for fragment in network.oriented_fragments()
+            sub_v_vars.x(fragment) for fragment in network.oriented_fragments()
         ),
         name="alpha_is_the_number_of_vertices_in_the_solution",
     )
 
 
-def _active_arcs_have_flow_at_least_total_flow(
+def active_arcs_have_flow_at_least_total_flow(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    sub_arc_vars: pb_lp_var.SubArcs,
+    flow_vars: pb_lp_var.Flow,
+    pos_flow_vars: pb_lp_var.PositiveFlow,
+    network: net.Network,
 ) -> None:
     """Active links have flow at least total flow."""
     max_seed_cov = max(
@@ -361,17 +339,19 @@ def _active_arcs_have_flow_at_least_total_flow(
             const
             for const in chain(
                 (
-                    var.pos_f_s(source_arc)
-                    >= var.total_flow() - (1 - var.y_s(source_arc)) * max_seed_cov
+                    pos_flow_vars.s(source_arc)
+                    >= flow_vars.total()
+                    - (1 - sub_arc_vars.s(source_arc)) * max_seed_cov
                     for source_arc in network.source_arcs()
                 ),
                 (
-                    var.pos_f(arc) >= var.total_flow() - (1 - var.y(arc)) * max_seed_cov
+                    pos_flow_vars.l(arc)
+                    >= flow_vars.total() - (1 - sub_arc_vars.l(arc)) * max_seed_cov
                     for arc in network.link_arcs()
                 ),
                 (
-                    var.pos_f_t(sink_arc)
-                    >= var.total_flow() - (1 - var.y_t(sink_arc)) * max_seed_cov
+                    pos_flow_vars.t(sink_arc)
+                    >= flow_vars.total() - (1 - sub_arc_vars.t(sink_arc)) * max_seed_cov
                     for sink_arc in network.sink_arcs()
                 ),
             )
@@ -383,12 +363,15 @@ def _active_arcs_have_flow_at_least_total_flow(
             const
             for const in chain(
                 (
-                    var.pos_f_s(source_arc) <= var.total_flow()
+                    pos_flow_vars.s(source_arc) <= flow_vars.total()
                     for source_arc in network.source_arcs()
                 ),
-                (var.pos_f(arc) <= var.total_flow() for arc in network.link_arcs()),
                 (
-                    var.pos_f_t(sink_arc) <= var.total_flow()
+                    pos_flow_vars.l(arc) <= flow_vars.total()
+                    for arc in network.link_arcs()
+                ),
+                (
+                    pos_flow_vars.t(sink_arc) <= flow_vars.total()
                     for sink_arc in network.sink_arcs()
                 ),
             )
@@ -400,12 +383,15 @@ def _active_arcs_have_flow_at_least_total_flow(
             const
             for const in chain(
                 (
-                    var.pos_f_s(source_arc) <= var.f_s(source_arc)
+                    pos_flow_vars.s(source_arc) <= flow_vars.s(source_arc)
                     for source_arc in network.source_arcs()
                 ),
-                (var.pos_f(arc) <= var.f(arc) for arc in network.link_arcs()),
                 (
-                    var.pos_f_t(sink_arc) <= var.f_t(sink_arc)
+                    pos_flow_vars.l(arc) <= flow_vars.l(arc)
+                    for arc in network.link_arcs()
+                ),
+                (
+                    pos_flow_vars.t(sink_arc) <= flow_vars.t(sink_arc)
                     for sink_arc in network.sink_arcs()
                 ),
             )
@@ -414,38 +400,31 @@ def _active_arcs_have_flow_at_least_total_flow(
     )
 
 
-def _total_flow_is_strictly_positive(
+def total_flow_is_strictly_positive(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
+    flow_vars: pb_lp_var.Flow,
     epsilon_total_flow: float,
 ) -> None:
     """Total flow is strictly positive."""
     m.addConstr(
-        var.total_flow() >= epsilon_total_flow,
+        flow_vars.total() >= epsilon_total_flow,
         name="total_flow_is_strictly_positive",
     )
 
 
-def _minimum_cumulative_length(
+def minimum_cumulative_length(
     m: gurobipy.Model,
-    var: milp_vars.MaxCovFlow,
-    network: pb_network.Network,
+    frag_vars: pb_lp_var.SubFragments,
+    network: net.Network,
     minimum_cumulative_length: int,
 ) -> None:
     """Minimum cumulative length."""
     # DOCU note that the repetition is not considered
-    m.addConstrs(
-        (
-            var.x(frag) <= var.frag(frag_id)
-            for frag_id in network.fragment_ids()
-            for frag in network.to_oriented(frag_id)
-        ),
-        name="extremity_actives_fragment",
-    )
     m.addConstr(
         minimum_cumulative_length
         <= gurobipy.quicksum(
-            var.frag(frag_id) * gfa_segment.length(network.gfa_graph().segment(frag_id))
+            frag_vars.x(frag_id)
+            * gfa_segment.length(network.gfa_graph().segment(frag_id))
             for frag_id in network.fragment_ids()
         ),
         name="minimum_cumulative_length",
@@ -453,200 +432,47 @@ def _minimum_cumulative_length(
 
 
 # ------------------------------------------------------------------------------------ #
-#                                          MGC                                         #
+#                                          GC                                          #
 # ------------------------------------------------------------------------------------ #
-def add_mgc_constraints(  # noqa: PLR0913
+def exactly_one_interval_is_active(
     m: gurobipy.Model,
-    var: milp_vars.MaxGC,
-    obj_fun_domain: milp_objs.ObjectiveFunctionDomain,
-    network: pb_network.Network,
-    intervals: gc_items.Intervals,
-    coefficient: float,
-    previous_coverage_score: float,
-) -> None:
-    """Add MGC constraints."""
-    _coverage_score_lower_bound(
-        m,
-        var,
-        obj_fun_domain,
-        coefficient,
-        previous_coverage_score,
-        network,
-    )
-    _exactly_one_interval_is_active(m, var, intervals)
-    _define_frag_gc(m, var, network, intervals)
-
-
-def _coverage_score_lower_bound(  # noqa: PLR0913
-    m: gurobipy.Model,
-    var: milp_vars.MaxGC,
-    obj_fun_domain: milp_objs.ObjectiveFunctionDomain,
-    coefficient: float,
-    previous_coverage_score: float,
-    network: pb_network.Network,
-) -> None:
-    """Total flow lower bound."""
-    # DOCU MGC: fix the total flow
-    m.addConstr(
-        coefficient * previous_coverage_score
-        <= milp_objs.coverage_score(network, var.mcf_vars(), obj_fun_domain),
-        name="coverage_score_lower_bound",
-    )
-
-
-def _exactly_one_interval_is_active(
-    m: gurobipy.Model,
-    var: milp_vars.MaxGC,
+    gc_vars: pb_lp_var.GCIntervals,
     intervals: gc_items.Intervals,
 ) -> None:
     """Exactly one interval is active."""
     m.addConstr(
-        gurobipy.quicksum(var.gc(interval) for interval in intervals) == 1,
+        gurobipy.quicksum(gc_vars.gc(interval) for interval in intervals) == 1,
         name="exactly_one_interval_is_active",
     )
 
 
-def _define_frag_gc(
+def define_frag_gc(
     m: gurobipy.Model,
-    var: milp_vars.MaxGC,
-    network: pb_network.Network,
+    frag_vars: pb_lp_var.SubFragments,
+    gc_vars: pb_lp_var.GCIntervals,
+    network: net.Network,
     intervals: gc_items.Intervals,
 ) -> None:
+    """Define frag gc variables."""
     m.addConstrs(
         (
-            var.frag_gc(frag_id, interval) <= var.mcf_vars().frag(frag_id)
+            gc_vars.frag_gc(frag_id, interval) <= frag_vars.x(frag_id)
             for (frag_id, interval) in product(network.fragment_ids(), intervals)
         ),
         name="define_frag_gc_1",
     )
     m.addConstrs(
         (
-            var.frag_gc(frag_id, interval) <= var.gc(interval)
+            gc_vars.frag_gc(frag_id, interval) <= gc_vars.gc(interval)
             for (frag_id, interval) in product(network.fragment_ids(), intervals)
         ),
         name="define_frag_gc_2",
     )
     m.addConstrs(
         (
-            var.frag_gc(frag_id, interval)
-            >= var.mcf_vars().frag(frag_id) + var.gc(interval) - 1
+            gc_vars.frag_gc(frag_id, interval)
+            >= frag_vars.x(frag_id) + gc_vars.gc(interval) - 1
             for (frag_id, interval) in product(network.fragment_ids(), intervals)
         ),
         name="define_frag_gc_3",
     )
-
-
-# ------------------------------------------------------------------------------------ #
-#                                          MPS                                         #
-# ------------------------------------------------------------------------------------ #
-def add_mps_constraints(  # noqa: PLR0913
-    m: gurobipy.Model,
-    var: milp_vars.MaxPlasmidScore,
-    network: pb_network.Network,
-    intervals: gc_items.Intervals,
-    coefficient: float,
-    previous_gc_score: float,
-    obj_fun_domain: milp_objs.ObjectiveFunctionDomain,
-) -> None:
-    """Add MPS constraints to MGC model."""
-    _gc_probability_score_lower_bound(
-        m,
-        var,
-        network,
-        intervals,
-        coefficient,
-        previous_gc_score,
-        obj_fun_domain,
-    )
-
-
-def _gc_probability_score_lower_bound(  # noqa: PLR0913
-    m: gurobipy.Model,
-    var: milp_vars.MaxPlasmidScore,
-    network: pb_network.Network,
-    intervals: gc_items.Intervals,
-    coefficient: float,
-    previous_gc_probability_score: float,
-    obj_fun_domain: milp_objs.ObjectiveFunctionDomain,
-) -> None:
-    """GC probability score lower bound."""
-    # DOCU be carefull when previous_gc_probability_score is < 0
-    m.addConstr(
-        previous_gc_probability_score
-        - (1 - coefficient) * abs(previous_gc_probability_score)
-        <= milp_objs.gc_score(network, intervals, var.mgc_vars(), obj_fun_domain),
-        name="gc_probability_score_lower_bound",
-    )
-
-
-# ------------------------------------------------------------------------------------ #
-#                                         MPS'                                         #
-# ------------------------------------------------------------------------------------ #
-def add_mps_prime_constraints_to_mps(
-    m: gurobipy.Model,
-    var: milp_vars.MaxPlasmidScore,
-    network: pb_network.Network,
-    mps_obj_value: float,
-    obj_fun_domain: milp_objs.ObjectiveFunctionDomain,
-) -> None:
-    """Add MPS' constraints to MPS model."""
-    _fix_plasmidness_score(m, var, network, mps_obj_value, obj_fun_domain)
-
-
-def _fix_plasmidness_score(
-    m: gurobipy.Model,
-    var: milp_vars.MaxPlasmidScore,
-    network: pb_network.Network,
-    mps_obj_value: float,
-    obj_fun_domain: milp_objs.ObjectiveFunctionDomain,
-) -> None:
-    # FIXME numerical problem can occur
-    # Warning: max constraint violation (9.5055e-06) exceeds tolerance
-    m.addConstr(
-        milp_objs.plasmidness_score(network, var, obj_fun_domain) >= mps_obj_value,
-        name="fix_plasmidness_score",
-    )
-
-
-# ------------------------------------------------------------------------------------ #
-#                                       Multiobj                                       #
-# ------------------------------------------------------------------------------------ #
-def set_multiobj_constraints(
-    m: gurobipy.Model,
-    var: milp_vars.MaxPlasmidScore,
-    network: pb_network.Network,
-    intervals: gc_items.Intervals,
-) -> None:
-    """MCF constraints."""
-    # REFACTOR will remove this feature
-    _exactly_one_active_source_arc(m, var.mcf_vars(), network)
-    _arc_capacities_limit_arc_flows(m, var.mcf_vars(), network)
-    _fragment_coverages_limit_cumulative_flows(m, var.mcf_vars(), network)
-    _flow_conservation(m, var.mcf_vars(), network)
-    _total_flow_value(m, var.mcf_vars(), network)
-    _active_arcs_implies_active_fragments(m, var.mcf_vars(), network)
-    _active_fragments_imply_at_least_one_active_arc(m, var.mcf_vars(), network)
-    _pos_flow_implies_active_vertices(m, var.mcf_vars(), network)
-    #
-    # Connectivity
-    #
-    _subtree_depth_min_distance(m, var.mcf_vars(), network)
-    _arcs_in_tree_are_active(m, var.mcf_vars(), network)
-    _alpha_is_the_number_of_vertices_in_the_solution(m, var.mcf_vars(), network)
-    #
-    # Arc flow lower bound
-    #
-    _active_arcs_have_flow_at_least_total_flow(m, var.mcf_vars(), network)
-    #
-    # Plasmid property
-    #
-    # REFACTOR magic values should be in config
-    # DOCU MULTIOBJ: + minimum flow value constraint
-    _total_flow_is_strictly_positive(m, var.mcf_vars(), 0.0001)
-    # DOCU MULTIOBJ: + min cumulative length constraint
-    _minimum_cumulative_length(m, var.mcf_vars(), network, 1000)
-    #
-    # GC content
-    #
-    _exactly_one_interval_is_active(m, var.mgc_vars(), intervals)
-    _define_frag_gc(m, var.mgc_vars(), network, intervals)

@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
-import pangebin.plasbin.milp.variables as milp_vars
-import pangebin.plasbin.network as pb_network
+import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.network as net
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -25,20 +25,20 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def active_fragments(
-    network: pb_network.Network,
-    variables: milp_vars.MaxCovFlow,
+    network: net.Network,
+    frag_vars: pb_lp_var.SubFragments,
 ) -> Iterator[str]:
     """Get active fragments."""
-    return (f_id for f_id in network.fragment_ids() if variables.frag(f_id).X > 0)
+    return (f_id for f_id in network.fragment_ids() if frag_vars.x(f_id).X > 0)
 
 
 def active_gc_content_interval(
     intervals: gc_items.Intervals,
-    variables: milp_vars.MaxGC,
+    gc_vars: pb_lp_var.GCIntervals,
 ) -> tuple[float, float]:
     """Get active GC content interval."""
     for interval in intervals:
-        if variables.gc(interval).X > 0:
+        if gc_vars.gc(interval).X > 0:
             return interval
     _crt_msg = "Could not find active GC content interval"
     _LOGGER.critical(_crt_msg)
@@ -51,30 +51,27 @@ class Pangebin:
     @classmethod
     def from_optimal_variables(
         cls,
-        network: pb_network.Network,
+        network: net.Network,
         intervals: gc_items.Intervals,
-        mcf_var: milp_vars.MaxCovFlow,
-        mgc_var: milp_vars.MaxGC,
+        flow_vars: pb_lp_var.Flow,
+        frag_vars: pb_lp_var.SubFragments,
+        gc_vars: pb_lp_var.GCIntervals,
     ) -> Pangebin:
         """Get result from variable values."""
         return cls(
             (
                 (
                     frag_id,
-                    milp_vars.incoming_flow_forward_reverse(
-                        frag_id,
-                        network,
-                        mcf_var,
-                    ).getValue(),
+                    flow_vars.incoming_forward_reverse(network, frag_id).getValue(),
                 )
-                for frag_id in active_fragments(network, mcf_var)
+                for frag_id in active_fragments(network, frag_vars)
             ),
-            mcf_var.total_flow().X,
+            flow_vars.total().X,
             sum(
                 gfa_segment.length(network.gfa_graph().segment(frag_id))
-                for frag_id in active_fragments(network, mcf_var)
+                for frag_id in active_fragments(network, frag_vars)
             ),
-            active_gc_content_interval(intervals, mgc_var),
+            active_gc_content_interval(intervals, gc_vars),
         )
 
     def __init__(

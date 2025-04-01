@@ -5,20 +5,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import pangebin.plasbin.milp.objectives as milp_objs
-import pangebin.plasbin.network as pb_network
+import typer
+
+import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.network as net
 from pangebin.yaml import YAMLInterface
 
 
 class Binning(YAMLInterface):
     """PangeBin-flow binning config class."""
 
-    DEFAULT_SINK_ARCS_DOMAIN = pb_network.SinkArcsDomain.ALL
+    DEFAULT_SINK_ARCS_DOMAIN = net.SinkArcsDomain.ALL
     DEFAULT_MIN_FLOW = 0.0001
     DEFAULT_MIN_CUMULATIVE_LENGTH = 1000
-    # TODO CLI circular
     DEFAULT_CIRCULAR = False
-    DEFAULT_OBJ_FUN_DOMAIN = milp_objs.ObjectiveFunctionDomain.ALL
+    DEFAULT_OBJ_FUN_DOMAIN = pb_lp_obj.ObjectiveFunctionDomain.ALL
     DEFAULT_GAMMA_MCF = 0.9
     DEFAULT_GAMMA_MGC = 0.9
 
@@ -53,13 +54,13 @@ class Binning(YAMLInterface):
             config_dict.get(cls.KEY_GAMMA_MGC, cls.DEFAULT_GAMMA_MGC),
         )
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
-        sink_arcs_domain: pb_network.SinkArcsDomain = DEFAULT_SINK_ARCS_DOMAIN,
+        sink_arcs_domain: net.SinkArcsDomain = DEFAULT_SINK_ARCS_DOMAIN,
         min_flow: float = DEFAULT_MIN_FLOW,
         min_cumulative_len: int = DEFAULT_MIN_CUMULATIVE_LENGTH,
         circular: bool = DEFAULT_CIRCULAR,  # noqa: FBT001
-        obj_fun_domain: milp_objs.ObjectiveFunctionDomain = DEFAULT_OBJ_FUN_DOMAIN,
+        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain = DEFAULT_OBJ_FUN_DOMAIN,
         gamma_mcf: float = DEFAULT_GAMMA_MCF,
         gamma_mgc: float = DEFAULT_GAMMA_MGC,
     ) -> None:
@@ -72,8 +73,8 @@ class Binning(YAMLInterface):
         self.__gamma_mcf = gamma_mcf
         self.__gamma_mgc = gamma_mgc
 
-    def sink_arcs_domain(self) -> pb_network.SinkArcsDomain:
-        """Get sink arcs domain."""
+    def sink_arcs_domain(self) -> net.SinkArcsDomain:
+        """Get sink-arcs domain."""
         return self.__sink_arcs_domain
 
     def min_flow(self) -> float:
@@ -88,7 +89,7 @@ class Binning(YAMLInterface):
         """Get circular."""
         return self.__circular
 
-    def obj_fun_domain(self) -> milp_objs.ObjectiveFunctionDomain:
+    def obj_fun_domain(self) -> pb_lp_obj.ObjectiveFunctionDomain:
         """Get objective function domain."""
         return self.__obj_fun_domain
 
@@ -111,6 +112,53 @@ class Binning(YAMLInterface):
             self.KEY_GAMMA_MCF: self.__gamma_mcf,
             self.KEY_GAMMA_MGC: self.__gamma_mgc,
         }
+
+
+class BinningOptions:
+    """Binning options."""
+
+    _RICH_HELP_PANEL = "Binning options"
+
+    SINK_ARCS_DOMAIN = typer.Option(
+        help="Sink-arcs domain",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    MIN_FLOW = typer.Option(
+        help="Minimum flow",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    MIN_CUMULATIVE_LENGTH = typer.Option(
+        help="Minimum cumulative length",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    CIRCULAR = typer.Option(
+        help="The flow is circular",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    OBJ_FUN_DOMAIN = typer.Option(
+        help="Objective function domain",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    GAMMA_MCF = typer.Option(
+        help="Gamma MCF coefficient",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    GAMMA_MGC = typer.Option(
+        help="Gamma MGC coefficient",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    CONFIG_FILE = typer.Option(
+        "--bin-cfg",
+        help="The configuration file path",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
 
 
 if __name__ == "__main__":

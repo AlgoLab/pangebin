@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
+from itertools import chain
 from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class SinkArcsDomain(StrEnum):
-    """Sink arcs definition."""
+    """Sink-arcs definition."""
 
     ALL = "all"
     SEEDS = "seeds"
@@ -185,7 +186,7 @@ class Network:
     def sink_arcs(
         self,
     ) -> Iterator[tuple[gfa_segment.OrientedFragment, str]]:
-        """Create fragment to sink arcs."""
+        """Create fragment to sink-arcs."""
         return ((fragment, self.SINK_VERTEX) for fragment in self.oriented_fragments())
 
     #
@@ -266,3 +267,31 @@ class Network:
             del self.__plasmidness[fragment_id]
         else:
             self.__coverages[fragment_id] -= coverage_to_substrack
+
+
+class StrFormatter:
+    """Network string formatter."""
+
+    @classmethod
+    def arc(cls, arc: gfa_link.Link) -> str:
+        """Get arc string."""
+        return str(arc)
+
+    @classmethod
+    def s_arc(cls, link: tuple[str, gfa_segment.OrientedFragment]) -> str:
+        """Get source arc string."""
+        return f"{link[0]}_{link[1]}"
+
+    @classmethod
+    def t_arc(cls, link: tuple[gfa_segment.OrientedFragment, str]) -> str:
+        """Get sink arc string."""
+        return f"{link[0]}_{link[1]}"
+
+    @classmethod
+    def arc_ids(cls, network: Network) -> Iterator[str]:
+        """Get iterator over source, arc and sink arc ids."""
+        return chain(
+            (cls.s_arc(s_link) for s_link in network.source_arcs()),
+            (cls.arc(arc) for arc in network.link_arcs()),
+            (cls.t_arc(t_link) for t_link in network.sink_arcs()),
+        )

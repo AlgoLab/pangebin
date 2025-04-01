@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import Any
 
 import gurobipy
+import typer
 
 from pangebin.yaml import YAMLInterface
 
 
-# TODO add to CLI gurobi config
 class Gurobi(YAMLInterface):
     """Gurobi config."""
 
@@ -76,6 +76,33 @@ def configurate_global_gurobi(config: Gurobi) -> None:
     threads = config.threads()
     if threads is not None:
         gurobipy.setParam(gurobipy.GRB.Param.Threads, threads)
+
+
+class GurobiOptions:
+    """Gurobi solver options."""
+
+    _RICH_HELP_PANEL = "Gurobi solver options"
+
+    MIP_GAP = typer.Option(
+        help="MIP gap",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    TIME_LIMIT = typer.Option(
+        help="Time limit",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    THREADS = typer.Option(
+        help="Threads",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
+
+    CONFIG_FILE = typer.Option(
+        "--gurobi-cfg",
+        help="The configuration file path",
+        rich_help_panel=_RICH_HELP_PANEL,
+    )
 
 
 if __name__ == "__main__":

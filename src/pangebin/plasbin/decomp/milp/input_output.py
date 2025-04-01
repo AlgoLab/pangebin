@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from pangebin.plasbin.milp import models as milp_models
+from pangebin.plasbin.decomp.milp import models as milp_models
 from pangebin.yaml import YAMLInterface
 
 
