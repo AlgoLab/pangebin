@@ -21,7 +21,7 @@ def pg_bin_dir_to_pbf_bininfo(
     bin_stats = bin_item.Stats.from_yaml(io_manager.bin_stats_path(bin_number))
     return pbf_items.PBFBinInfo(
         f"P{bin_number + 1}",
-        bin_stats.coverage_flow(),
+        bin_stats.total_flow(),
         bin_stats.gc_content_interval(),
         seq_mults,
     )

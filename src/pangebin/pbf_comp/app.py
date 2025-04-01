@@ -50,7 +50,7 @@ def plasmidness(
     """Convert PlasBin-flow plasmidness file to PangeBin plasmidness TSV file."""
     common_log.init_logger(_LOGGER, "Converting PlasBin-flow plasmidness file.", debug)
     with (
-        comp_io.PBFPLMReader.open(pbf_plasmidness_file) as pbf_plasmidness_fin,
+        comp_io.PlmReader.open(pbf_plasmidness_file) as pbf_plasmidness_fin,
         plm_io.Writer.open(
             pg_plasmidness_tsv,
         ) as pg_plasmidness_fout,
@@ -98,7 +98,7 @@ def seeds(
         debug,
     )
     with (
-        comp_io.PBFSeedReader.open(pbf_seeds_file) as pbf_seeds_fin,
+        comp_io.SeedReader.open(pbf_seeds_file) as pbf_seeds_fin,
         seed_io.Writer.open(
             pg_seeds_tsv,
         ) as pg_seeds_fout,
@@ -140,7 +140,7 @@ def bins(
     """Convert PlasBin-flow bin info TSV file to PangeBin bins."""
     common_log.init_logger(_LOGGER, "Converting PlasBin-flow bin info TSV file.", debug)
     io_manager = pb_io.Manager(pb_io.Config(output_directory=pg_bins_parent_dir))
-    with comp_io.PBFBinsWriter.open(pbf_bin_info_tsv) as pbf_bin_info_fout:
+    with comp_io.BinsWriter.open(pbf_bin_info_tsv) as pbf_bin_info_fout:
         for k in range(io_manager.number_of_bins()):
             pbf_bin_info_fout.write_bin_line(
                 comp_ops.pg_bin_dir_to_pbf_bininfo(io_manager, k),

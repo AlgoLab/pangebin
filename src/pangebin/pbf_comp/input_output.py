@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-class PBFPLMWriter:
+class PlmWriter:
     """PlasBin-flow plasmidness scores TSV writer."""
 
     @classmethod
@@ -29,10 +29,10 @@ class PBFPLMWriter:
     def open(
         cls,
         file: Path,
-    ) -> Generator[PBFPLMWriter, None, None]:
+    ) -> Generator[PlmWriter, None, None]:
         """Open TSV file for writing."""
         with file.open("w") as f_out:
-            writer = PBFPLMWriter(csv.writer(f_out, delimiter="\t"))
+            writer = PlmWriter(csv.writer(f_out, delimiter="\t"))
             yield writer
 
     def __init__(self, csv_writer: _csv._writer) -> None:
@@ -44,15 +44,15 @@ class PBFPLMWriter:
         self.__csv_writer.writerow([sequence_id, plasmidness])
 
 
-class PBFPLMReader:
+class PlmReader:
     """PlasBin-flow plasmidness scores TSV reader."""
 
     @classmethod
     @contextmanager
-    def open(cls, file: Path) -> Generator[PBFPLMReader, None, None]:
+    def open(cls, file: Path) -> Generator[PlmReader, None, None]:
         """Open TSV file for reading."""
         with file.open() as f_in:
-            reader = PBFPLMReader(csv.reader(f_in, delimiter="\t"))
+            reader = PlmReader(csv.reader(f_in, delimiter="\t"))
             yield reader
 
     def __init__(self, csv_reader: _csv._reader) -> None:
@@ -64,7 +64,7 @@ class PBFPLMReader:
         return ((row[0], float(row[1])) for row in self.__csv_reader)
 
 
-class PBFSeedWriter:
+class SeedWriter:
     """PlasBin-flow seed sequences TSV writer."""
 
     @classmethod
@@ -72,10 +72,10 @@ class PBFSeedWriter:
     def open(
         cls,
         file: Path,
-    ) -> Generator[PBFSeedWriter, None, None]:
+    ) -> Generator[SeedWriter, None, None]:
         """Open TSV file for writing."""
         with file.open("w") as f_out:
-            writer = PBFSeedWriter(csv.writer(f_out, delimiter="\t"))
+            writer = SeedWriter(csv.writer(f_out, delimiter="\t"))
             yield writer
 
     def __init__(self, csv_writer: _csv._writer) -> None:
@@ -87,15 +87,15 @@ class PBFSeedWriter:
         self.__csv_writer.writerow([sequence_id])
 
 
-class PBFSeedReader:
+class SeedReader:
     """PlasBin-flow seed sequences TSV reader."""
 
     @classmethod
     @contextmanager
-    def open(cls, file: Path) -> Generator[PBFSeedReader, None, None]:
+    def open(cls, file: Path) -> Generator[SeedReader, None, None]:
         """Open TSV file for reading."""
         with file.open() as f_in:
-            reader = PBFSeedReader(csv.reader(f_in, delimiter="\t"))
+            reader = SeedReader(csv.reader(f_in, delimiter="\t"))
             yield reader
 
     def __init__(self, csv_reader: _csv._reader) -> None:
@@ -107,7 +107,7 @@ class PBFSeedReader:
         return (row[0] for row in self.__csv_reader)
 
 
-class PBFBinsHeader(StrEnum):
+class BinsHeader(StrEnum):
     """PlasBin-flow bins header."""
 
     PLASMID_ID = "#Pls_ID"
@@ -116,22 +116,24 @@ class PBFBinsHeader(StrEnum):
     CONTIGS = "Contigs"
 
 
-class PBFIntervalFormatter:
+class IntervalFormatter:
     """PlasBin-flow interval formatter."""
+
+    SEP = "-"
 
     @classmethod
     def to_str(cls, interval: tuple[float, float]) -> str:
         """Format interval."""
-        return f"{interval[0]}-{interval[1]}"
+        return f"{interval[0]}{cls.SEP}{interval[1]}"
 
     @classmethod
     def from_str(cls, interval_str: str) -> tuple[float, float]:
         """Parse interval."""
-        l_split = interval_str.split("-")
+        l_split = interval_str.split(cls.SEP)
         return (float(l_split[0]), float(l_split[1]))
 
 
-class PBFContigMultFormatter:
+class ContigMultFormatter:
     """PlasBin-flow contig multiplier formatter."""
 
     _SEP = ":"
@@ -148,7 +150,7 @@ class PBFContigMultFormatter:
         return pbf_items.ContigMult(l_split[0], float(l_split[1]))
 
 
-class PBFBinsWriter:
+class BinsWriter:
     """PlasBin-flow bins TSV writer."""
 
     @classmethod
@@ -156,10 +158,10 @@ class PBFBinsWriter:
     def open(
         cls,
         file: Path,
-    ) -> Generator[PBFBinsWriter, None, None]:
+    ) -> Generator[BinsWriter, None, None]:
         """Open TSV file for writing."""
         with file.open("w") as f_out:
-            writer = PBFBinsWriter(csv.writer(f_out, delimiter="\t"))
+            writer = BinsWriter(csv.writer(f_out, delimiter="\t"))
             writer.__write_header()
             yield writer
 
@@ -171,10 +173,10 @@ class PBFBinsWriter:
         """Write header."""
         self.__csv_writer.writerow(
             [
-                PBFBinsHeader.PLASMID_ID,
-                PBFBinsHeader.FLOW,
-                PBFBinsHeader.GC_INTERVAL,
-                PBFBinsHeader.CONTIGS,
+                BinsHeader.PLASMID_ID,
+                BinsHeader.FLOW,
+                BinsHeader.GC_INTERVAL,
+                BinsHeader.CONTIGS,
             ],
         )
 
@@ -187,24 +189,24 @@ class PBFBinsWriter:
             [
                 bin_info.identifier(),
                 bin_info.flow(),
-                PBFIntervalFormatter.to_str(bin_info.gc_interval()),
+                IntervalFormatter.to_str(bin_info.gc_interval()),
                 ",".join(
-                    PBFContigMultFormatter.to_str(contig_mult)
+                    ContigMultFormatter.to_str(contig_mult)
                     for contig_mult in bin_info.contigs_mults()
                 ),
             ],
         )
 
 
-class PBFBinsReader:
+class BinsReader:
     """PlasBin-flow bin info TSV reader."""
 
     @classmethod
     @contextmanager
-    def open(cls, file: Path) -> Generator[PBFBinsReader, None, None]:
+    def open(cls, file: Path) -> Generator[BinsReader, None, None]:
         """Open TSV file for reading."""
         with file.open() as f_in:
-            reader = PBFBinsReader(csv.reader(f_in, delimiter="\t"))
+            reader = BinsReader(csv.reader(f_in, delimiter="\t"))
             next(reader.__csv_reader)  # skip header
             yield reader
 
@@ -220,9 +222,9 @@ class PBFBinsReader:
             pbf_items.PBFBinInfo(
                 row[0],
                 float(row[1]),
-                PBFIntervalFormatter.from_str(row[2]),
+                IntervalFormatter.from_str(row[2]),
                 (
-                    PBFContigMultFormatter.from_str(ctg_id_mult)
+                    ContigMultFormatter.from_str(ctg_id_mult)
                     for ctg_id_mult in row[3].split(",")
                 ),
             )
