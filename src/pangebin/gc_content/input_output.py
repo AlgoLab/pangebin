@@ -69,13 +69,13 @@ class IntervalStepsReader:
 
 
 class ScoresHeader(StrEnum):
-    """GC probability scores TSV header."""
+    """GC scores TSV header."""
 
     SEQUENCE_ID = "Sequence_ID"
 
 
 class ScoresWriter:
-    """GC probability scores TSV writer."""
+    """GC scores TSV writer."""
 
     @classmethod
     @contextmanager

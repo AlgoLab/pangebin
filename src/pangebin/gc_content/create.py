@@ -37,7 +37,7 @@ def gfa_file_to_gc_scores(
     Yield
     -----
     items.SequenceProbabilityScores
-        The GC probability scores for a sequence
+        The GC scores for a sequence
 
     """
     all_prob_b = list(gc_content_intervals.interval_equiprobabilities())
@@ -61,7 +61,7 @@ def sequence_gc_proba_scores(
     all_prob_b: list[float],
     pseudo_count: int,
 ) -> Iterator[float]:
-    """Compute sequence GC probability scores for each GC interval.
+    """Compute sequence GC scores for each GC interval.
 
     Parameters
     ----------
@@ -77,7 +77,7 @@ def sequence_gc_proba_scores(
     Yield
     -----
     float
-        GC probability score for the sequence record
+        GC score for the sequence record
 
     """
 
