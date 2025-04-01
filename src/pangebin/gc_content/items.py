@@ -64,6 +64,23 @@ class Intervals:
         return self.__step_list
 
 
+class IntervalFormatter:
+    """Interval formatter."""
+
+    SEP = "_"
+
+    @classmethod
+    def to_str(cls, interval: tuple[float, float]) -> str:
+        """Format interval."""
+        return f"{interval[0]}{cls.SEP}{interval[1]}"
+
+    @classmethod
+    def from_str(cls, interval_str: str) -> tuple[float, float]:
+        """Parse interval."""
+        l_split = interval_str.split(cls.SEP)
+        return (float(l_split[0]), float(l_split[1]))
+
+
 class SequenceGCScores:
     """Sequence probability scores."""
 

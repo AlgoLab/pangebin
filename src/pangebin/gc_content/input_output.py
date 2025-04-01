@@ -73,17 +73,6 @@ class ScoresHeader(StrEnum):
 
     SEQUENCE_ID = "Sequence_ID"
 
-    @classmethod
-    def fmt_interval(cls, interval: tuple[float, float]) -> str:
-        """Format interval."""
-        return f"{interval[0]}_{interval[1]}"
-
-    @classmethod
-    def str_to_interval(cls, interval_str: str) -> tuple[float, float]:
-        """Parse interval."""
-        l_interval_str = interval_str.split("_")
-        return (float(l_interval_str[0]), float(l_interval_str[1]))
-
 
 class ScoresWriter:
     """GC probability scores TSV writer."""
@@ -110,7 +99,7 @@ class ScoresWriter:
         self.__csv_writer.writerow(
             [
                 ScoresHeader.SEQUENCE_ID,
-                *(ScoresHeader.fmt_interval(interval) for interval in intervals),
+                *(items.IntervalFormatter.to_str(interval) for interval in intervals),
             ],
         )
 
@@ -125,7 +114,7 @@ class ScoresWriter:
 
 
 class ScoresReader:
-    """GC probability scores TSV reader."""
+    """GC scores TSV reader."""
 
     @classmethod
     @contextmanager
@@ -145,18 +134,21 @@ class ScoresReader:
         return self.__intervals
 
     def __iter__(self) -> Iterator[items.SequenceGCScores]:
-        """Iterate sequence probability scores."""
-        for row in self.__csv_reader:
-            yield items.SequenceGCScores(
+        """Iterate sequence GC scores."""
+        return (
+            items.SequenceGCScores(
                 row[0],
                 (float(item) for item in row[1:]),
             )
+            for row in self.__csv_reader
+        )
 
     def __header_to_intervals(self) -> items.Intervals:
         """Parse header."""
         intervals = items.Intervals()
         intervals_details = [
-            ScoresHeader.str_to_interval(item) for item in next(self.__csv_reader)[1:]
+            items.IntervalFormatter.from_str(item)
+            for item in next(self.__csv_reader)[1:]
         ]
         for interval in intervals_details:
             intervals.append(interval[0])
