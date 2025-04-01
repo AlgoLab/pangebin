@@ -1,4 +1,4 @@
-"""Plasbin creation module."""
+"""Plasbin decomp creation module."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import rich.progress as rich_prog
 import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.config as pb_cfg
+import pangebin.plasbin.decomp.config as decomp_cfg
 import pangebin.plasbin.decomp.milp.input_output as lp_io
 import pangebin.plasbin.decomp.milp.models as lp_mod
 import pangebin.plasbin.decomp.milp.views as lp_views
@@ -34,13 +35,14 @@ def plasbin_assembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     contig_gc_scores: Iterable[gc_items.SequenceGCScores],
     contig_plasmidness: Iterable[tuple[str, float]],
-    config: pb_cfg.Binning,
+    plasbin_config: pb_cfg.Binning,
+    decomp_config: decomp_cfg.Decomp,
     gurobi_config: pb_lp_cfg.Gurobi,
     output_directory: Path = lp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[
         bins_items.Stats,
-        Iterable[bins_items.FragmentNormCoverage],
+        Iterable[bins_items.SequenceNormCoverage],
         lp_views.StatsContainer,
         list[Path],
     ]
@@ -68,10 +70,11 @@ def plasbin_assembly(  # noqa: PLR0913
             seed_contigs,
             contig_gc_scores,
             contig_plasmidness,
-            config.sink_arcs_domain(),
+            plasbin_config.sink_arcs_domain(),
         ),
         gc_intervals,
-        config,
+        plasbin_config,
+        decomp_config,
         gurobi_config,
         output_directory,
     )
@@ -83,13 +86,14 @@ def plasbin_panassembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
     fragment_plasmidness: Iterable[tuple[str, float]],
-    config: pb_cfg.Binning,
+    plasbin_config: pb_cfg.Binning,
+    decomp_config: decomp_cfg.Decomp,
     gurobi_config: pb_lp_cfg.Gurobi,
     output_directory: Path = lp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[
         bins_items.Stats,
-        Iterable[bins_items.FragmentNormCoverage],
+        Iterable[bins_items.SequenceNormCoverage],
         lp_views.StatsContainer,
         list[Path],
     ]
@@ -117,25 +121,27 @@ def plasbin_panassembly(  # noqa: PLR0913
             seed_fragments,
             fragment_gc_scores,
             fragment_plasmidness,
-            config.sink_arcs_domain(),
+            plasbin_config.sink_arcs_domain(),
         ),
         gc_intervals,
-        config,
+        plasbin_config,
+        decomp_config,
         gurobi_config,
         output_directory,
     )
 
 
-def plasbin(
+def plasbin(  # noqa: PLR0913
     network: net.Network,
     gc_intervals: gc_items.Intervals,
-    config: pb_cfg.Binning,
+    plasbin_config: pb_cfg.Binning,
+    decomp_config: decomp_cfg.Decomp,
     gurobi_config: pb_lp_cfg.Gurobi,
     output_directory: Path,
 ) -> Iterator[
     tuple[
         bins_items.Stats,
-        Iterable[bins_items.FragmentNormCoverage],
+        Iterable[bins_items.SequenceNormCoverage],
         lp_views.StatsContainer,
         list[Path],
     ]
@@ -172,7 +178,8 @@ def plasbin(
             result = _hierarchical_binning(
                 network,
                 gc_intervals,
-                config,
+                plasbin_config,
+                decomp_config,
                 io_manager,
                 bin_number,
             )
@@ -180,7 +187,7 @@ def plasbin(
                 milp_stats, milp_result_values, log_files = result
                 fragment_norm_coverages, norm_coverage = _fragment_norm_coverages(
                     milp_result_values,
-                    config.circular(),
+                    plasbin_config.circular(),
                 )
                 yield (
                     bins_items.Stats(
@@ -209,10 +216,11 @@ def plasbin(
 
 
 # REFACTOR return other than None
-def _hierarchical_binning(
+def _hierarchical_binning(  # noqa: PLR0913
     network: net.Network,
     gc_intervals: gc_items.Intervals,
-    config: pb_cfg.Binning,
+    plasbin_config: pb_cfg.Binning,
+    decomp_config: decomp_cfg.Decomp,
     io_manager: lp_io.Manager,
     bin_number: int,
 ) -> tuple[lp_views.StatsContainer, pb_lp_res.Pangebin, list[Path]] | None:
@@ -222,10 +230,10 @@ def _hierarchical_binning(
     #
     mcf_model, mcf_vars = lp_mod.mcf(
         network,
-        config.min_flow(),
-        config.min_cumulative_len(),
-        config.circular(),
-        config.obj_fun_domain(),
+        plasbin_config.min_flow(),
+        plasbin_config.min_cumulative_len(),
+        plasbin_config.circular(),
+        plasbin_config.obj_fun_domain(),
     )
     log_files.append(_run_model(bin_number, mcf_model, lp_mod.Names.MCF, io_manager))
 
@@ -235,7 +243,7 @@ def _hierarchical_binning(
     mcf_stats = lp_views.MCFStats.from_opt_mcf_vars(
         network,
         mcf_vars,
-        config.obj_fun_domain(),
+        plasbin_config.obj_fun_domain(),
     )
     #
     # MGC model
@@ -243,10 +251,10 @@ def _hierarchical_binning(
     mgc_model, mgc_vars = lp_mod.mgc_from_mcf(
         mcf_model,
         mcf_vars,
-        config.obj_fun_domain(),
+        plasbin_config.obj_fun_domain(),
         network,
         gc_intervals,
-        config.gamma_mgc(),
+        decomp_config.gamma_mcf(),
     )
     log_files.append(_run_model(bin_number, mgc_model, lp_mod.Names.MGC, io_manager))
 
@@ -257,7 +265,7 @@ def _hierarchical_binning(
         network,
         gc_intervals,
         mgc_vars,
-        config.obj_fun_domain(),
+        plasbin_config.obj_fun_domain(),
     )
     #
     # MPS model
@@ -267,8 +275,8 @@ def _hierarchical_binning(
         mgc_vars,
         network,
         gc_intervals,
-        config.gamma_mgc(),
-        config.obj_fun_domain(),
+        decomp_config.gamma_mgc(),
+        plasbin_config.obj_fun_domain(),
     )
     log_files.append(_run_model(bin_number, mps_model, lp_mod.Names.MPS, io_manager))
 
@@ -279,7 +287,7 @@ def _hierarchical_binning(
         network,
         gc_intervals,
         mps_vars,
-        config.obj_fun_domain(),
+        plasbin_config.obj_fun_domain(),
     )
     #
     # MRCF model
@@ -288,7 +296,7 @@ def _hierarchical_binning(
         mps_model,
         mps_vars,
         network,
-        config.obj_fun_domain(),
+        plasbin_config.obj_fun_domain(),
     )
     log_files.append(_run_model(bin_number, mrcf_model, lp_mod.Names.MRCF, io_manager))
 
@@ -299,7 +307,7 @@ def _hierarchical_binning(
         network,
         gc_intervals,
         mrcf_vars,
-        config.obj_fun_domain(),
+        plasbin_config.obj_fun_domain(),
     )
 
     milp_result_values = pb_lp_res.Pangebin.from_optimal_variables(
@@ -332,7 +340,7 @@ def _run_model(
 def _fragment_norm_coverages(
     milp_result_values: pb_lp_res.Pangebin,
     circular: bool,  # noqa: FBT001
-) -> tuple[Iterable[bins_items.FragmentNormCoverage], float]:
+) -> tuple[Iterable[bins_items.SequenceNormCoverage], float]:
     """Get fragment normalized coverages."""
     norm_cst = (
         milp_result_values.total_flow()
@@ -341,7 +349,7 @@ def _fragment_norm_coverages(
     )
     return (
         (
-            bins_items.FragmentNormCoverage(frag_id, inflow / norm_cst)
+            bins_items.SequenceNormCoverage(frag_id, inflow / norm_cst)
             for frag_id, inflow in milp_result_values.fragments_incoming_flow()
         ),
         norm_cst,

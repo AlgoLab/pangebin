@@ -62,18 +62,18 @@ class Stats(YAMLInterface):
         }
 
 
-class FragmentNormCoverage:
-    """Fragment normalized coverage."""
+class SequenceNormCoverage:
+    """Sequence normalized coverage."""
 
     def __init__(self, identifier: str, normalized_coverage: float) -> None:
-        """Fragment normalized coverage."""
+        """Sequence normalized coverage."""
         self.__identifier = identifier
         self.__normalized_coverage = normalized_coverage
 
     def identifier(self) -> str:
-        """Fragment identifier."""
+        """Sequence identifier."""
         return self.__identifier
 
     def normalized_coverage(self) -> float:
-        """Fragment normalized coverage."""
+        """Sequence normalized coverage."""
         return self.__normalized_coverage

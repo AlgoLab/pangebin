@@ -20,16 +20,12 @@ class Binning(YAMLInterface):
     DEFAULT_MIN_CUMULATIVE_LENGTH = 1000
     DEFAULT_CIRCULAR = False
     DEFAULT_OBJ_FUN_DOMAIN = pb_lp_obj.ObjectiveFunctionDomain.ALL
-    DEFAULT_GAMMA_MCF = 0.9
-    DEFAULT_GAMMA_MGC = 0.9
 
     KEY_SINK_ARC_DEFINITION = "sink_arc_definition"
     KEY_MIN_FLOW = "min_flow"
     KEY_MIN_CUMULATIVE_LENGTH = "min_cumulative_len"
     KEY_CIRCULAR = "circular"
     KEY_OBJ_FUN_DOMAIN = "obj_fun_domain"
-    KEY_GAMMA_MCF = "gamma_mcf"
-    KEY_GAMMA_MGC = "gamma_mgc"
 
     DEFAULT_YAML_FILE = Path("binning_config.yaml")
 
@@ -50,19 +46,15 @@ class Binning(YAMLInterface):
             ),
             config_dict.get(cls.KEY_CIRCULAR, cls.DEFAULT_CIRCULAR),
             config_dict.get(cls.KEY_OBJ_FUN_DOMAIN, cls.DEFAULT_OBJ_FUN_DOMAIN),
-            config_dict.get(cls.KEY_GAMMA_MCF, cls.DEFAULT_GAMMA_MCF),
-            config_dict.get(cls.KEY_GAMMA_MGC, cls.DEFAULT_GAMMA_MGC),
         )
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         sink_arcs_domain: net.SinkArcsDomain = DEFAULT_SINK_ARCS_DOMAIN,
         min_flow: float = DEFAULT_MIN_FLOW,
         min_cumulative_len: int = DEFAULT_MIN_CUMULATIVE_LENGTH,
         circular: bool = DEFAULT_CIRCULAR,  # noqa: FBT001
         obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain = DEFAULT_OBJ_FUN_DOMAIN,
-        gamma_mcf: float = DEFAULT_GAMMA_MCF,
-        gamma_mgc: float = DEFAULT_GAMMA_MGC,
     ) -> None:
         """Initialize object."""
         self.__sink_arcs_domain = sink_arcs_domain
@@ -70,8 +62,6 @@ class Binning(YAMLInterface):
         self.__min_cumulative_len = min_cumulative_len
         self.__circular = circular
         self.__obj_fun_domain = obj_fun_domain
-        self.__gamma_mcf = gamma_mcf
-        self.__gamma_mgc = gamma_mgc
 
     def sink_arcs_domain(self) -> net.SinkArcsDomain:
         """Get sink-arcs domain."""
@@ -93,14 +83,6 @@ class Binning(YAMLInterface):
         """Get objective function domain."""
         return self.__obj_fun_domain
 
-    def gamma_mcf(self) -> float:
-        """Get gamma mcf."""
-        return self.__gamma_mcf
-
-    def gamma_mgc(self) -> float:
-        """Get gamma mgc."""
-        return self.__gamma_mgc
-
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict."""
         return {
@@ -109,8 +91,6 @@ class Binning(YAMLInterface):
             self.KEY_MIN_CUMULATIVE_LENGTH: self.__min_cumulative_len,
             self.KEY_CIRCULAR: self.__circular,
             self.KEY_OBJ_FUN_DOMAIN: str(self.__obj_fun_domain),
-            self.KEY_GAMMA_MCF: self.__gamma_mcf,
-            self.KEY_GAMMA_MGC: self.__gamma_mgc,
         }
 
 
@@ -141,16 +121,6 @@ class BinningOptions:
 
     OBJ_FUN_DOMAIN = typer.Option(
         help="Objective function domain",
-        rich_help_panel=_RICH_HELP_PANEL,
-    )
-
-    GAMMA_MCF = typer.Option(
-        help="Gamma MCF coefficient",
-        rich_help_panel=_RICH_HELP_PANEL,
-    )
-
-    GAMMA_MGC = typer.Option(
-        help="Gamma MGC coefficient",
         rich_help_panel=_RICH_HELP_PANEL,
     )
 
