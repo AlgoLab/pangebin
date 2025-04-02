@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import typer
 
+import pangebin.plasbin.binlab.app as binlab_app
 import pangebin.plasbin.decomp.app as decomp_app
 
 APP = typer.Typer(rich_markup_mode="rich")
 APP.add_typer(decomp_app.APP)
+APP.add_typer(binlab_app.APP)
