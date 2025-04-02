@@ -32,12 +32,25 @@ class Binning(YAMLInterface):
     NAME = "PangeBin-flow binning config"
 
     @classmethod
+    def default(cls) -> Binning:
+        """Get default config."""
+        return cls(
+            cls.DEFAULT_SINK_ARCS_DOMAIN,
+            cls.DEFAULT_MIN_FLOW,
+            cls.DEFAULT_MIN_CUMULATIVE_LENGTH,
+            cls.DEFAULT_CIRCULAR,
+            cls.DEFAULT_OBJ_FUN_DOMAIN,
+        )
+
+    @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Binning:
         """Convert dict to object."""
         return cls(
-            config_dict.get(
-                cls.KEY_SINK_ARC_DEFINITION,
-                cls.DEFAULT_SINK_ARCS_DOMAIN,
+            net.SinkArcsDomain(
+                config_dict.get(
+                    cls.KEY_SINK_ARC_DEFINITION,
+                    cls.DEFAULT_SINK_ARCS_DOMAIN,
+                ),
             ),
             config_dict.get(cls.KEY_MIN_FLOW, cls.DEFAULT_MIN_FLOW),
             config_dict.get(
@@ -45,16 +58,18 @@ class Binning(YAMLInterface):
                 cls.DEFAULT_MIN_CUMULATIVE_LENGTH,
             ),
             config_dict.get(cls.KEY_CIRCULAR, cls.DEFAULT_CIRCULAR),
-            config_dict.get(cls.KEY_OBJ_FUN_DOMAIN, cls.DEFAULT_OBJ_FUN_DOMAIN),
+            pb_lp_obj.ObjectiveFunctionDomain(
+                config_dict.get(cls.KEY_OBJ_FUN_DOMAIN, cls.DEFAULT_OBJ_FUN_DOMAIN),
+            ),
         )
 
     def __init__(
         self,
-        sink_arcs_domain: net.SinkArcsDomain = DEFAULT_SINK_ARCS_DOMAIN,
-        min_flow: float = DEFAULT_MIN_FLOW,
-        min_cumulative_len: int = DEFAULT_MIN_CUMULATIVE_LENGTH,
-        circular: bool = DEFAULT_CIRCULAR,  # noqa: FBT001
-        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain = DEFAULT_OBJ_FUN_DOMAIN,
+        sink_arcs_domain: net.SinkArcsDomain,
+        min_flow: float,
+        min_cumulative_len: int,
+        circular: bool,  # noqa: FBT001
+        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
     ) -> None:
         """Initialize object."""
         self.__sink_arcs_domain = sink_arcs_domain
@@ -132,5 +147,5 @@ class BinningOptions:
 
 
 if __name__ == "__main__":
-    default_config = Binning()
+    default_config = Binning.default()
     default_config.to_yaml(Binning.DEFAULT_YAML_FILE)

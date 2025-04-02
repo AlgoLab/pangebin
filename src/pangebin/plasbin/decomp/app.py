@@ -1,4 +1,4 @@
-"""Plasbin application module."""
+"""Plasbin decomp application module."""
 
 # Due to typer usage:
 # ruff: noqa: TC001, TC003, UP007, FBT001, FBT002, PLR0913
@@ -314,11 +314,11 @@ def _init_binning_cfg(
         pb_cfg.Binning.from_yaml(binning_cfg_yaml)
         if binning_cfg_yaml is not None
         else pb_cfg.Binning(
-            sink_arcs_domain=sink_arcs_domain,
-            min_flow=min_flow,
-            min_cumulative_len=min_cumulative_len,
-            circular=circular,
-            obj_fun_domain=obj_fun_domain,
+            sink_arcs_domain,
+            min_flow,
+            min_cumulative_len,
+            circular,
+            obj_fun_domain,
         )
     )
     _LOGGER.debug("Binning config:\n%s", binning_config.to_dict())
