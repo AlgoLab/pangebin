@@ -9,47 +9,11 @@ import pangebin.plasbin.milp.variables as pb_lp_var
 import pangebin.plasbin.network as net
 from pangebin.plasbin.milp.variables import Domain
 
+# TODO use new variable frag in MGC and MPS models
+
 
 class MaxCovFlow:
     """Max coverage flow variables."""
-
-    @classmethod
-    def default(cls, network: net.Network, model: gp.Model) -> MaxCovFlow:
-        """Create default MaxCovFlow variables."""
-        # DOCU MCF: frag variables
-        frag = pb_lp_var.SubFragments(
-            network,
-            model,
-            Domain.continuous(0, gp.GRB.INFINITY),
-        )
-        sub_v = pb_lp_var.SubVertices(
-            network,
-            model,
-            Domain.continuous(0, gp.GRB.INFINITY),
-        )
-        sub_arc = pb_lp_var.SubArcs(
-            network,
-            model,
-            Domain.binary(),
-        )
-        flow = pb_lp_var.Flow(
-            network,
-            model,
-            Domain.continuous(0, gp.GRB.INFINITY),
-            Domain.continuous(0, gp.GRB.INFINITY),
-        )
-        pos_flow = pb_lp_var.PositiveFlow(
-            network,
-            model,
-            Domain.continuous(0, gp.GRB.INFINITY),
-        )
-        ccomp = pb_lp_var.ConnectedComponent(
-            network,
-            model,
-            Domain.continuous(-gp.GRB.INFINITY, gp.GRB.INFINITY),
-            Domain.continuous(-gp.GRB.INFINITY, 0),
-        )
-        return cls(frag, sub_v, sub_arc, flow, pos_flow, ccomp)
 
     def __init__(  # noqa: PLR0913
         self,
@@ -95,32 +59,6 @@ class MaxCovFlow:
 class MaxGC(MaxCovFlow):
     """MGC variables."""
 
-    @classmethod
-    def from_mcf(
-        cls,
-        network: net.Network,
-        gc_intervals: gc_items.Intervals,
-        model: gp.Model,
-        mcf_vars: MaxCovFlow,
-    ) -> MaxGC:
-        """Create MGC variables from MCF variables."""
-        gc = pb_lp_var.GCIntervals(
-            network,
-            gc_intervals,
-            model,
-            Domain.binary(),
-            Domain.continuous(0, gp.GRB.INFINITY),
-        )
-        return cls(
-            mcf_vars.frag(),
-            mcf_vars.sub_v(),
-            mcf_vars.sub_arc(),
-            mcf_vars.flow(),
-            mcf_vars.pos_flow(),
-            mcf_vars.ccomp(),
-            gc,
-        )
-
     def __init__(  # noqa: PLR0913
         self,
         frag: pb_lp_var.SubFragments,
@@ -130,69 +68,120 @@ class MaxGC(MaxCovFlow):
         pos_flow: pb_lp_var.PositiveFlow,
         ccomp: pb_lp_var.ConnectedComponent,
         gc: pb_lp_var.GCIntervals,
+        frag_gc: pb_lp_var.FragmentGC,
     ) -> None:
         """Create MaxGC variables."""
         super().__init__(frag, sub_v, sub_arc, flow, pos_flow, ccomp)
         self.__gc = gc
+        self.__frag_gc = frag_gc
 
     def gc(self) -> pb_lp_var.GCIntervals:
         """Get GC variables."""
         return self.__gc
 
+    def frag_gc(self) -> pb_lp_var.FragmentGC:
+        """Get fragment GC variables."""
+        return self.__frag_gc
+
 
 class MaxPlasmidScore(MaxGC):
     """MPS variables."""
-
-    @classmethod
-    def from_mgc(cls, mgc_vars: MaxGC) -> MaxPlasmidScore:
-        """Create MPS variables from MGC variables."""
-        return cls(
-            mgc_vars.frag(),
-            mgc_vars.sub_v(),
-            mgc_vars.sub_arc(),
-            mgc_vars.flow(),
-            mgc_vars.pos_flow(),
-            mgc_vars.ccomp(),
-            mgc_vars.gc(),
-        )
-
-    def __init__(  # noqa: PLR0913
-        self,
-        frag: pb_lp_var.SubFragments,
-        sub_v: pb_lp_var.SubVertices,
-        sub_arc: pb_lp_var.SubArcs,
-        flow: pb_lp_var.Flow,
-        pos_flow: pb_lp_var.PositiveFlow,
-        ccomp: pb_lp_var.ConnectedComponent,
-        gc: pb_lp_var.GCIntervals,
-    ) -> None:
-        super().__init__(frag, sub_v, sub_arc, flow, pos_flow, ccomp, gc)
 
 
 class MaxRefCovFlow(MaxPlasmidScore):
     """MRCF variables."""
 
-    @classmethod
-    def from_mps(cls, mps_vars: MaxPlasmidScore) -> MaxRefCovFlow:
-        """Create MRCF variables from MPS variables."""
-        return cls(
-            mps_vars.frag(),
-            mps_vars.sub_v(),
-            mps_vars.sub_arc(),
-            mps_vars.flow(),
-            mps_vars.pos_flow(),
-            mps_vars.ccomp(),
-            mps_vars.gc(),
-        )
 
-    def __init__(  # noqa: PLR0913
-        self,
-        frag: pb_lp_var.SubFragments,
-        sub_v: pb_lp_var.SubVertices,
-        sub_arc: pb_lp_var.SubArcs,
-        flow: pb_lp_var.Flow,
-        pos_flow: pb_lp_var.PositiveFlow,
-        ccomp: pb_lp_var.ConnectedComponent,
-        gc: pb_lp_var.GCIntervals,
-    ) -> None:
-        super().__init__(frag, sub_v, sub_arc, flow, pos_flow, ccomp, gc)
+def init_mcf(network: net.Network, model: gp.Model) -> MaxCovFlow:
+    """Create MCF variables."""
+    frag = pb_lp_var.SubFragments(
+        network,
+        model,
+        Domain.continuous(0, gp.GRB.INFINITY),
+    )
+    sub_v = pb_lp_var.SubVertices(
+        network,
+        model,
+        Domain.continuous(0, gp.GRB.INFINITY),
+    )
+    sub_arc = pb_lp_var.SubArcs(
+        network,
+        model,
+        Domain.binary(),
+    )
+    flow = pb_lp_var.Flow(
+        network,
+        model,
+        Domain.continuous(0, gp.GRB.INFINITY),
+        Domain.continuous(0, gp.GRB.INFINITY),
+    )
+    pos_flow = pb_lp_var.PositiveFlow(
+        network,
+        model,
+        Domain.continuous(0, gp.GRB.INFINITY),
+    )
+    ccomp = pb_lp_var.ConnectedComponent(
+        network,
+        model,
+        Domain.continuous(-gp.GRB.INFINITY, gp.GRB.INFINITY),
+        Domain.continuous(-gp.GRB.INFINITY, 0),
+    )
+    return MaxCovFlow(frag, sub_v, sub_arc, flow, pos_flow, ccomp)
+
+
+def mgc_from_mcf(
+    model: gp.Model,
+    mcf_vars: MaxCovFlow,
+    network: net.Network,
+    gc_intervals: gc_items.Intervals,
+) -> MaxGC:
+    """Create MGC variables from MCF variables."""
+    gc = pb_lp_var.GCIntervals(
+        gc_intervals,
+        model,
+        Domain.binary(),
+    )
+    frag_gc = pb_lp_var.FragmentGC(
+        network,
+        gc_intervals,
+        model,
+        Domain.continuous(0, gp.GRB.INFINITY),
+    )
+    return MaxGC(
+        mcf_vars.frag(),
+        mcf_vars.sub_v(),
+        mcf_vars.sub_arc(),
+        mcf_vars.flow(),
+        mcf_vars.pos_flow(),
+        mcf_vars.ccomp(),
+        gc,
+        frag_gc,
+    )
+
+
+def mps_from_mgc(mgc_vars: MaxGC) -> MaxPlasmidScore:
+    """Create MPS variables from MGC variables."""
+    return MaxPlasmidScore(
+        mgc_vars.frag(),
+        mgc_vars.sub_v(),
+        mgc_vars.sub_arc(),
+        mgc_vars.flow(),
+        mgc_vars.pos_flow(),
+        mgc_vars.ccomp(),
+        mgc_vars.gc(),
+        mgc_vars.frag_gc(),
+    )
+
+
+def mrcf_from_mps(mps_vars: MaxPlasmidScore) -> MaxRefCovFlow:
+    """Create MRCF variables from MPS variables."""
+    return MaxRefCovFlow(
+        mps_vars.frag(),
+        mps_vars.sub_v(),
+        mps_vars.sub_arc(),
+        mps_vars.flow(),
+        mps_vars.pos_flow(),
+        mps_vars.ccomp(),
+        mps_vars.gc(),
+        mps_vars.frag_gc(),
+    )

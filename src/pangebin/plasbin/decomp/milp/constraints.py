@@ -103,7 +103,7 @@ def add_mgc_constraints(  # noqa: PLR0913
         network,
     )
     lp_cst.exactly_one_interval_is_active(m, var.gc(), intervals)
-    lp_cst.define_frag_gc(m, var.frag(), var.gc(), network, intervals)
+    lp_cst.define_frag_gc(m, var.frag(), var.gc(), var.frag_gc(), network, intervals)
 
 
 def _coverage_score_lower_bound(  # noqa: PLR0913
@@ -160,7 +160,7 @@ def _gc_score_lower_bound(  # noqa: PLR0913
     # DOCU MPS: be carefull when previous_gc_score is < 0
     m.addConstr(
         previous_gc_score - (1 - coefficient) * abs(previous_gc_score)
-        <= lp_obj.gc_score(network, intervals, var.gc(), obj_fun_domain),
+        <= lp_obj.gc_score(network, intervals, var.frag_gc(), obj_fun_domain),
         name="gc_score_lower_bound",
     )
 

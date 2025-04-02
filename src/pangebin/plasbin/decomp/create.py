@@ -240,7 +240,7 @@ def _hierarchical_binning(  # noqa: PLR0913
     if mcf_model.Status != gp.GRB.OPTIMAL:
         return None
 
-    mcf_stats = lp_views.MCFStats.from_opt_mcf_vars(
+    mcf_stats = lp_views.mcf_stats_from_opt_vars(
         network,
         mcf_vars,
         plasbin_config.obj_fun_domain(),
@@ -261,7 +261,7 @@ def _hierarchical_binning(  # noqa: PLR0913
     if mgc_model.Status != gp.GRB.OPTIMAL:
         return None
 
-    mgc_stats = lp_views.MGCStats.from_opt_mgc_vars(
+    mgc_stats = lp_views.mgc_stats_from_opt_vars(
         network,
         gc_intervals,
         mgc_vars,
@@ -283,7 +283,7 @@ def _hierarchical_binning(  # noqa: PLR0913
     if mps_model.Status != gp.GRB.OPTIMAL:
         return None
 
-    mps_stats = lp_views.MPSStats.from_opt_mps_vars(
+    mps_stats = lp_views.mps_stats_from_opt_vars(
         network,
         gc_intervals,
         mps_vars,
@@ -303,7 +303,7 @@ def _hierarchical_binning(  # noqa: PLR0913
     if mrcf_model.Status != gp.GRB.OPTIMAL:
         return None
 
-    mrcf_stats = lp_views.MRCFStats.from_opt_mrcf_vars(
+    mrcf_stats = lp_views.mrcf_stats_from_opt_vars(
         network,
         gc_intervals,
         mrcf_vars,

@@ -30,7 +30,7 @@ def mcf(
 ) -> tuple[gp.Model, lp_var.MaxCovFlow]:
     """Create MCF model."""
     mcf_model = gp.Model("Maximum Coverage likelihood Flow")
-    mcf_vars = lp_var.MaxCovFlow.default(network, mcf_model)
+    mcf_vars = lp_var.init_mcf(network, mcf_model)
     lp_obj.set_mcf_objective(mcf_model, mcf_vars, network, obj_fun_domain)
     lp_cst.set_mcf_constraints(
         mcf_model,
@@ -55,7 +55,7 @@ def mgc_from_mcf(  # noqa: PLR0913
     previous_coverage_score = mcf_model.ObjVal
     mgc_model = mcf_model
     mgc_model.ModelName = "Maximum GC Score"
-    mgc_vars = lp_var.MaxGC.from_mcf(network, intervals, mgc_model, mcf_vars)
+    mgc_vars = lp_var.mgc_from_mcf(mgc_model, mcf_vars, network, intervals)
     lp_obj.set_mgc_objective(mgc_model, mgc_vars, network, intervals, obj_fun_domain)
     lp_cst.add_mgc_constraints(
         mgc_model,
@@ -81,7 +81,7 @@ def mps_from_mgc(  # noqa: PLR0913
     previous_gc_score = mgc_model.ObjVal
     mps_model = mgc_model
     mps_model.ModelName = "Maximum Plasmidness Score"
-    mps_vars = lp_var.MaxPlasmidScore.from_mgc(mgc_vars)
+    mps_vars = lp_var.mps_from_mgc(mgc_vars)
     lp_obj.set_mps_objective(mps_model, mps_vars, network, obj_fun_domain)
     lp_cst.add_mps_constraints(
         mps_model,
@@ -106,7 +106,7 @@ def mrcf_from_mps(
     previous_plasmidness_score = mps_model.ObjVal
     mrcf_model = mps_model
     mrcf_model.ModelName = "Maximum Refined Coverage likelihood Flow"
-    mrcf_vars = lp_var.MaxRefCovFlow.from_mps(mps_var)
+    mrcf_vars = lp_var.mrcf_from_mps(mps_var)
     lp_obj.set_mrcf_objective(mrcf_model, mrcf_vars, obj_fun_domain, network)
     lp_cst.add_mrcf_constraints(
         mrcf_model,

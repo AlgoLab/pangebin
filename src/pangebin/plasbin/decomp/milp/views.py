@@ -18,24 +18,6 @@ class MCFStats:
     KEY_COVERAGE_SCORE = "coverage_score"
 
     @classmethod
-    def from_opt_mcf_vars(
-        cls,
-        network: net.Network,
-        mcf_vars: lp_vars.MaxCovFlow,
-        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
-    ) -> MCFStats:
-        """Create MCF stats from optimal variables."""
-        return cls(
-            mcf_vars.flow().total().X,
-            lp_obj.coverage_score(
-                network,
-                mcf_vars.flow(),
-                mcf_vars.frag(),
-                obj_fun_domain,
-            ).getValue(),
-        )
-
-    @classmethod
     def from_dict(cls, obj_dict: dict) -> MCFStats:
         """Convert dict to object."""
         return cls(obj_dict[cls.KEY_TOTAL_FLOW], obj_dict[cls.KEY_COVERAGE_SCORE])
@@ -61,35 +43,27 @@ class MCFStats:
         }
 
 
+def mcf_stats_from_opt_vars(
+    network: net.Network,
+    mcf_vars: lp_vars.MaxCovFlow,
+    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+) -> MCFStats:
+    """Create MCF stats from optimal variables."""
+    return MCFStats(
+        mcf_vars.flow().total().X,
+        lp_obj.coverage_score(
+            network,
+            mcf_vars.flow(),
+            mcf_vars.frag(),
+            obj_fun_domain,
+        ).getValue(),
+    )
+
+
 class MGCStats(MCFStats):
     """MGC stats."""
 
     KEY_GC_SCORE = "gc_score"
-
-    @classmethod
-    def from_opt_mgc_vars(
-        cls,
-        network: net.Network,
-        intervals: gc_items.Intervals,
-        mgc_vars: lp_vars.MaxGC,
-        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
-    ) -> MGCStats:
-        """Create MGC stats from optimal variables."""
-        return cls(
-            mgc_vars.flow().total().X,
-            lp_obj.coverage_score(
-                network,
-                mgc_vars.flow(),
-                mgc_vars.frag(),
-                obj_fun_domain,
-            ).getValue(),
-            lp_obj.gc_score(
-                network,
-                intervals,
-                mgc_vars.gc(),
-                obj_fun_domain,
-            ).getValue(),
-        )
 
     @classmethod
     def from_dict(cls, obj_dict: dict) -> MGCStats:
@@ -121,40 +95,34 @@ class MGCStats(MCFStats):
         }
 
 
+def mgc_stats_from_opt_vars(
+    network: net.Network,
+    intervals: gc_items.Intervals,
+    mgc_vars: lp_vars.MaxGC,
+    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+) -> MGCStats:
+    """Create MGC stats from optimal variables."""
+    return MGCStats(
+        mgc_vars.flow().total().X,
+        lp_obj.coverage_score(
+            network,
+            mgc_vars.flow(),
+            mgc_vars.frag(),
+            obj_fun_domain,
+        ).getValue(),
+        lp_obj.gc_score(
+            network,
+            intervals,
+            mgc_vars.frag_gc(),
+            obj_fun_domain,
+        ).getValue(),
+    )
+
+
 class MPSStats(MGCStats):
     """MPS stats."""
 
     KEY_PLASMIDNESS_SCORE = "plasmidness_score"
-
-    @classmethod
-    def from_opt_mps_vars(
-        cls,
-        network: net.Network,
-        intervals: gc_items.Intervals,
-        mps_vars: lp_vars.MaxPlasmidScore,
-        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
-    ) -> MPSStats:
-        """Create MPS stats from optimal variables."""
-        return cls(
-            mps_vars.flow().total().X,
-            lp_obj.coverage_score(
-                network,
-                mps_vars.flow(),
-                mps_vars.frag(),
-                obj_fun_domain,
-            ).getValue(),
-            lp_obj.gc_score(
-                network,
-                intervals,
-                mps_vars.gc(),
-                obj_fun_domain,
-            ).getValue(),
-            lp_obj.plasmidness_score(
-                network,
-                mps_vars.frag(),
-                obj_fun_domain,
-            ).getValue(),
-        )
 
     @classmethod
     def from_dict(cls, obj_dict: dict) -> MPSStats:
@@ -188,38 +156,37 @@ class MPSStats(MGCStats):
         }
 
 
+def mps_stats_from_opt_vars(
+    network: net.Network,
+    intervals: gc_items.Intervals,
+    mps_vars: lp_vars.MaxPlasmidScore,
+    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+) -> MPSStats:
+    """Create MPS stats from optimal variables."""
+    return MPSStats(
+        mps_vars.flow().total().X,
+        lp_obj.coverage_score(
+            network,
+            mps_vars.flow(),
+            mps_vars.frag(),
+            obj_fun_domain,
+        ).getValue(),
+        lp_obj.gc_score(
+            network,
+            intervals,
+            mps_vars.frag_gc(),
+            obj_fun_domain,
+        ).getValue(),
+        lp_obj.plasmidness_score(
+            network,
+            mps_vars.frag(),
+            obj_fun_domain,
+        ).getValue(),
+    )
+
+
 class MRCFStats(MPSStats):
     """MRCF stats."""
-
-    @classmethod
-    def from_opt_mrcf_vars(
-        cls,
-        network: net.Network,
-        intervals: gc_items.Intervals,
-        mrcf_vars: lp_vars.MaxRefCovFlow,
-        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
-    ) -> MRCFStats:
-        """Create MRCF stats from optimal variables."""
-        return cls(
-            mrcf_vars.flow().total().X,
-            lp_obj.coverage_score(
-                network,
-                mrcf_vars.flow(),
-                mrcf_vars.frag(),
-                obj_fun_domain,
-            ).getValue(),
-            lp_obj.gc_score(
-                network,
-                intervals,
-                mrcf_vars.gc(),
-                obj_fun_domain,
-            ).getValue(),
-            lp_obj.plasmidness_score(
-                network,
-                mrcf_vars.frag(),
-                obj_fun_domain,
-            ).getValue(),
-        )
 
     @classmethod
     def from_dict(cls, obj_dict: dict) -> MRCFStats:
@@ -230,6 +197,35 @@ class MRCFStats(MPSStats):
             obj_dict[cls.KEY_GC_SCORE],
             obj_dict[cls.KEY_PLASMIDNESS_SCORE],
         )
+
+
+def mrcf_stats_from_opt_vars(
+    network: net.Network,
+    intervals: gc_items.Intervals,
+    mrcf_vars: lp_vars.MaxRefCovFlow,
+    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+) -> MRCFStats:
+    """Create MRCF stats from optimal variables."""
+    return MRCFStats(
+        mrcf_vars.flow().total().X,
+        lp_obj.coverage_score(
+            network,
+            mrcf_vars.flow(),
+            mrcf_vars.frag(),
+            obj_fun_domain,
+        ).getValue(),
+        lp_obj.gc_score(
+            network,
+            intervals,
+            mrcf_vars.frag_gc(),
+            obj_fun_domain,
+        ).getValue(),
+        lp_obj.plasmidness_score(
+            network,
+            mrcf_vars.frag(),
+            obj_fun_domain,
+        ).getValue(),
+    )
 
 
 class StatsContainer(YAMLInterface):
