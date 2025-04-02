@@ -3,13 +3,17 @@
 # ------------------------------------------------------------------------------------ #
 # USAGE
 #
-# ./test/plasbin_panasm.sh {run|clean} test/<dataset> [--debug]
+# ./test/plasbin_decomp_panasm.sh {run|clean} test/<dataset> [--debug]
 # ------------------------------------------------------------------------------------ #
 
 command=$1
 dataset_dir=$2
 
-out_dir="$dataset_dir/result/plasbin"
+out_dir="$dataset_dir/result/plasbin/decomp"
+
+binning_config="test/config/binning_config.yaml"
+decomp_config="test/config/plasbin_decomp_config.yaml"
+gurobi_config="test/config/gurobi_config.yaml"
 
 debug=""
 if [ "$3" == "--debug" ]; then
@@ -27,7 +31,10 @@ run() {
     local plasmidness="$panassembly_datadir/plasmidness.tsv"
     local seeds="$panassembly_datadir/seeds.tsv"
 
-    pangebin sub plasbin panasm $panassembly_gfa $seeds $gc_scores $plasmidness \
+    pangebin sub plasbin decomp panasm $panassembly_gfa $seeds $gc_scores $plasmidness \
+        --bin-cfg $binning_config \
+        --decomp-cfg $decomp_config \
+        --gurobi-cfg $gurobi_config \
         --outdir $out_dir \
         $debug
 }
