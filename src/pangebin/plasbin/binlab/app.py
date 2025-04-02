@@ -120,7 +120,7 @@ def plasbin_assembly(
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
-    """PlasBin an assembly graph."""
+    """PlasBin an assembly graph with the binlab approach."""
     common_log.init_logger(_LOGGER, "Running PlasBin on assembly.", debug)
     io_manager = _init_io_manager(outdir)
 
@@ -245,7 +245,7 @@ def plasbin_panassembly(
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
-    """PlasBin a pan-assembly graph."""
+    """PlasBin a pan-assembly graph with the binlab approach."""
     common_log.init_logger(_LOGGER, "Running PlasBin on pan-assembly.", debug)
     io_manager = _init_io_manager(outdir)
 
@@ -306,11 +306,11 @@ def _init_binning_cfg(
         pb_cfg.Binning.from_yaml(binning_cfg_yaml)
         if binning_cfg_yaml is not None
         else pb_cfg.Binning(
-            sink_arcs_domain=sink_arcs_domain,
-            min_flow=min_flow,
-            min_cumulative_len=min_cumulative_len,
-            circular=circular,
-            obj_fun_domain=obj_fun_domain,
+            sink_arcs_domain,
+            min_flow,
+            min_cumulative_len,
+            circular,
+            obj_fun_domain,
         )
     )
     _LOGGER.debug("Binning config:\n%s", binning_config.to_dict())

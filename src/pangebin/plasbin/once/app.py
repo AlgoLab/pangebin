@@ -1,4 +1,4 @@
-"""Plasbin decomp application module."""
+"""Plasbin once application module."""
 
 # Due to typer usage:
 # ruff: noqa: TC001, TC003, UP007, FBT001, FBT002, PLR0913
@@ -19,22 +19,21 @@ import pangebin.logging as common_log
 import pangebin.plasbin.bins.input_output as bin_io
 import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.config as pb_cfg
-import pangebin.plasbin.decomp.config as decomp_cfg
-import pangebin.plasbin.decomp.milp.input_output as lp_io
-import pangebin.plasbin.decomp.milp.views as lp_views
 import pangebin.plasbin.input_output as pb_io
 import pangebin.plasbin.milp.config as pb_lp_cfg
 import pangebin.plasbin.milp.objectives as pb_lp_obj
 import pangebin.plasbin.network as net
+import pangebin.plasbin.once.milp.input_output as lp_io
+import pangebin.plasbin.once.milp.views as lp_views
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
-from pangebin.plasbin.decomp import create
+from pangebin.plasbin.once import create
 
 _LOGGER = logging.getLogger(__name__)
 
 APP = typer.Typer(
-    name="decomp",
-    help="Hiearchical decomposition binning method",
+    name="once",
+    help="Once method",
     rich_markup_mode="rich",
 )
 
@@ -90,19 +89,6 @@ def plasbin_assembly(
         Path | None,
         pb_cfg.BinningOptions.CONFIG_FILE,
     ] = None,
-    # Decomp options
-    gamma_mcf: Annotated[
-        float,
-        decomp_cfg.DecompOptions.GAMMA_MCF,
-    ] = decomp_cfg.Decomp.DEFAULT_GAMMA_MCF,
-    gamma_mgc: Annotated[
-        float,
-        decomp_cfg.DecompOptions.GAMMA_MGC,
-    ] = decomp_cfg.Decomp.DEFAULT_GAMMA_MGC,
-    decomp_cfg_yaml: Annotated[
-        Path | None,
-        decomp_cfg.DecompOptions.CONFIG_FILE,
-    ] = None,
     # Gurobi options
     mip_gap: Annotated[
         float | None,
@@ -124,7 +110,7 @@ def plasbin_assembly(
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
-    """PlasBin an assembly graph with the decomp approach."""
+    """PlasBin an assembly graph with the once approach."""
     common_log.init_logger(_LOGGER, "Running PlasBin on assembly.", debug)
     io_manager = _init_io_manager(outdir)
 
@@ -136,7 +122,6 @@ def plasbin_assembly(
         obj_fun_domain,
         binning_cfg_yaml,
     )
-    decomp_config = _init_decomp_cfg(gamma_mcf, gamma_mgc, decomp_cfg_yaml)
     gurobi_config = _init_gurobi_cfg(mip_gap, time_limit, threads, gurobi_cfg_yaml)
 
     seeds, intervals, gc_scores, plasmidness = _init_plasbin_input(
@@ -145,7 +130,7 @@ def plasbin_assembly(
         contig_plasmidness_tsv,
     )
 
-    for k, (bin_stats, seq_normcovs, all_milp_stats, log_files) in enumerate(
+    for k, (bin_stats, seq_normcovs, all_milp_stats, log_file) in enumerate(
         create.plasbin_assembly(
             gfa_io.from_file(assembly_gfa),
             seeds,
@@ -153,7 +138,6 @@ def plasbin_assembly(
             gc_scores,
             plasmidness,
             binning_config,
-            decomp_config,
             gurobi_config,
             io_manager.config().output_directory(),
         ),
@@ -164,7 +148,7 @@ def plasbin_assembly(
             bin_stats,
             seq_normcovs,
             all_milp_stats,
-            log_files,
+            log_file,
         )
 
 
@@ -219,19 +203,6 @@ def plasbin_panassembly(
         Path | None,
         pb_cfg.BinningOptions.CONFIG_FILE,
     ] = None,
-    # Decomp options
-    gamma_mcf: Annotated[
-        float,
-        decomp_cfg.DecompOptions.GAMMA_MCF,
-    ] = decomp_cfg.Decomp.DEFAULT_GAMMA_MCF,
-    gamma_mgc: Annotated[
-        float,
-        decomp_cfg.DecompOptions.GAMMA_MGC,
-    ] = decomp_cfg.Decomp.DEFAULT_GAMMA_MGC,
-    decomp_cfg_yaml: Annotated[
-        Path | None,
-        decomp_cfg.DecompOptions.CONFIG_FILE,
-    ] = None,
     # Gurobi options
     mip_gap: Annotated[
         float | None,
@@ -253,7 +224,7 @@ def plasbin_panassembly(
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
-    """PlasBin a pan-assembly graph with the decomp approach."""
+    """PlasBin a pan-assembly graph with the once approach."""
     common_log.init_logger(_LOGGER, "Running PlasBin on pan-assembly.", debug)
     io_manager = _init_io_manager(outdir)
 
@@ -265,7 +236,6 @@ def plasbin_panassembly(
         obj_fun_domain,
         binning_cfg_yaml,
     )
-    decomp_config = _init_decomp_cfg(gamma_mcf, gamma_mgc, decomp_cfg_yaml)
     gurobi_config = _init_gurobi_cfg(mip_gap, time_limit, threads, gurobi_cfg_yaml)
 
     seeds, intervals, gc_scores, plasmidness = _init_plasbin_input(
@@ -282,7 +252,6 @@ def plasbin_panassembly(
             gc_scores,
             plasmidness,
             binning_config,
-            decomp_config,
             gurobi_config,
             io_manager.config().output_directory(),
         ),
@@ -325,23 +294,6 @@ def _init_binning_cfg(
     return binning_config
 
 
-def _init_decomp_cfg(
-    gamma_mcf: float,
-    gamma_mgc: float,
-    decomp_cfg_yaml: Path | None,
-) -> decomp_cfg.Decomp:
-    decomp_config = (
-        decomp_cfg.Decomp.from_yaml(decomp_cfg_yaml)
-        if decomp_cfg_yaml is not None
-        else decomp_cfg.Decomp(
-            gamma_mcf=gamma_mcf,
-            gamma_mgc=gamma_mgc,
-        )
-    )
-    _LOGGER.debug("Decomp config:\n%s", decomp_config.to_dict())
-    return decomp_config
-
-
 def _init_gurobi_cfg(
     mip_gap: float | None,
     time_limit: float | None,
@@ -382,8 +334,8 @@ def _write_outputs(
     k: int,
     bin_stats: bins_items.Stats,
     seq_normcovs: Iterable[bins_items.SequenceNormCoverage],
-    all_milp_stats: lp_views.StatsContainer,
-    log_files: list[Path],
+    milp_stats: lp_views.MGCLBStats,
+    log_file: Path,
 ) -> None:
     io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
     bin_stats.to_yaml(io_manager.bin_stats_path(k))
@@ -393,8 +345,8 @@ def _write_outputs(
                 seq_normcov.identifier(),
                 seq_normcov.normalized_coverage(),
             )
-    all_milp_stats.to_yaml(io_manager.milp_stats_path(k))
+    milp_stats.to_yaml(io_manager.milp_stats_path(k))
     io_manager.move_gurobi_logs(
-        log_files,
+        [log_file],
         lp_io.Manager.attributes_from_gurobi_log_path,
     )

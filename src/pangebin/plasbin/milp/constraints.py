@@ -480,7 +480,7 @@ def define_inflow_gc(  # noqa: PLR0913
     frag_vars: pb_lp_var.SubFragments,
     gc_vars: pb_lp_var.GCIntervals,
     flow_vars: pb_lp_var.Flow,
-    inflow_gc_vars: pb_lp_var.InflowGCIntervals,
+    inflow_gc_vars: pb_lp_var.InflowGC,
     network: net.Network,
     intervals: gc_items.Intervals,
 ) -> None:

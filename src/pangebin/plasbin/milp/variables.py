@@ -447,7 +447,7 @@ class FragmentGC:
         return f"{frag_id}_{gc_items.IntervalFormatter.to_str(interval)}"
 
 
-class InflowGCIntervals:
+class InflowGC:
     """Inflow interval variables.
 
     Defines:
