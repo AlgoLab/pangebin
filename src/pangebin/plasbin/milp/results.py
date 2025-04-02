@@ -38,7 +38,7 @@ def active_gc_content_interval(
 ) -> tuple[float, float]:
     """Get active GC content interval."""
     for interval in intervals:
-        if gc_vars.gc(interval).X > 0:
+        if gc_vars.x(interval).X > 0:
             return interval
     _crt_msg = "Could not find active GC content interval"
     _LOGGER.critical(_crt_msg)

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from itertools import chain, product
 
-import gurobipy
+import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
@@ -16,7 +16,7 @@ import pangebin.plasbin.network as net
 
 
 def active_fragments_active_one_of_their_orientations(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_v_vars: pb_lp_var.SubVertices,
     sub_f_vars: pb_lp_var.SubFragments,
     network: net.Network,
@@ -34,9 +34,7 @@ def active_fragments_active_one_of_their_orientations(
     m.addConstrs(
         (
             sub_f_vars.x(frag_id)
-            <= gurobipy.quicksum(
-                sub_v_vars.x(frag) for frag in network.to_oriented(frag_id)
-            )
+            <= gp.quicksum(sub_v_vars.x(frag) for frag in network.to_oriented(frag_id))
             for frag_id in network.fragment_ids()
         ),
         name="active_fragment_implies_active_extremity",
@@ -44,19 +42,19 @@ def active_fragments_active_one_of_their_orientations(
 
 
 def exactly_one_active_source_arc(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_arc_vars: pb_lp_var.SubArcs,
     network: net.Network,
 ) -> None:
     """Exactly one out source arc constraint."""
     m.addConstr(
-        gurobipy.quicksum(sub_arc_vars.s(a) for a in network.source_arcs()) == 1,
+        gp.quicksum(sub_arc_vars.s(a) for a in network.source_arcs()) == 1,
         name="exactly_one_out_source_link",
     )
 
 
 def circularity(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_arc_vars: pb_lp_var.SubArcs,
     network: net.Network,
 ) -> None:
@@ -75,7 +73,7 @@ def circularity(
 
 
 def arc_capacities_limit_arc_flows(
-    m: gurobipy.Model,
+    m: gp.Model,
     flow_vars: pb_lp_var.Flow,
     sub_arc_vars: pb_lp_var.SubArcs,
     network: net.Network,
@@ -104,7 +102,7 @@ def arc_capacities_limit_arc_flows(
 
 
 def fragment_coverages_limit_cumulative_flows(
-    m: gurobipy.Model,
+    m: gp.Model,
     flow_vars: pb_lp_var.Flow,
     network: net.Network,
 ) -> None:
@@ -120,7 +118,7 @@ def fragment_coverages_limit_cumulative_flows(
 
 
 def flow_conservation(
-    m: gurobipy.Model,
+    m: gp.Model,
     flow_vars: pb_lp_var.Flow,
     network: net.Network,
 ) -> None:
@@ -136,25 +134,25 @@ def flow_conservation(
 
 
 def total_flow_value(
-    m: gurobipy.Model,
+    m: gp.Model,
     flow_vars: pb_lp_var.Flow,
     network: net.Network,
 ) -> None:
     """Set the total flow equals the source outgoing flow and the sink incoming flow."""
     m.addConstr(
         flow_vars.total()
-        == gurobipy.quicksum(flow_vars.s(s_w) for s_w in network.source_arcs()),
+        == gp.quicksum(flow_vars.s(s_w) for s_w in network.source_arcs()),
         name="total_flow_equals_source_outgoing_flow",
     )
     m.addConstr(
         flow_vars.total()
-        == gurobipy.quicksum(flow_vars.t(u_t) for u_t in network.sink_arcs()),
+        == gp.quicksum(flow_vars.t(u_t) for u_t in network.sink_arcs()),
         name="total_flow_equals_sink_incoming_flow",
     )
 
 
 def active_arcs_implies_active_fragments(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_v_vars: pb_lp_var.SubVertices,
     sub_arc_vars: pb_lp_var.SubArcs,
     network: net.Network,
@@ -183,7 +181,7 @@ def active_arcs_implies_active_fragments(
 
 # REFACTOR Potentially useless constraint
 def active_fragments_imply_at_least_one_active_arc(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_v_vars: pb_lp_var.SubVertices,
     sub_arc_vars: pb_lp_var.SubArcs,
     network: net.Network,
@@ -199,7 +197,7 @@ def active_fragments_imply_at_least_one_active_arc(
 
 
 def active_arcs_imply_vertices_in_same_component(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_v_vars: pb_lp_var.SubVertices,
     sub_arc_vars: pb_lp_var.SubArcs,
     network: net.Network,
@@ -225,7 +223,7 @@ def active_arcs_imply_vertices_in_same_component(
 
 
 def subtree_depth_min_distance(
-    m: gurobipy.Model,
+    m: gp.Model,
     ccomp_vars: pb_lp_var.ConnectedComponent,
     network: net.Network,
 ) -> None:
@@ -235,7 +233,7 @@ def subtree_depth_min_distance(
     #
     m.addConstr(
         ccomp_vars.alpha()
-        + gurobipy.quicksum(
+        + gp.quicksum(
             ccomp_vars.beta_s(source_arcs) for source_arcs in network.source_arcs()
         )
         <= 1,
@@ -257,16 +255,14 @@ def subtree_depth_min_distance(
     # For the sink
     #
     m.addConstr(
-        -gurobipy.quicksum(
-            ccomp_vars.beta_t(sink_arcs) for sink_arcs in network.sink_arcs()
-        )
+        -gp.quicksum(ccomp_vars.beta_t(sink_arcs) for sink_arcs in network.sink_arcs())
         <= 1,
         name="sink_subtree_depth_min_distance",
     )
 
 
 def arcs_in_tree_are_active(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_arc_vars: pb_lp_var.SubArcs,
     ccomp_vars: pb_lp_var.ConnectedComponent,
     network: net.Network,
@@ -307,7 +303,7 @@ def arcs_in_tree_are_active(
 
 
 def alpha_is_the_number_of_vertices_in_the_solution(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_v_vars: pb_lp_var.SubVertices,
     ccomp_vars: pb_lp_var.ConnectedComponent,
     network: net.Network,
@@ -316,7 +312,7 @@ def alpha_is_the_number_of_vertices_in_the_solution(
     m.addConstr(
         ccomp_vars.alpha()
         == 2
-        + gurobipy.quicksum(
+        + gp.quicksum(
             sub_v_vars.x(fragment) for fragment in network.oriented_fragments()
         ),
         name="alpha_is_the_number_of_vertices_in_the_solution",
@@ -324,7 +320,7 @@ def alpha_is_the_number_of_vertices_in_the_solution(
 
 
 def active_arcs_have_flow_at_least_total_flow(
-    m: gurobipy.Model,
+    m: gp.Model,
     sub_arc_vars: pb_lp_var.SubArcs,
     flow_vars: pb_lp_var.Flow,
     pos_flow_vars: pb_lp_var.PositiveFlow,
@@ -401,7 +397,7 @@ def active_arcs_have_flow_at_least_total_flow(
 
 
 def total_flow_is_strictly_positive(
-    m: gurobipy.Model,
+    m: gp.Model,
     flow_vars: pb_lp_var.Flow,
     epsilon_total_flow: float,
 ) -> None:
@@ -413,7 +409,7 @@ def total_flow_is_strictly_positive(
 
 
 def minimum_cumulative_length(
-    m: gurobipy.Model,
+    m: gp.Model,
     frag_vars: pb_lp_var.SubFragments,
     network: net.Network,
     minimum_cumulative_length: int,
@@ -422,7 +418,7 @@ def minimum_cumulative_length(
     # DOCU note that the repetition is not considered
     m.addConstr(
         minimum_cumulative_length
-        <= gurobipy.quicksum(
+        <= gp.quicksum(
             frag_vars.x(frag_id)
             * gfa_segment.length(network.gfa_graph().segment(frag_id))
             for frag_id in network.fragment_ids()
@@ -435,44 +431,83 @@ def minimum_cumulative_length(
 #                                          GC                                          #
 # ------------------------------------------------------------------------------------ #
 def exactly_one_interval_is_active(
-    m: gurobipy.Model,
+    m: gp.Model,
     gc_vars: pb_lp_var.GCIntervals,
     intervals: gc_items.Intervals,
 ) -> None:
     """Exactly one interval is active."""
     m.addConstr(
-        gurobipy.quicksum(gc_vars.gc(interval) for interval in intervals) == 1,
+        gp.quicksum(gc_vars.x(interval) for interval in intervals) == 1,
         name="exactly_one_interval_is_active",
     )
 
 
-def define_frag_gc(
-    m: gurobipy.Model,
+def define_frag_gc(  # noqa: PLR0913
+    m: gp.Model,
     frag_vars: pb_lp_var.SubFragments,
     gc_vars: pb_lp_var.GCIntervals,
+    frag_gc_vars: pb_lp_var.FragmentGC,
     network: net.Network,
     intervals: gc_items.Intervals,
 ) -> None:
     """Define frag gc variables."""
     m.addConstrs(
         (
-            gc_vars.frag_gc(frag_id, interval) <= frag_vars.x(frag_id)
+            frag_gc_vars.x(frag_id, interval) <= frag_vars.x(frag_id)
             for (frag_id, interval) in product(network.fragment_ids(), intervals)
         ),
         name="define_frag_gc_1",
     )
     m.addConstrs(
         (
-            gc_vars.frag_gc(frag_id, interval) <= gc_vars.gc(interval)
+            frag_gc_vars.x(frag_id, interval) <= gc_vars.x(interval)
             for (frag_id, interval) in product(network.fragment_ids(), intervals)
         ),
         name="define_frag_gc_2",
     )
     m.addConstrs(
         (
-            gc_vars.frag_gc(frag_id, interval)
-            >= frag_vars.x(frag_id) + gc_vars.gc(interval) - 1
+            frag_gc_vars.x(frag_id, interval)
+            >= frag_vars.x(frag_id) + gc_vars.x(interval) - 1
             for (frag_id, interval) in product(network.fragment_ids(), intervals)
         ),
         name="define_frag_gc_3",
+    )
+
+
+def define_inflow_gc(  # noqa: PLR0913
+    m: gp.Model,
+    frag_vars: pb_lp_var.SubFragments,
+    gc_vars: pb_lp_var.GCIntervals,
+    flow_vars: pb_lp_var.Flow,
+    inflow_gc_vars: pb_lp_var.InflowGCIntervals,
+    network: net.Network,
+    intervals: gc_items.Intervals,
+) -> None:
+    """Define inflow_gc variables."""
+    m.addConstrs(
+        (
+            inflow_gc_vars.x(frag_id, interval)
+            <= frag_vars.x(frag_id) * network.coverage(frag_id)
+            for (frag_id, interval) in product(network.fragment_ids(), intervals)
+        ),
+        name="define_inflow_gc_1",
+    )
+    m.addConstrs(
+        (
+            inflow_gc_vars.x(frag_id, interval)
+            <= gc_vars.x(interval) * network.coverage(frag_id)
+            for (frag_id, interval) in product(network.fragment_ids(), intervals)
+        ),
+        name="define_inflow_gc_2",
+    )
+    m.addConstrs(
+        (
+            inflow_gc_vars.x(frag_id, interval)
+            >= flow_vars.incoming_forward_reverse(network, frag_id)
+            - (2 - frag_vars.x(frag_id) - gc_vars.x(interval))
+            * network.coverage(frag_id)
+            for (frag_id, interval) in product(network.fragment_ids(), intervals)
+        ),
+        name="define_inflow_gc_3",
     )

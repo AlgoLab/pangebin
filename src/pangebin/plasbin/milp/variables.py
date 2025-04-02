@@ -378,7 +378,6 @@ class SubFragments:
         model: gp.Model,
         frag_domain: Domain,
     ) -> None:
-        # TODO use new variable frag in MGC and MPS models
         self.__frag: dict[str, gp.Var] = dict(
             gen_vars(model, frag_domain, "frag", network.fragment_ids()),
         )
@@ -394,16 +393,13 @@ class GCIntervals:
     Defines:
 
     * gc_a for all intervals a
-    * frag_gc_ib for all fragments i and intervals b
     """
 
     def __init__(
         self,
-        network: net.Network,
         intervals: gc_items.Intervals,
         model: gp.Model,
         gc_domain: Domain,
-        frag_gc_domain: Domain,
     ) -> None:
         self.__gc: dict[str, gp.Var] = dict(
             gen_vars(
@@ -413,6 +409,27 @@ class GCIntervals:
                 map(gc_items.IntervalFormatter.to_str, intervals),
             ),
         )
+
+    def x(self, interval: tuple[float, float]) -> gp.Var:
+        """Get GC variable."""
+        return self.__gc[gc_items.IntervalFormatter.to_str(interval)]
+
+
+class FragmentGC:
+    """Fragment interval variables.
+
+    Defines:
+
+    * frag_gc_ib for all fragments i and intervals b
+    """
+
+    def __init__(
+        self,
+        network: net.Network,
+        intervals: gc_items.Intervals,
+        model: gp.Model,
+        frag_gc_domain: Domain,
+    ) -> None:
         self.__frag_gc: dict[str, gp.Var] = dict(
             gen_vars(
                 model,
@@ -422,13 +439,41 @@ class GCIntervals:
             ),
         )
 
-    def gc(self, interval: tuple[float, float]) -> gp.Var:
-        """Get GC variable."""
-        return self.__gc[gc_items.IntervalFormatter.to_str(interval)]
-
-    def frag_gc(self, frag_id: str, interval: tuple[float, float]) -> gp.Var:
+    def x(self, frag_id: str, interval: tuple[float, float]) -> gp.Var:
         """Get fragment GC variable."""
         return self.__frag_gc[self.__fmt_frag_gc(frag_id, interval)]
 
     def __fmt_frag_gc(self, frag_id: str, interval: tuple[float, float]) -> str:
+        return f"{frag_id}_{gc_items.IntervalFormatter.to_str(interval)}"
+
+
+class InflowGCIntervals:
+    """Inflow interval variables.
+
+    Defines:
+
+    * inflow_gc_ib for all fragments i and intervals b
+    """
+
+    def __init__(
+        self,
+        network: net.Network,
+        intervals: gc_items.Intervals,
+        model: gp.Model,
+        inflow_gc_domain: Domain,
+    ) -> None:
+        self.__inflow_gc: dict[str, gp.Var] = dict(
+            gen_vars(
+                model,
+                inflow_gc_domain,
+                "inflow_gc",
+                map(self.__fmt_inflow_gc, *product(network.fragment_ids(), intervals)),
+            ),
+        )
+
+    def x(self, frag_id: str, interval: tuple[float, float]) -> gp.Var:
+        """Get inflow GC variable."""
+        return self.__inflow_gc[self.__fmt_inflow_gc(frag_id, interval)]
+
+    def __fmt_inflow_gc(self, frag_id: str, interval: tuple[float, float]) -> str:
         return f"{frag_id}_{gc_items.IntervalFormatter.to_str(interval)}"
