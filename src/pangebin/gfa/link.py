@@ -23,11 +23,11 @@ class Link:
         """Get link from link line."""
         return cls(
             OrientedFragment(
-                link_line.from_segment.name,
+                link_line.field_to_s("from_segment"),
                 Orientation(link_line.from_orient),
             ),
             OrientedFragment(
-                link_line.to_segment.name,
+                link_line.field_to_s("to_segment"),
                 Orientation(link_line.to_orient),
             ),
             link_line.overlap,

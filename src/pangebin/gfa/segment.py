@@ -11,7 +11,6 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
-import pangebin.gfa.line as gfa_line
 from pangebin.gfa.tag import FieldType
 
 if TYPE_CHECKING:
@@ -62,10 +61,13 @@ class OrientedFragment:
         segment_name: str,
     ) -> OrientedFragment:
         """Get fragment from left dovetail line."""
-        if link_line.to_segment.name == segment_name:
-            return cls(link_line.from_segment.name, Orientation(link_line.from_orient))
+        if link_line.field_to_s("to_segment") == segment_name:
+            return cls(
+                link_line.field_to_s("from_segment"),
+                Orientation(link_line.from_orient),
+            )
         return cls(
-            link_line.to_segment.name,
+            link_line.field_to_s("to_segment"),
             Orientation.from_reverse_string(link_line.to_orient),
         )
 
@@ -76,10 +78,13 @@ class OrientedFragment:
         segment_name: str,
     ) -> OrientedFragment:
         """Get fragment from right dovetail line."""
-        if link_line.from_segment.name == segment_name:
-            return cls(link_line.to_segment.name, Orientation(link_line.to_orient))
+        if link_line.field_to_s("from_segment") == segment_name:
+            return cls(
+                link_line.field_to_s("to_segment"),
+                Orientation(link_line.to_orient),
+            )
         return cls(
-            link_line.from_segment.name,
+            link_line.field_to_s("from_segment"),
             Orientation.from_reverse_string(link_line.from_orient),
         )
 
@@ -154,9 +159,9 @@ def get_segment_line_by_name(gfa: gfapy.Gfa, name: str) -> GfaSegment:
 
     """
     # REFACTOR simplify using gfa.segment() method
-    line: gfapy.Line | None = gfa.line(str(name))
-    if line is None or line.record_type != gfa_line.Type.SEGMENT:
-        _err_msg = f"Invalid segment name: {name}, line is {line}"
+    line: GfaSegment | None = gfa.segment(str(name))
+    if line is None:
+        _err_msg = f"Invalid segment name: {name}"
         _LOGGER.error(_err_msg)
         raise ValueError(_err_msg)
     return line
