@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 from enum import StrEnum
 from itertools import chain
 from typing import TYPE_CHECKING
+
+import gfapy  # type: ignore[import-untyped]
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.assembler.ops as gfa_asm_ops
@@ -15,8 +18,6 @@ import pangebin.gfa.segment as gfa_segment
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
-
-    import gfapy  # type: ignore[import-untyped]
 
 
 class SinkArcsDomain(StrEnum):
@@ -232,7 +233,9 @@ class Network:
         if coverage_to_substrack >= self.coverage(fragment_id):
             # XXX All the references of a fragment is not deleted
             # see https://github.com/ggonnella/gfapy/issues/33
-            # remove path
+            #
+            # Remove path
+            #
             path_line: gfa_path.GfaPath
             # Use list constructor to avoid concurrent modification
             for path_line in list(self.__gfa_graph.paths):
@@ -240,25 +243,18 @@ class Network:
                     seg_line.name for seg_line in path_line.segment_names
                 ):
                     path_line.disconnect()
+            #
+            # Remove links
+            #
             link_line: gfa_link.GfaLink
             for link_line in list(
                 gfa_segment.get_segment_line_by_name(
                     self.__gfa_graph,
                     fragment_id,
-                ).dovetails_L,
+                ).dovetails,
             ):
-                link_line.disconnect()
-            for link_line in list(
-                gfa_segment.get_segment_line_by_name(
-                    self.__gfa_graph,
-                    fragment_id,
-                ).dovetails_R,
-            ):
-                # Arcs (v+, v+) were already disconnected in the previous loop
-                # FIXME verify everywhere if this repetition is problematic or not
-                link = gfa_link.Link.from_link_line(link_line)
-                if link.predecessor() != link.successor():
-                    link_line.disconnect()
+                with contextlib.suppress(gfapy.RuntimeError):
+                    link_line.disconnect()  # FIXME potential bug https://github.com/ggonnella/gfapy/issues/36
             self.__gfa_graph.segment(fragment_id).disconnect()
             if fragment_id in self.__seeds:
                 self.__seeds.remove(fragment_id)

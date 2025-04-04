@@ -252,7 +252,7 @@ def remove_unused_segments(pangenome_gfa: gfapy.Gfa) -> None:
             or gfa_pan_segment.occurence_in_paths(segment_line) == 0
         ):
             _number_of_disconnected_segments += 1
-            segment_line.disconnect()
+            segment_line.disconnect()  # FIXME potential bug
 
     _LOGGER.debug(
         "Number of disconnected segments in the pangenome graph: %i",
@@ -504,7 +504,7 @@ def add_assembly_links_to_pangenome(
                 != gfa_pan_link.LinkOriginTagValue.PANGENOME_LINK
             ):
                 _LOGGER.debug("Previous multi-edge: %s", _existing_link_with_orient[0])
-                _existing_link_with_orient[0].disconnect()
+                _existing_link_with_orient[0].disconnect()  # FIXME potential bug
             else:
                 _LOGGER.debug("New multi-edge: %s", new_panassembly_link)
                 add_new_panassembly_link = False
