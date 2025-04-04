@@ -137,11 +137,16 @@ def bins(
     ],
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
-    """Convert PlasBin-flow bin info TSV file to PangeBin bins."""
-    common_log.init_logger(_LOGGER, "Converting PlasBin-flow bin info TSV file.", debug)
+    """Convert PangeBin-flow bins into PlasBin-flow bin info TSV file."""
+    common_log.init_logger(
+        _LOGGER,
+        "Converting PangeBin-flow bins into PlasBin-flow bin info TSV file.",
+        debug,
+    )
     io_manager = pb_io.Manager(pb_io.Config(output_directory=pg_bins_parent_dir))
     with comp_io.BinsWriter.open(pbf_bin_info_tsv) as pbf_bin_info_fout:
         for k in range(io_manager.number_of_bins()):
             pbf_bin_info_fout.write_bin_line(
                 comp_ops.pg_bin_dir_to_pbf_bininfo(io_manager, k),
             )
+    _LOGGER.info("PlasBin-flow bin info TSV file: %s", pbf_bin_info_tsv)
