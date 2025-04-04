@@ -19,7 +19,7 @@ import pangebin.logging as common_log
 import pangebin.plasbin.binlab.config as binlab_cfg
 import pangebin.plasbin.binlab.milp.input_output as lp_io
 import pangebin.plasbin.binlab.milp.views as lp_views
-import pangebin.plasbin.bins.input_output as bin_io
+import pangebin.plasbin.bins.input_output as bins_io
 import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.config as pb_cfg
 import pangebin.plasbin.input_output as pb_io
@@ -377,7 +377,7 @@ def _write_outputs(
 ) -> None:
     io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
     bin_stats.to_yaml(io_manager.bin_stats_path(k))
-    with bin_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
+    with bins_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
         for seq_normcov in seq_normcovs:
             fout.write_sequence_normcov(
                 seq_normcov.identifier(),

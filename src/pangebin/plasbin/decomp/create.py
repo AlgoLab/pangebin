@@ -185,9 +185,11 @@ def plasbin(  # noqa: PLR0913
             )
             if result is not None:
                 milp_stats, milp_result_values, log_files = result
-                fragment_norm_coverages, norm_coverage = _fragment_norm_coverages(
-                    milp_result_values,
-                    plasbin_config.circular(),
+                fragment_norm_coverages, norm_coverage = (
+                    pb_lp_res.fragment_norm_coverages(
+                        milp_result_values,
+                        plasbin_config.circular(),
+                    )
                 )
                 yield (
                     bins_items.Stats(
@@ -200,7 +202,11 @@ def plasbin(  # noqa: PLR0913
                     milp_stats,
                     log_files,
                 )
-                _update_network(network, milp_result_values)
+                pb_lp_res.update_network(
+                    network,
+                    milp_result_values,
+                    plasbin_config.min_flow(),
+                )
                 bin_number += 1
 
                 progress.update(
@@ -335,31 +341,3 @@ def _run_model(
     model.Params.LogFile = str(log_file)
     model.optimize()
     return log_file
-
-
-def _fragment_norm_coverages(
-    milp_result_values: pb_lp_res.Pangebin,
-    circular: bool,  # noqa: FBT001
-) -> tuple[Iterable[bins_items.SequenceNormCoverage], float]:
-    """Get fragment normalized coverages."""
-    norm_cst = (
-        milp_result_values.total_flow()
-        if not circular
-        else min(inflow for _, inflow in milp_result_values.fragments_incoming_flow())
-    )
-    return (
-        (
-            bins_items.SequenceNormCoverage(frag_id, inflow / norm_cst)
-            for frag_id, inflow in milp_result_values.fragments_incoming_flow()
-        ),
-        norm_cst,
-    )
-
-
-def _update_network(
-    network: net.Network,
-    milp_result_values: pb_lp_res.Pangebin,
-) -> None:
-    """Update network."""
-    for frag_id, incoming_flow in milp_result_values.fragments_incoming_flow():
-        network.reduce_coverage(frag_id, incoming_flow)

@@ -16,15 +16,15 @@ import pangebin.gc_content.input_output as gc_io
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.input_output as gfa_io
 import pangebin.logging as common_log
-import pangebin.plasbin.bins.input_output as bin_io
+import pangebin.plasbin.bins.input_output as bins_io
 import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.config as pb_cfg
 import pangebin.plasbin.input_output as pb_io
 import pangebin.plasbin.milp.config as pb_lp_cfg
 import pangebin.plasbin.milp.objectives as pb_lp_obj
 import pangebin.plasbin.network as net
-import pangebin.plasbin.once.milp.input_output as lp_io
-import pangebin.plasbin.once.milp.views as lp_views
+import pangebin.plasbin.once.milp.input_output as once_lp_io
+import pangebin.plasbin.once.milp.views as once_lp_views
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
 from pangebin.plasbin.once import create
@@ -334,12 +334,12 @@ def _write_outputs(
     k: int,
     bin_stats: bins_items.Stats,
     seq_normcovs: Iterable[bins_items.SequenceNormCoverage],
-    milp_stats: lp_views.MGCLBStats,
+    milp_stats: once_lp_views.MGCLBStats,
     log_file: Path,
 ) -> None:
     io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
     bin_stats.to_yaml(io_manager.bin_stats_path(k))
-    with bin_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
+    with bins_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
         for seq_normcov in seq_normcovs:
             fout.write_sequence_normcov(
                 seq_normcov.identifier(),
@@ -348,5 +348,5 @@ def _write_outputs(
     milp_stats.to_yaml(io_manager.milp_stats_path(k))
     io_manager.move_gurobi_logs(
         [log_file],
-        lp_io.Manager.attributes_from_gurobi_log_path,
+        once_lp_io.Manager.attributes_from_gurobi_log_path,
     )

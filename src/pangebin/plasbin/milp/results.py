@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
+import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.milp.variables as pb_lp_var
 import pangebin.plasbin.network as net
 
@@ -113,3 +114,36 @@ class Pangebin:
     def gc_interval(self) -> tuple[float, float]:
         """Get GC interval."""
         return self.__gc_interval
+
+
+def update_network(
+    network: net.Network,
+    milp_result_values: Pangebin,
+    minimum_flow: float,
+) -> None:
+    """Update network."""
+    for frag_id, incoming_flow in milp_result_values.fragments_incoming_flow():
+        network.reduce_coverage(frag_id, incoming_flow)
+    for frag_id in network.fragment_ids():
+        cov_i = network.coverage(frag_id)
+        if cov_i < minimum_flow:
+            network.reduce_coverage(frag_id, cov_i)
+
+
+def fragment_norm_coverages(
+    milp_result_values: Pangebin,
+    circular: bool,  # noqa: FBT001
+) -> tuple[Iterable[bins_items.SequenceNormCoverage], float]:
+    """Get fragment normalized coverages."""
+    norm_cst = (
+        milp_result_values.total_flow()
+        if not circular
+        else min(inflow for _, inflow in milp_result_values.fragments_incoming_flow())
+    )
+    return (
+        (
+            bins_items.SequenceNormCoverage(frag_id, inflow / norm_cst)
+            for frag_id, inflow in milp_result_values.fragments_incoming_flow()
+        ),
+        norm_cst,
+    )
