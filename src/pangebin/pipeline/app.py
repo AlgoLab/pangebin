@@ -11,6 +11,7 @@ from typing import Annotated
 import typer
 
 import pangebin.logging as common_log
+import pangebin.pipeline.asm_pbf.app as pipe_asm_pbf_app
 import pangebin.pipeline.seed_thresholds.app as pipe_seed_thr_app
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,3 +33,4 @@ CONFIG_APP = typer.Typer(
 
 
 CONFIG_APP.command(name="seed-thresholds")(pipe_seed_thr_app.write_configs)
+CONFIG_APP.command(name="once")(pipe_asm_pbf_app.write_once_configs)

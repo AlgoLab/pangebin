@@ -19,6 +19,7 @@ import pangebin.panassembly.app as panassembly_app
 import pangebin.pangenome.app as pangenome_app
 import pangebin.pbf_comp.app as pbf_comp_app
 import pangebin.pipeline.app as pipeline_app
+import pangebin.pipeline.asm_pbf.app as pipe_asm_pbf_app
 import pangebin.pipeline.seed_thresholds.app as pipe_seed_thr_app
 import pangebin.plasbin.app as plasbin_app
 import pangebin.seed.app as seed_app
@@ -43,6 +44,7 @@ APP.command(rich_help_panel=_TyperRichHelpPanel.PIPELINE)(
 )
 
 APP.add_typer(pipeline_app.CONFIG_APP, rich_help_panel=_TyperRichHelpPanel.PIPELINE)
+APP.add_typer(pipe_asm_pbf_app.APP, rich_help_panel=_TyperRichHelpPanel.PIPELINE)
 
 # ------------------------------------------------------------------------------------ #
 #                                     Sub Commands                                     #
