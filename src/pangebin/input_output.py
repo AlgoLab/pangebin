@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import gzip
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -59,11 +60,16 @@ def open_file_read(filepath: Path) -> Generator[IO[str], None, None]:
     """
     text_in: IO[str]
     if is_gz_file(filepath):
-        with (
-            filepath.open("rb") as f_in,
-            bgzip.BGZipReader(fileobj=f_in) as g_in,
-        ):
-            text_in = io.TextIOWrapper(g_in, encoding="utf-8")
+        # XXX bug https://github.com/DataBiosphere/bgzip/issues/88
+        # with (
+        #     filepath.open("rb") as f_in,
+        #     bgzip.BGZipReader(f_in) as g_in,
+        # ):
+        #     text_in = io.TextIOWrapper(g_in, encoding="utf-8")
+        #     yield text_in
+        #     text_in.close()
+        with gzip.open(filepath, "rb") as f_in:
+            text_in = io.TextIOWrapper(f_in, encoding="utf-8")
             yield text_in
             text_in.close()
     else:
