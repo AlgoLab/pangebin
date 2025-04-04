@@ -29,7 +29,7 @@ def standardize_assembly_graph(
     graph : gfapy.Gfa
         GFA graph
     assembler_id : asm_items.Identifier
-        Assembler
+        Assembler identifier
     config : Config
         Configuration
 

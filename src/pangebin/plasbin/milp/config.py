@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import gurobipy
+import gurobipy as gp
 import typer
 
 from pangebin.yaml import YAMLInterface
@@ -25,6 +25,11 @@ class Gurobi(YAMLInterface):
     DEFAULT_YAML_FILE = Path("gurobi_config.yaml")
 
     @classmethod
+    def default(cls) -> Gurobi:
+        """Get default config."""
+        return cls(cls.DEFAULT_MIP_GAP, cls.DEFAULT_TIME_LIMIT, cls.DEFAULT_THREADS)
+
+    @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Gurobi:
         """Convert dict to object."""
         return cls(
@@ -35,9 +40,9 @@ class Gurobi(YAMLInterface):
 
     def __init__(
         self,
-        mip_gap: float | None = DEFAULT_MIP_GAP,
-        time_limit: float | None = DEFAULT_TIME_LIMIT,
-        threads: int | None = DEFAULT_THREADS,
+        mip_gap: float | None,
+        time_limit: float | None,
+        threads: int | None,
     ) -> None:
         """Initialize object."""
         self.__mip_gap = mip_gap
@@ -67,15 +72,16 @@ class Gurobi(YAMLInterface):
 
 def configurate_global_gurobi(config: Gurobi) -> None:
     """Configure global Gurobi parameters."""
+    # gp.setParam(gp.GRB.Param.MIPFocus, 2)  # XXX MIPFocus set to 2
     mip_gap = config.mip_gap()
     if mip_gap is not None:
-        gurobipy.setParam(gurobipy.GRB.Param.MIPGap, mip_gap)
+        gp.setParam(gp.GRB.Param.MIPGap, mip_gap)
     time_limit = config.time_limit()
     if time_limit is not None:
-        gurobipy.setParam(gurobipy.GRB.Param.TimeLimit, time_limit)
+        gp.setParam(gp.GRB.Param.TimeLimit, time_limit)
     threads = config.threads()
     if threads is not None:
-        gurobipy.setParam(gurobipy.GRB.Param.Threads, threads)
+        gp.setParam(gp.GRB.Param.Threads, threads)
 
 
 class GurobiOptions:
@@ -106,5 +112,5 @@ class GurobiOptions:
 
 
 if __name__ == "__main__":
-    gurobi_config = Gurobi()
+    gurobi_config = Gurobi.default()
     gurobi_config.to_yaml(Gurobi.DEFAULT_YAML_FILE)

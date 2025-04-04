@@ -73,11 +73,13 @@ class IOOpts:
 def std_asm_graph(
     skesa_gfa_path: Annotated[Path, Arguments.INPUT_SKESA_GFA],
     unicycler_gfa_path: Annotated[Path, Arguments.INPUT_UNICYCLER_GFA],
+    # Config
     min_contig_length: Annotated[
         int,
         ConfigOpts.MIN_CONTIG_LENGTH,
     ] = Config.DEFAULT_MIN_CONTIG_LENGTH,
     config_file: Annotated[Path | None, ConfigOpts.CONFIG_FILE] = None,
+    # IO options
     outdir: Annotated[Path, IOOpts.OUTPUT_DIR] = standardize_io.Config.DEFAULT_DIR,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
@@ -89,10 +91,9 @@ def std_asm_graph(
     config = (
         Config.from_yaml(config_file)
         if config_file is not None
-        else Config(
-            min_contig_length=min_contig_length,
-        )
+        else Config(min_contig_length)
     )
+    _LOGGER.debug("Config: %s", config)
 
     io_manager = standardize_io.Manager(
         standardize_io.Config(output_directory=outdir),

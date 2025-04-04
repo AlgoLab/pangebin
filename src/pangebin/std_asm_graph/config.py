@@ -20,6 +20,11 @@ class Config(YAMLInterface):
     NAME = "Standardize config"
 
     @classmethod
+    def default(cls) -> Config:
+        """Get default config."""
+        return cls(cls.DEFAULT_MIN_CONTIG_LENGTH)
+
+    @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
         """Convert dict to object."""
         return cls(
@@ -28,7 +33,7 @@ class Config(YAMLInterface):
 
     def __init__(
         self,
-        min_contig_length: int = DEFAULT_MIN_CONTIG_LENGTH,
+        min_contig_length: int,
     ) -> None:
         """Initialize object."""
         self.__min_contig_length = min_contig_length
