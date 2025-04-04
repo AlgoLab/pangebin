@@ -21,7 +21,7 @@ APP = typer.Typer(rich_markup_mode="rich")
 
 
 DEFAULT_GC_CONTENT_INTERVAL_FILE = (
-    Path(__file__).parent / "default_gc_content_intervals.txt"
+    Path(__file__).parent / "default_gc_content_intervals.tsv"
 )
 
 
