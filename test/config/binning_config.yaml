@@ -2,4 +2,4 @@ sink_arc_definition: all
 min_flow: 0.0001
 min_cumulative_len: 1000
 circular: false
-obj_fun_domain: seeds
+obj_fun_domain: all
