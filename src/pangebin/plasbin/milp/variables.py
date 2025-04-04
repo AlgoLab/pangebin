@@ -435,7 +435,10 @@ class FragmentGC:
                 model,
                 frag_gc_domain,
                 "frag_gc",
-                map(self.__fmt_frag_gc, *product(network.fragment_ids(), intervals)),
+                (
+                    self.__fmt_frag_gc(*tup)
+                    for tup in product(network.fragment_ids(), intervals)
+                ),
             ),
         )
 
@@ -467,7 +470,10 @@ class InflowGC:
                 model,
                 inflow_gc_domain,
                 "inflow_gc",
-                map(self.__fmt_inflow_gc, *product(network.fragment_ids(), intervals)),
+                (
+                    self.__fmt_inflow_gc(*tup)
+                    for tup in product(network.fragment_ids(), intervals)
+                ),
             ),
         )
 
