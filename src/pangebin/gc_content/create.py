@@ -135,12 +135,6 @@ def sequence_gc_proba_scores(
 
     seq_length = len(seq_record)
     seq_gc_count = sum(1 for nt in seq_record.seq if nt in ("G", "C"))
-    _LOGGER.debug(
-        "GC ratio of %s is %s (len = %s)",
-        seq_record.name,
-        seq_gc_count / seq_length,
-        seq_length,
-    )
     for k, gc_interval in enumerate(gc_content_intervals):
         prob_n_knw_b = integrate.quad(
             lambda plasmid_gc_ratio: proba_to_count_n_in_a_plasmid_with_gc_ratio(
