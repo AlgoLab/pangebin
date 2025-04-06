@@ -49,7 +49,7 @@ DEFAULT_EXECUTE = False
 #
 # Git
 #
-DEFAULT_MAIN_BRANCH = "main"
+DEFAULT_MAIN_BRANCH = "master"
 DEFAULT_DEV_BRANCH = "develop"
 
 
