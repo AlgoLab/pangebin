@@ -324,9 +324,7 @@ def _init_binlab_cfg(
     binlab_config = (
         binlab_cfg.Binlab.from_yaml(binlab_cfg_yaml)
         if binlab_cfg_yaml is not None
-        else binlab_cfg.Binlab(
-            gamma_mbs=gamma_mbs,
-        )
+        else binlab_cfg.Binlab(gamma_mbs)
     )
     _LOGGER.debug("Binlab config:\n%s", binlab_config.to_dict())
     return binlab_config

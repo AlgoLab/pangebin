@@ -24,6 +24,11 @@ class Decomp(YAMLInterface):
     NAME = "PangeBin-flow decomp binning config"
 
     @classmethod
+    def default(cls) -> Decomp:
+        """Get default config."""
+        return cls(cls.DEFAULT_GAMMA_MCF, cls.DEFAULT_GAMMA_MGC)
+
+    @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Decomp:
         """Convert dict to object."""
         return cls(
@@ -33,8 +38,8 @@ class Decomp(YAMLInterface):
 
     def __init__(
         self,
-        gamma_mcf: float = DEFAULT_GAMMA_MCF,
-        gamma_mgc: float = DEFAULT_GAMMA_MGC,
+        gamma_mcf: float,
+        gamma_mgc: float,
     ) -> None:
         """Initialize object."""
         self.__gamma_mcf = gamma_mcf
@@ -79,5 +84,5 @@ class DecompOptions:
 
 
 if __name__ == "__main__":
-    default_config = Decomp()
+    default_config = Decomp.default()
     default_config.to_yaml(Decomp.DEFAULT_YAML_FILE)

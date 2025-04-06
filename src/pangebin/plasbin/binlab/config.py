@@ -22,6 +22,11 @@ class Binlab(YAMLInterface):
     NAME = "PangeBin-flow binlab binning config"
 
     @classmethod
+    def default(cls) -> Binlab:
+        """Get default config."""
+        return cls(cls.DEFAULT_GAMMA_MBS)
+
+    @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Binlab:
         """Convert dict to object."""
         return cls(
@@ -30,7 +35,7 @@ class Binlab(YAMLInterface):
 
     def __init__(
         self,
-        gamma_mbs: float = DEFAULT_GAMMA_MBS,
+        gamma_mbs: float,
     ) -> None:
         """Initialize object."""
         self.__gamma_mbs = gamma_mbs
@@ -64,5 +69,5 @@ class BinlabOptions:
 
 
 if __name__ == "__main__":
-    default_config = Binlab()
+    default_config = Binlab.default()
     default_config.to_yaml(Binlab.DEFAULT_YAML_FILE)

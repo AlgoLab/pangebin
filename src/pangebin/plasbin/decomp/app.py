@@ -333,10 +333,7 @@ def _init_decomp_cfg(
     decomp_config = (
         decomp_cfg.Decomp.from_yaml(decomp_cfg_yaml)
         if decomp_cfg_yaml is not None
-        else decomp_cfg.Decomp(
-            gamma_mcf=gamma_mcf,
-            gamma_mgc=gamma_mgc,
-        )
+        else decomp_cfg.Decomp(gamma_mcf, gamma_mgc)
     )
     _LOGGER.debug("Decomp config:\n%s", decomp_config.to_dict())
     return decomp_config
