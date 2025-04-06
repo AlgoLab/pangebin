@@ -1,0 +1,1 @@
+"""GC content module."""

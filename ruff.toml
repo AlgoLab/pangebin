@@ -1,10 +1,6 @@
 [lint]
-    select = ["ALL", "PL"]
+    select = ["ALL"]
     ignore = [
-        # missing-type-cls
-        "ANN102",
-        # missing-type-self
-        "ANN101",
         # multi-line-summary-second-line
         "D213",
         # one-blank-line-before-class
@@ -12,4 +8,6 @@
         # flake8-todos
         "TD",
     ]
-    exclude = ["*venv*", "src/strainminer/graphunzip/*"]
+
+    [lint.pydocstyle]
+        convention = "numpy"

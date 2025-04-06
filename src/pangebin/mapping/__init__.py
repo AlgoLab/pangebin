@@ -1,0 +1,1 @@
+"""Blast mapping module."""

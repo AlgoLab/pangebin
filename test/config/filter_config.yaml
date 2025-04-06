@@ -1,0 +1,4 @@
+min_length: 1
+min_pident: 95
+min_q_cov: 0.95
+min_s_cov: 0

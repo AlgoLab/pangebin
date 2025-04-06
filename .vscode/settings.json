@@ -11,6 +11,7 @@
         "editor.formatOnSave": true
     },
     "autoDocstring.docstringFormat": "numpy",
+    "comment-divider.length": 88,
     "coverage-gutters.coverageFileNames": [
         "tests/coverage/cov.lcov"
     ],
@@ -22,21 +23,23 @@
     "files.exclude": {
         "**/__pycache__": true,
         ".mypy_cache": true,
-        ".pytest_cache": true
+        ".pytest_cache": true,
+        ".nextflow": true,
+        ".ruff_cache": true
     },
     "ltex.checkFrequency": "manual",
+    "markdownlint.config": {
+        "MD024": false
+    },
     "mypy-type-checker.args": [
         "--config-file=${workspaceFolder}/mypy.ini",
         "--exclude=${workspaceFolder}/tests"
     ],
-    "mypy-type-checker.preferDaemon": false,
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportUndefinedVariable": "none"
+    },
     "python.analysis.extraPaths": [],
     "python.analysis.typeCheckingMode": "off",
-    "python.testing.pytestArgs": [
-        "--config-file=${workspaceFolder}/pytest.ini"
-    ],
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
     "todo-tree.filtering.excludeGlobs": [
         "**/node_modules",
         "**/.vscode/settings.json",
@@ -102,8 +105,5 @@
         "foreground": "#006400",
         "gutterIcon": true,
         "type": "text-and-comment"
-    },
-    "python.analysis.diagnosticSeverityOverrides": {
-        "reportUndefinedVariable": "none"
     }
 }

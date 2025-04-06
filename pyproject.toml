@@ -1,7 +1,37 @@
+[build-system]
+    requires = ["setuptools>=61.0.0", "wheel"]
+    build-backend = "setuptools.build_meta"
+
 [project]
     name = "pangebin"
-    version = "0.0.2"
+    version = "0.1.0"
+    description = "PlasBin-flow adapted for pangenomes."
+    authors = [
+        { name = "msgr0", email = "m.sgro2@campus.unimib.it" },
+        { name = "vepain", email = "victorepain@disroot.org" },
+    ]
+    readme = "README.md"
+    license = { file = "LICENSE" }
+    requires-python = ">=3.10"
+
+    dependencies = [
+        "bidict >=0.23, <0.24",
+        "bgzip >=0.5, <0.6",
+        "typing_extensions >=4.12, <4.13",
+        "biopython >=1.84, <1.85 ",
+        "gfapy >= 1.2, <1.3",
+        "gurobipy >=12.0, <12.1",
+        "networkx >=3.4, <3.5",
+        "numpy >=2.1, <2.2",
+        "pandas >=2.2, <2.3",
+        "scipy >=1.14, <1.15",
+        "PyYAML >=6.0, < 6.1",
+        "typer >=0.15, <0.16",
+        "defusedxml >=0.7.1, <0.8",
+    ]
+
     [project.scripts]
         pangebin = "pangebin.__main__:main"
 
-    
+[tool.setuptools.package-data]
+    pangebin = ["py.typed"]
