@@ -33,4 +33,4 @@ CONFIG_APP = typer.Typer(
 
 
 CONFIG_APP.command(name="seed-thresholds")(pipe_seed_thr_app.write_configs)
-CONFIG_APP.command(name="once")(pipe_asm_pbf_app.write_once_configs)
+CONFIG_APP.add_typer(pipe_asm_pbf_app.CONFIGS_APP)
