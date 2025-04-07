@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 <!-- next-header -->
+## [0.2.0] - 2025-04-07
+
+### Added
+
+* `pangebin configs asm-pbf {decomp|binlab|once} OUTPUT_DIR` commands to write defaults configuration files for the `asm-pbf` pipelines
+* Add `doc/cli.md` documentation on CLI
 
 ## [0.1.0] - 2025-04-06
 
