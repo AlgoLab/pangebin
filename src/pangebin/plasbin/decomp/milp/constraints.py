@@ -10,6 +10,9 @@ import pangebin.plasbin.milp.objectives as pb_lp_obj
 import pangebin.plasbin.network as net
 
 
+# ------------------------------------------------------------------------------------ #
+#                                          MCF                                         #
+# ------------------------------------------------------------------------------------ #
 def set_mcf_constraints(  # noqa: PLR0913
     m: gp.Model,
     var: lp_var.MaxCovFlow,

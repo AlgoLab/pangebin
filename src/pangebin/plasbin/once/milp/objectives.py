@@ -1,30 +1,12 @@
 """PangeBin-flow once MILP objectives."""
 
-from collections.abc import Callable, Iterable
-
 import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
-import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.milp.objectives as pb_lp_obj
 import pangebin.plasbin.milp.variables as pb_lp_var
 import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.variables as lp_vars
-
-
-def _max_frag_length(
-    network: net.Network,
-    frag_set_fn: Callable[[net.Network], Iterable[str]],
-) -> int:
-    return max(
-        gfa_segment.length(network.gfa_graph().segment(frag_id))
-        for frag_id in frag_set_fn(network)
-    )
-
-
-def zeta_i(network: net.Network, frag_id: str, max_frag_length: int) -> float:
-    """Get zeta_i coefficient."""
-    return gfa_segment.length(network.gfa_graph().segment(frag_id)) / max_frag_length
 
 
 def coverage_score(
@@ -35,9 +17,9 @@ def coverage_score(
 ) -> gp.LinExpr:
     """Get linear expression for coverage score."""
     frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
-    max_frag_length = _max_frag_length(network, frag_set_fn)
+    max_frag_length = pb_lp_obj.max_frag_length(network, frag_set_fn)
     return gp.quicksum(
-        zeta_i(network, frag_id, max_frag_length)
+        pb_lp_obj.zeta_i(network, frag_id, max_frag_length)
         * (
             flow_vars.incoming_forward_reverse(network, frag_id)
             - (
@@ -56,9 +38,9 @@ def plasmidness_score(
 ) -> gp.LinExpr:
     """Get linear expression for coverage score."""
     frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
-    max_frag_length = _max_frag_length(network, frag_set_fn)
+    max_frag_length = pb_lp_obj.max_frag_length(network, frag_set_fn)
     return gp.quicksum(
-        zeta_i(network, frag_id, max_frag_length)
+        pb_lp_obj.zeta_i(network, frag_id, max_frag_length)
         * network.plasmidness(frag_id)
         * flow_vars.incoming_forward_reverse(network, frag_id)
         for frag_id in frag_set_fn(network)
@@ -73,9 +55,9 @@ def gc_score(
 ) -> gp.LinExpr:
     """Get linear expression for GC score."""
     frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
-    max_frag_length = _max_frag_length(network, frag_set_fn)
+    max_frag_length = pb_lp_obj.max_frag_length(network, frag_set_fn)
     return gp.quicksum(
-        zeta_i(network, frag_id, max_frag_length)
+        pb_lp_obj.zeta_i(network, frag_id, max_frag_length)
         * network.gc_score(frag_id)[b]
         * inflow_gc_vars.x(frag_id, interval)
         for b, interval in enumerate(intervals)

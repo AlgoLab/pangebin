@@ -3,7 +3,6 @@
 import gurobipy
 
 import pangebin.gc_content.items as gc_items
-import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.decomp.milp.variables as lp_var
 import pangebin.plasbin.milp.objectives as pb_lp_obj
 import pangebin.plasbin.milp.variables as pb_lp_var
@@ -19,12 +18,9 @@ def coverage_score(
     """Get linear expression for coverage score."""
     # DOCU MCF: Tests on coverage score
     frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
-    max_frag_length = max(
-        gfa_segment.length(network.gfa_graph().segment(frag_id))
-        for frag_id in frag_set_fn(network)
-    )
+    max_frag_length = pb_lp_obj.max_frag_length(network, frag_set_fn)
     return gurobipy.quicksum(
-        (gfa_segment.length(network.gfa_graph().segment(frag_id)) / max_frag_length)
+        pb_lp_obj.zeta_i(network, frag_id, max_frag_length)
         * (
             flow_vars.incoming_forward_reverse(network, frag_id)
             - (
@@ -85,12 +81,10 @@ def plasmidness_score(
 ) -> gurobipy.LinExpr:
     """Get linear expression for plasmidness score."""
     frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
-    max_frag_len = max(
-        gfa_segment.length(network.gfa_graph().segment(frag_id))
-        for frag_id in frag_set_fn(network)
-    )  # DOCU MPS: coeff in obj
+    max_frag_length = pb_lp_obj.max_frag_length(network, frag_set_fn)
+    # DOCU MPS: coeff in obj
     return gurobipy.quicksum(
-        (gfa_segment.length(network.gfa_graph().segment(frag_id)) / max_frag_len)
+        pb_lp_obj.zeta_i(network, frag_id, max_frag_length)
         * network.plasmidness(frag_id)
         * frag_vars.x(frag_id)
         for frag_id in frag_set_fn(network)
