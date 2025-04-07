@@ -120,7 +120,7 @@ class IOOptions:
     )
 
 
-@APP.command()
+@APP.command(help="Run Pangebin decomp approach.")
 def decomp(
     assembly_gfa: Annotated[Path, Arguments.ASSEMBLY_GFA],
     seed_contigs_tsv: Annotated[Path, Arguments.SEED_CONTIGS_TSV],
@@ -188,7 +188,7 @@ def decomp(
     )
 
 
-@APP.command()
+@APP.command(help="Run Pangebin binlab approach.")
 def binlab(
     assembly_gfa: Annotated[Path, Arguments.ASSEMBLY_GFA],
     seed_contigs_tsv: Annotated[Path, Arguments.SEED_CONTIGS_TSV],
@@ -264,7 +264,7 @@ def binlab(
     )
 
 
-@APP.command()
+@APP.command(help="Run Pangebin once approach.")
 def once(
     assembly_gfa: Annotated[Path, Arguments.ASSEMBLY_GFA],
     seed_contigs_tsv: Annotated[Path, Arguments.SEED_CONTIGS_TSV],
@@ -330,20 +330,6 @@ def once(
     return _convert_pangebin_output_to_pbf_output(
         io_manager.config().output_directory(),
     )
-
-
-ARG_CONFIGS_OUTDIR = typer.Argument(help="Output directory")
-
-
-def write_once_configs(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
-    """Write the configuration files for the once approach."""
-    output_directory.mkdir(parents=True, exist_ok=True)
-
-    binning_config = pb_cfg.Binning.default()
-    binning_config.to_yaml(output_directory / pb_cfg.Binning.DEFAULT_YAML_FILE)
-
-    gurobi_config = pb_lp_cfg.Gurobi.default()
-    gurobi_config.to_yaml(output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE)
 
 
 def _init_io_manager(outdir: Path) -> pb_io.Manager:
@@ -463,3 +449,57 @@ def _convert_pangebin_output_to_pbf_output(pangebin_outdir: Path) -> Path:
     pbf_bin_file = pangebin_outdir / "bins.tsv"
     pbf_comp_app.bins(pangebin_outdir, pbf_bin_file)
     return pbf_bin_file
+
+
+# ------------------------------------------------------------------------------------ #
+#                                     Write Configs                                    #
+# ------------------------------------------------------------------------------------ #
+CONFIGS_APP = typer.Typer(
+    name="asm-pbf",
+    rich_markup_mode="rich",
+    help="Write default configuration files for the asm-pbf pipelines",
+)
+
+ARG_CONFIGS_OUTDIR = typer.Argument(help="Output directory")
+
+
+@CONFIGS_APP.command(name="decomp")
+def write_decomp_configs(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
+    """Write the configuration files for the decomp approach."""
+    output_directory.mkdir(parents=True, exist_ok=True)
+
+    binning_config = pb_cfg.Binning.default()
+    binning_config.to_yaml(output_directory / pb_cfg.Binning.DEFAULT_YAML_FILE)
+
+    decomp_config = decomp_cfg.Decomp.default()
+    decomp_config.to_yaml(output_directory / decomp_cfg.Decomp.DEFAULT_YAML_FILE)
+
+    gurobi_config = pb_lp_cfg.Gurobi.default()
+    gurobi_config.to_yaml(output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE)
+
+
+@CONFIGS_APP.command(name="binlab")
+def write_binlab_configs(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
+    """Write the configuration files for the binlab approach."""
+    output_directory.mkdir(parents=True, exist_ok=True)
+
+    binning_config = pb_cfg.Binning.default()
+    binning_config.to_yaml(output_directory / pb_cfg.Binning.DEFAULT_YAML_FILE)
+
+    binlab_config = binlab_cfg.Binlab.default()
+    binlab_config.to_yaml(output_directory / binlab_cfg.Binlab.DEFAULT_YAML_FILE)
+
+    gurobi_config = pb_lp_cfg.Gurobi.default()
+    gurobi_config.to_yaml(output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE)
+
+
+@CONFIGS_APP.command(name="once")
+def write_once_configs(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
+    """Write the configuration files for the once approach."""
+    output_directory.mkdir(parents=True, exist_ok=True)
+
+    binning_config = pb_cfg.Binning.default()
+    binning_config.to_yaml(output_directory / pb_cfg.Binning.DEFAULT_YAML_FILE)
+
+    gurobi_config = pb_lp_cfg.Gurobi.default()
+    gurobi_config.to_yaml(output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE)
