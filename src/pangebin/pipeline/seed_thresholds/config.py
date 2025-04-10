@@ -10,7 +10,7 @@ import pangebin.ground_truth.config as gt_cfg
 import pangebin.mapping.filter as map_filter
 import pangebin.seed.thresholds.config as seed_thr_cfg
 from pangebin import subprocess_lib
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class Config(YAMLInterface):

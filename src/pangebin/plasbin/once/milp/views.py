@@ -7,7 +7,7 @@ import pangebin.plasbin.milp.objectives as pb_lp_obj
 import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.objectives as lp_obj
 import pangebin.plasbin.once.milp.variables as lp_vars
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class MGCLBStats(YAMLInterface):

@@ -17,7 +17,7 @@ import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.input_output as once_lp_io
 import pangebin.plasbin.once.milp.models as lp_mod
 import pangebin.plasbin.once.milp.views as once_lp_views
-from pangebin.logging import CONSOLE
+from pangebin.pblog import CONSOLE
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator

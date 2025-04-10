@@ -18,7 +18,7 @@ import pangebin.plasbin.decomp.milp.views as lp_views
 import pangebin.plasbin.milp.config as pb_lp_cfg
 import pangebin.plasbin.milp.results as pb_lp_res
 import pangebin.plasbin.network as net
-from pangebin.logging import CONSOLE
+from pangebin.pblog import CONSOLE
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator

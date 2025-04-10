@@ -17,7 +17,7 @@ import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.gfa.segment as gfa_segment
 import pangebin.gfa.views as gfa_views
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 from pangebin.gfa import iter as gfa_iter
 
 APP = typer.Typer(rich_markup_mode="rich")

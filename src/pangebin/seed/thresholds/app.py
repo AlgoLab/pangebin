@@ -11,7 +11,7 @@ from typing import Annotated
 
 import typer
 
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 import pangebin.seed.thresholds.config as seed_thr_config
 import pangebin.seed.thresholds.create as seed_thr_create
 import pangebin.seed.thresholds.input_output as seed_thr_io

@@ -18,9 +18,9 @@ import pangebin.gc_content.items as gc_items
 import pangebin.gfa.app as gfa_app
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
-import pangebin.logging as common_log
 import pangebin.pbf_comp.app as pbf_comp_app
 import pangebin.pbf_comp.input_output as pbf_comp_io
+import pangebin.pblog as common_log
 import pangebin.plasbin.binlab.config as binlab_cfg
 import pangebin.plasbin.binlab.create as binlab_create
 import pangebin.plasbin.binlab.milp.input_output as binlab_lp_io

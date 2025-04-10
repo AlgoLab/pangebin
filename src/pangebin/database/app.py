@@ -14,7 +14,7 @@ import typer
 import pangebin.database.create as db_create
 import pangebin.database.input_output as db_io
 import pangebin.entrez as pg_entrez
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 
 _LOGGER = logging.getLogger(__name__)
 

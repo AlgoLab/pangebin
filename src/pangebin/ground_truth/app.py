@@ -15,7 +15,7 @@ import pangebin.entrez as pg_entrez
 import pangebin.ground_truth.config as gt_config
 import pangebin.ground_truth.create as gt_create
 import pangebin.ground_truth.input_output as gt_io
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 
 _LOGGER = logging.getLogger(__name__)
 

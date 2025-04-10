@@ -11,9 +11,9 @@ from typing import Annotated
 
 import typer
 
-import pangebin.logging as common_log
 import pangebin.pbf_comp.input_output as comp_io
 import pangebin.pbf_comp.ops as comp_ops
+import pangebin.pblog as common_log
 import pangebin.plasbin.input_output as pb_io
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io

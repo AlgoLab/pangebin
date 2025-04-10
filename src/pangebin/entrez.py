@@ -7,7 +7,7 @@ import logging
 import typer
 from Bio import Entrez
 
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 _LOGGER = logging.getLogger(__name__)
 

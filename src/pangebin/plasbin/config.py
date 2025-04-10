@@ -9,7 +9,7 @@ import typer
 
 import pangebin.plasbin.milp.objectives as pb_lp_obj
 import pangebin.plasbin.network as net
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class Binning(YAMLInterface):

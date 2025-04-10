@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 import yaml  # type: ignore[import-untyped]
 
 import pangebin.database.items as db_items
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator

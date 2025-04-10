@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class TestItem:

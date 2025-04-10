@@ -11,7 +11,7 @@ from typing import Annotated
 
 import typer
 
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 from pangebin.gc_content import create, items
 from pangebin.gc_content import input_output as io
 

@@ -10,7 +10,7 @@ from typing import Annotated
 
 import typer
 
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 import pangebin.pipeline.asm_pbf.app as pipe_asm_pbf_app
 import pangebin.pipeline.seed_thresholds.app as pipe_seed_thr_app
 
