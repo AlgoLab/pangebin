@@ -18,8 +18,8 @@ import pangebin.assembly.create as asm_create
 import pangebin.database.input_output as db_io
 import pangebin.gene_density.app as gd_app
 import pangebin.ground_truth.app as gt_app
-import pangebin.logging as common_log
 import pangebin.mapping.app as mapping_app
+import pangebin.pblog as common_log
 import pangebin.pipeline.seed_thresholds.config as pipe_seed_thr_cfg
 import pangebin.seed.thresholds.app as seed_thr_app
 import pangebin.seed.thresholds.input_output as seed_thr_io

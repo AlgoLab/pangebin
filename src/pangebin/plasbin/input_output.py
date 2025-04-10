@@ -9,7 +9,7 @@ from typing import Any
 
 import typer
 
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class Manager:

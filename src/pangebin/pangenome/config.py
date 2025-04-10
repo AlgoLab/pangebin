@@ -6,7 +6,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 _PARENT_DIR = Path(__file__).resolve().parent
 

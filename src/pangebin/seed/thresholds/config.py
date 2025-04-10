@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class ThresholdRanges(YAMLInterface):

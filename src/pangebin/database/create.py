@@ -13,7 +13,7 @@ from rich import progress
 
 import pangebin.database.items as db_items
 import pangebin.entrez as pg_entrez
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

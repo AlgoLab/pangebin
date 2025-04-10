@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class Stats(YAMLInterface):

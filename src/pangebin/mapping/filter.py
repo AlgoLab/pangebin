@@ -9,7 +9,7 @@ from typing import Any
 import pandas as pd
 
 from pangebin.mapping import items
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 _LOGGER = logging.getLogger(__name__)
 

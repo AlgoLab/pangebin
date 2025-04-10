@@ -15,8 +15,8 @@ import typer
 
 import pangebin.gfa.header as gfa_header
 import pangebin.gfa.input_output as gfa_io
-import pangebin.logging as common_log
 import pangebin.panassembly.input_output as panassembly_io
+import pangebin.pblog as common_log
 from pangebin.panassembly.create import pangenome_graph_into_panassembly_graph
 
 _LOGGER = logging.getLogger(__name__)

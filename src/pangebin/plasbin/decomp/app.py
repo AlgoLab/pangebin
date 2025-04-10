@@ -15,7 +15,7 @@ import typer
 import pangebin.gc_content.input_output as gc_io
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.input_output as gfa_io
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 import pangebin.plasbin.bins.input_output as bins_io
 import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.config as pb_cfg

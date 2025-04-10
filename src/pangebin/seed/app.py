@@ -12,7 +12,7 @@ from typing import Annotated
 import typer
 
 import pangebin.gfa.input_output as gfa_io
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 import pangebin.seed.create as seed_create
 import pangebin.seed.input_output as seed_io
 import pangebin.seed.thresholds.app as seed_thr_app

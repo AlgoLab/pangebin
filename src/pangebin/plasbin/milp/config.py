@@ -8,7 +8,7 @@ from typing import Any
 import gurobipy as gp
 import typer
 
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class Gurobi(YAMLInterface):

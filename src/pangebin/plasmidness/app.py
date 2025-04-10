@@ -12,7 +12,7 @@ from typing import Annotated
 import typer
 
 import pangebin.gfa.input_output as gfa_io
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 import pangebin.plasmidness.create as plm_create
 import pangebin.plasmidness.input_output as plm_io
 

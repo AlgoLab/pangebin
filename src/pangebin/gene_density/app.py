@@ -11,7 +11,7 @@ import typer
 
 import pangebin.gene_density.create as gd_create
 import pangebin.gene_density.input_output as gd_io
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 
 _LOGGER = logging.getLogger(__name__)
 

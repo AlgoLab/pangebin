@@ -13,10 +13,10 @@ from typing import Annotated
 import typer
 
 import pangebin.input_output as common_io
-import pangebin.logging as common_log
 import pangebin.pangenome.config as pangenome_config
 import pangebin.pangenome.create as pangenome_create
 import pangebin.pangenome.input_output as pangenome_io
+import pangebin.pblog as common_log
 
 _LOGGER = logging.getLogger(__name__)
 

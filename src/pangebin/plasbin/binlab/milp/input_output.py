@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pangebin.plasbin.binlab.milp.models as lp_mod
-from pangebin.yaml import YAMLInterface
+from pangebin.yaml_interface import YAMLInterface
 
 
 class Manager(YAMLInterface):

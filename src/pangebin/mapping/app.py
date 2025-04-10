@@ -11,9 +11,9 @@ from typing import Annotated
 
 import typer
 
-import pangebin.logging as common_log
 import pangebin.mapping.filter as map_filter
 import pangebin.mapping.input_output as map_io
+import pangebin.pblog as common_log
 from pangebin.mapping import create
 
 _LOGGER = logging.getLogger(__name__)

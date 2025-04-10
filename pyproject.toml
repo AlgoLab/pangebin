@@ -4,7 +4,7 @@
 
 [project]
     name = "pangebin"
-    version = "0.2.0"
+    version = "0.2.1"
     description = "PlasBin-flow adapted for pangenomes."
     authors = [
         { name = "msgr0", email = "m.sgro2@campus.unimib.it" },

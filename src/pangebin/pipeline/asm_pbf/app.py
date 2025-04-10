@@ -18,9 +18,9 @@ import pangebin.gc_content.items as gc_items
 import pangebin.gfa.app as gfa_app
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
-import pangebin.logging as common_log
 import pangebin.pbf_comp.app as pbf_comp_app
 import pangebin.pbf_comp.input_output as pbf_comp_io
+import pangebin.pblog as common_log
 import pangebin.plasbin.binlab.config as binlab_cfg
 import pangebin.plasbin.binlab.create as binlab_create
 import pangebin.plasbin.binlab.milp.input_output as binlab_lp_io
@@ -463,43 +463,77 @@ CONFIGS_APP = typer.Typer(
 ARG_CONFIGS_OUTDIR = typer.Argument(help="Output directory")
 
 
-@CONFIGS_APP.command(name="decomp")
-def write_decomp_configs(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
-    """Write the configuration files for the decomp approach."""
-    output_directory.mkdir(parents=True, exist_ok=True)
-
+def _write_binning_config(output_dir: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
     binning_config = pb_cfg.Binning.default()
-    binning_config.to_yaml(output_directory / pb_cfg.Binning.DEFAULT_YAML_FILE)
+    binning_cfg_yaml = output_dir / pb_cfg.Binning.DEFAULT_YAML_FILE
+    binning_config.to_yaml(binning_cfg_yaml)
+    _LOGGER.info("Write general binning config: %s", binning_cfg_yaml)
 
+
+def _write_decomp_config(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
     decomp_config = decomp_cfg.Decomp.default()
-    decomp_config.to_yaml(output_directory / decomp_cfg.Decomp.DEFAULT_YAML_FILE)
+    decomp_cfg_yaml = output_directory / decomp_cfg.Decomp.DEFAULT_YAML_FILE
+    decomp_config.to_yaml(decomp_cfg_yaml)
+    _LOGGER.info("Write general decomp config: %s", decomp_cfg_yaml)
 
+
+def _write_binlab_config(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
+    binlab_config = binlab_cfg.Binlab.default()
+    binlab_cfg_yaml = output_directory / binlab_cfg.Binlab.DEFAULT_YAML_FILE
+    binlab_config.to_yaml(binlab_cfg_yaml)
+    _LOGGER.info("Write binlab config: %s", binlab_cfg_yaml)
+
+
+def _write_gurobi_config(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
     gurobi_config = pb_lp_cfg.Gurobi.default()
-    gurobi_config.to_yaml(output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE)
+    gurobi_cfg_yaml = output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE
+    gurobi_config.to_yaml(gurobi_cfg_yaml)
+    _LOGGER.info("Write gurobi config: %s", gurobi_cfg_yaml)
+
+
+@CONFIGS_APP.command(name="decomp")
+def write_decomp_configs(
+    output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Write the configuration files for the decomp approach."""
+    common_log.init_logger(
+        _LOGGER,
+        "Write the configuration files for the decomp approach.",
+        debug,
+    )
+    output_directory.mkdir(parents=True, exist_ok=True)
+    for write_fn in (_write_binning_config, _write_decomp_config, _write_gurobi_config):
+        write_fn(output_directory)
 
 
 @CONFIGS_APP.command(name="binlab")
-def write_binlab_configs(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
+def write_binlab_configs(
+    output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
     """Write the configuration files for the binlab approach."""
+    common_log.init_logger(
+        _LOGGER,
+        "Write the configuration files for the binlab approach.",
+        debug,
+    )
     output_directory.mkdir(parents=True, exist_ok=True)
-
-    binning_config = pb_cfg.Binning.default()
-    binning_config.to_yaml(output_directory / pb_cfg.Binning.DEFAULT_YAML_FILE)
-
-    binlab_config = binlab_cfg.Binlab.default()
-    binlab_config.to_yaml(output_directory / binlab_cfg.Binlab.DEFAULT_YAML_FILE)
-
-    gurobi_config = pb_lp_cfg.Gurobi.default()
-    gurobi_config.to_yaml(output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE)
+    for write_fn in (_write_binning_config, _write_binlab_config, _write_gurobi_config):
+        write_fn(output_directory)
 
 
 @CONFIGS_APP.command(name="once")
-def write_once_configs(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
+def write_once_configs(
+    output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
     """Write the configuration files for the once approach."""
+    common_log.init_logger(
+        _LOGGER,
+        "Write the configuration files for the once approach.",
+        debug,
+    )
     output_directory.mkdir(parents=True, exist_ok=True)
-
-    binning_config = pb_cfg.Binning.default()
-    binning_config.to_yaml(output_directory / pb_cfg.Binning.DEFAULT_YAML_FILE)
-
-    gurobi_config = pb_lp_cfg.Gurobi.default()
-    gurobi_config.to_yaml(output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE)
+    for write_fn in (_write_binning_config, _write_gurobi_config):
+        write_fn(output_directory)

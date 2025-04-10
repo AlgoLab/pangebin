@@ -14,7 +14,7 @@ import typer
 import pangebin.assembly.items as asm_items
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
-import pangebin.logging as common_log
+import pangebin.pblog as common_log
 import pangebin.std_asm_graph.fasta as standardize_fasta
 import pangebin.std_asm_graph.input_output as standardize_io
 from pangebin.std_asm_graph.config import Config
