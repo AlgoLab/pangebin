@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 <!-- next-header -->
+## [0.2.1] - 2025-04-10
+
+### Fixed
+
+* Some `pangebin` module names shadowed standard python libraries
+
 ## [0.2.0] - 2025-04-07
 
 ### Added
