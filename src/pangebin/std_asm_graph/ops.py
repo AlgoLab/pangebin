@@ -24,6 +24,12 @@ def standardize_assembly_graph(
 ) -> None:
     """Standardize assembly graph.
 
+    * Add `LN` tag to segments (sequence lengths)
+    * Rename segments according to the assembler
+    * Set (if not exist) `dp` segment tag (normalized coverage)
+    * Set header tag `Sd` to `Y` (gfa is standardized)
+    * Transform small contigs into links
+
     Parameters
     ----------
     graph : gfapy.Gfa
@@ -53,6 +59,8 @@ def standardize_assembly_graph(
     transform_small_contigs_into_links(graph, config.min_contig_length())
 
     gfa_ops.set_standardized_header_tag(graph)
+
+    # TODO get map between original and new segment names
 
 
 def transform_small_contigs_into_links(
