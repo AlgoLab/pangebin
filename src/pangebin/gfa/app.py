@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -17,6 +16,7 @@ import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.gfa.segment as gfa_segment
 import pangebin.gfa.views as gfa_views
+import pangebin.input_output as root_io
 import pangebin.pblog as common_log
 from pangebin.gfa import iter as gfa_iter
 
@@ -95,6 +95,10 @@ class ToFASTAArguments:
         help="Input GFA file",
     )
 
+    ARG_OUT_FASTA = typer.Argument(
+        help="Output FASTA file, must be different from input if provided",
+    )
+
 
 class ToFASTAOptions:
     """GFA to FASTA options."""
@@ -110,24 +114,28 @@ class ToFASTAOptions:
 @APP.command()
 def to_fasta(
     gfa_path: Annotated[Path, ToFASTAArguments.ARG_IN_GFA],
+    fasta_path: Annotated[Path, ToFASTAArguments.ARG_OUT_FASTA],
     attribute_string_separator: Annotated[
         str,
         ToFASTAOptions.OPT_ATTRIBUTE_STRING_SEPARATOR,
     ] = gfa_segment.DEFAULT_ATTRIBUTE_STR_SEP,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
-    """Convert GFA to FASTA."""
+    """Convert GFA to FASTA (write to stdout)."""
     common_log.init_logger(_LOGGER, "Converting GFA to FASTA.", debug)
 
     if not gfa_path.exists():
         _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
         raise typer.Exit(1)
 
-    for seq_record in gfa_iter.sequence_records(
-        gfa_path,
-        sep=attribute_string_separator,
-    ):
-        sys.stdout.write(seq_record.format("fasta"))
+    with root_io.open_file_write(fasta_path) as f_out:
+        for seq_record in gfa_iter.sequence_records(
+            gfa_path,
+            sep=attribute_string_separator,
+        ):
+            f_out.write(seq_record.format("fasta"))
+
+    _LOGGER.info("Resulting FASTA file: %s", fasta_path)
 
 
 class ISGFAStandardizeArgs:
