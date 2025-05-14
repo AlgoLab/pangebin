@@ -23,8 +23,8 @@
     "files.exclude": {
         "**/__pycache__": true,
         ".mypy_cache": true,
-        ".pytest_cache": true,
         ".nextflow": true,
+        ".pytest_cache": true,
         ".ruff_cache": true
     },
     "ltex.checkFrequency": "manual",
@@ -35,6 +35,7 @@
         "--config-file=${workspaceFolder}/mypy.ini",
         "--exclude=${workspaceFolder}/tests"
     ],
+    "nextflow.telemetry.enabled": false,
     "python.analysis.diagnosticSeverityOverrides": {
         "reportUndefinedVariable": "none"
     },
