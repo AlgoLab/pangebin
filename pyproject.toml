@@ -34,4 +34,8 @@
         pangebin = "pangebin.__main__:main"
 
 [tool.setuptools.package-data]
-    pangebin = ["py.typed"]
+    pangebin = [
+        "py.typed",
+        "gc_content/default_gc_content_intervals.tsv",
+        "pipeline/seed_thresholds/pipeline_seed_thresholds_cfg.yaml",
+    ]
