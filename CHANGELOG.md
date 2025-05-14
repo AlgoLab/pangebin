@@ -24,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 <!-- next-header -->
+## [0.2.2] - 2025-05-13
+
+### Changed
+
+* `to_fasta` gfa utils subcommand now takes a fasta file path as argument
+
+### Fixed
+
+* Non py data files are now listed
+
 ## [0.2.1] - 2025-04-10
 
 ### Fixed
