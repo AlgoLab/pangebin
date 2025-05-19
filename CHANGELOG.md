@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 <!-- next-header -->
+## [Unreleased] - yyyy-mm-dd
+
+### Added
+
+* GFA `predecessors` and `successors` functions
+* GFA subgraph function according to a a lis of segments to keep and a radius on the neighborhood
+
 ## [0.2.2] - 2025-05-13
 
 ### Changed
