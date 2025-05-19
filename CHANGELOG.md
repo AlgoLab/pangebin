@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * GFA `predecessors` and `successors` functions
 * GFA subgraph function according to a a lis of segments to keep and a radius on the neighborhood
 
+### Fixed
+
+* Only keep seeds contained in the graph
+
 ## [0.2.2] - 2025-05-13
 
 ### Changed
