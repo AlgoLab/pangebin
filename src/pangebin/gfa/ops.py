@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import TYPE_CHECKING
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, cast
 
 import gfapy  # type: ignore[import-untyped]
 
 import pangebin.gfa.header as gfa_header
 import pangebin.gfa.line as gfa_line
+import pangebin.gfa.segment as gfa_segment
 import pangebin.gfa.tag as gfa_tag
 import pangebin.input_output as io
-from pangebin.gfa import segment as gfa_segment
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
+    from gfapy.line.group.path.path import (
+        Path as GfaPath,  # type: ignore[import-untyped]
+    )
     from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
 
@@ -200,3 +206,77 @@ def set_standardized_header_tag(gfa: gfapy.Gfa) -> None:
         gfa_header.TagType.STANDARDIZED,
     )
     gfa_header.set_standardized_header_tag(gfa, is_standardized=True)
+
+
+def sub_radius_graph(
+    gfa_graph: gfapy.Gfa,
+    segment_names: Iterable[str],
+    radius: int,
+) -> gfapy.Gfa:
+    """Get a subgraph of a GFA graph."""
+    kept_segment_names = set()
+
+    lifo_distanced_segments: list[tuple[str, int]] = [
+        (segment_name, 0) for segment_name in segment_names
+    ]
+    while lifo_distanced_segments:
+        segment_name, distance = lifo_distanced_segments.pop()
+        if distance == radius:
+            kept_segment_names.add(segment_name)
+        elif distance < radius and segment_name not in kept_segment_names:
+            # OPTIMIZE could do better (if only we have a better API...)
+            kept_segment_names.add(segment_name)
+            link_line: GfaLink
+            for link_line in gfa_graph.segment(segment_name).dovetails:
+                lifo_distanced_segments.extend(
+                    (neighbor, distance + 1)
+                    for neighbor in (
+                        link_line.field_to_s("from_segment"),
+                        link_line.field_to_s("to_segment"),
+                    )
+                    if neighbor not in kept_segment_names
+                )
+    sub_graph = gfapy.Gfa()
+    for line in gfa_graph.lines:
+        sub_graph.add_line(str(line))
+
+    #
+    # Remove segments
+    #
+    segment_to_remove: GfaSegment
+    for segment_to_remove in [
+        s for s in sub_graph.segments if s.name not in kept_segment_names
+    ]:
+        with contextlib.suppress(gfapy.RuntimeError):
+            sub_graph.rm(segment_to_remove)
+    #
+    # Remove remaining links
+    #
+    links_to_remove: GfaLink
+    for links_to_remove in [
+        link_line
+        for link_line in sub_graph.dovetails
+        if cast("GfaLink", link_line).field_to_s("from_segment")
+        not in kept_segment_names
+        or cast("GfaLink", link_line).field_to_s("to_segment") not in kept_segment_names
+    ]:
+        with contextlib.suppress(gfapy.RuntimeError):
+            sub_graph.rm(links_to_remove)
+
+    #
+    # Remove remaining paths
+    #
+    path_to_remove: GfaPath
+    for path_to_remove in [
+        path_line
+        for path_line in sub_graph.paths
+        if any(
+            cast("gfapy.OrientedLine", oriented_identifier).name
+            not in kept_segment_names
+            for oriented_identifier in cast("GfaPath", path_line).segment_names
+        )
+    ]:
+        with contextlib.suppress(gfapy.RuntimeError):
+            sub_graph.rm(path_to_remove)
+
+    return sub_graph
