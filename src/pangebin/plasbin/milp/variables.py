@@ -77,7 +77,7 @@ class SubVertices:
 
     Defines:
 
-    * x_i for all oriented fragment i
+    * `x_i` for all oriented fragment i
     """
 
     def __init__(
@@ -100,7 +100,7 @@ class SubArcs:
 
     Defines:
 
-    * y_a for all link-arcs, source-arcs and sink-arcs a
+    * `y_a` for all link-arcs, source-arcs and sink-arcs a
     """
 
     def __init__(
@@ -150,8 +150,8 @@ class Flow:
 
     Defines:
 
-    * f_a for all link-arcs, source-arcs and sink-arcs a
-    * F the total flow
+    * `f_a` for all link-arcs, source-arcs and sink-arcs a
+    * `F` the total flow
     """
 
     def __init__(
@@ -236,7 +236,7 @@ class PositiveFlow:
 
     Defines:
 
-    * F_a for all link-arcs, source-arcs and sink-arcs a
+    * `F_a` for all link-arcs, source-arcs and sink-arcs a
     """
 
     def __init__(
@@ -279,8 +279,8 @@ class ConnectedComponent:
 
     Defines:
 
-    * alpha the number of vertices in the connected component
-    * beta_uv is the depth of the subtree defined by root v
+    * `alpha` the number of vertices in the connected component
+    * `beta_uv` is the depth of the subtree defined by root v
       for all (u, v) in link, source and sink-arcs
     """
 
@@ -369,7 +369,7 @@ class SubFragments:
 
     Defines:
 
-    * frag_a for all fragments a
+    * `frag_i` for all fragments i
     """
 
     def __init__(
@@ -392,7 +392,7 @@ class GCIntervals:
 
     Defines:
 
-    * gc_a for all intervals a
+    * `gc_b` for all intervals b
     """
 
     def __init__(
@@ -420,7 +420,7 @@ class FragmentGC:
 
     Defines:
 
-    * frag_gc_ib for all fragments i and intervals b
+    * `frag_gc_{ib}` for all fragments i and intervals b
     """
 
     def __init__(
@@ -455,7 +455,7 @@ class InflowGC:
 
     Defines:
 
-    * inflow_gc_ib for all fragments i and intervals b
+    * `inflow_gc_{ib}` for all fragments i and intervals b
     """
 
     def __init__(
