@@ -89,12 +89,14 @@ class Network:
         * Links from the source to seeds and from fragments to the sink
         """
         self.__gfa_graph: gfapy.Gfa = gfa_graph
-        self.__seeds = set(seeds)
+        self.__seeds = self.__seeds_in_graph(seeds)
         self.__coverages = dict(coverages)
+        # XXX GC scores are not verified as seeds
         self.__gc_scores = {
             frag_gc_score.sequence_id(): frag_gc_score.probability_scores()
             for frag_gc_score in gc_scores
         }
+        # XXX Plasmidness are not verified as seeds
         self.__plasmidness = dict(plasmidness)
         self.__sink_arc_gen_fn = (
             self.fragment_ids
@@ -106,6 +108,9 @@ class Network:
             if sink_arcs_definition == SinkArcsDomain.ALL
             else (lambda frag_id: frag_id in self.__seeds)
         )
+
+    def __seeds_in_graph(self, seeds: Iterable[str]) -> set[str]:
+        return {seed for seed in seeds if seed in self.__gfa_graph.segment_names}
 
     def number_of_fragments(self) -> int:
         """Get number of fragments."""
