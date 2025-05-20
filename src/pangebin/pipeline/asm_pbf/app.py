@@ -20,6 +20,7 @@ import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
 import pangebin.pbf_comp.app as pbf_comp_app
 import pangebin.pbf_comp.input_output as pbf_comp_io
+import pangebin.pbf_comp.ops as pbf_comp_ops
 import pangebin.pblog as common_log
 import pangebin.plasbin.binlab.config as binlab_cfg
 import pangebin.plasbin.binlab.create as binlab_create
@@ -415,7 +416,12 @@ def _init_plasbin_input(
     with pbf_comp_io.SeedReader.open(seed_sequences_tsv) as seeds_fin:
         seeds = list(seeds_fin)
     with pbf_comp_io.PlmReader.open(sequence_plasmidness_tsv) as plasmidness_fin:
-        plasmidness = list(plasmidness_fin)
+        # DOCU consider the plasmidness file gives originally plm between 0 and 1
+        # DOCU PBF plasmidness is converted runtime to pangebin plasmidness
+        plasmidness = [
+            (seq_id, pbf_comp_ops.pbf_to_pg_plasmidness(plm))
+            for seq_id, plm in plasmidness_fin
+        ]
     return seeds, plasmidness
 
 
