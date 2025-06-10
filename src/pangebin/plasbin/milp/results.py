@@ -25,12 +25,19 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
+_BINARY_MIN_ACTIVATION = 0.5
+
+
 def active_fragments(
     network: net.Network,
     frag_vars: pb_lp_var.SubFragments,
 ) -> Iterator[str]:
     """Get active fragments."""
-    return (f_id for f_id in network.fragment_ids() if frag_vars.x(f_id).X > 0)
+    return (
+        f_id
+        for f_id in network.fragment_ids()
+        if frag_vars.frag(f_id).X >= _BINARY_MIN_ACTIVATION
+    )
 
 
 def active_gc_content_interval(
@@ -39,7 +46,7 @@ def active_gc_content_interval(
 ) -> tuple[float, float]:
     """Get active GC content interval."""
     for interval in intervals:
-        if gc_vars.x(interval).X > 0:
+        if gc_vars.x(interval).X >= _BINARY_MIN_ACTIVATION:
             return interval
     _crt_msg = "Could not find active GC content interval"
     _LOGGER.critical(_crt_msg)
@@ -48,6 +55,32 @@ def active_gc_content_interval(
 
 class Pangebin:
     """Pangebin results."""
+
+    # REFACTOR tmp classmethod
+    @classmethod
+    def from_optimal_vars_without_gc_intervals(
+        cls,
+        network: net.Network,
+        intervals: gc_items.Intervals,
+        flow_vars: pb_lp_var.Flow,
+        frag_vars: pb_lp_var.SubFragments,
+    ) -> Pangebin:
+        """Get result from variable values."""
+        return cls(
+            (
+                (
+                    frag_id,
+                    flow_vars.incoming_forward_reverse(network, frag_id).getValue(),
+                )
+                for frag_id in active_fragments(network, frag_vars)
+            ),
+            flow_vars.total().X,
+            sum(
+                gfa_segment.length(network.gfa_graph().segment(frag_id))
+                for frag_id in active_fragments(network, frag_vars)
+            ),
+            next(iter(intervals)),  # XXX tmp fix
+        )
 
     @classmethod
     def from_optimal_variables(
@@ -135,11 +168,7 @@ def fragment_norm_coverages(
     circular: bool,  # noqa: FBT001
 ) -> tuple[Iterable[bins_items.SequenceNormCoverage], float]:
     """Get fragment normalized coverages."""
-    norm_cst = (
-        milp_result_values.total_flow()
-        if not circular
-        else min(inflow for _, inflow in milp_result_values.fragments_incoming_flow())
-    )
+    norm_cst = min(inflow for _, inflow in milp_result_values.fragments_incoming_flow())
     return (
         (
             bins_items.SequenceNormCoverage(frag_id, inflow / norm_cst)
