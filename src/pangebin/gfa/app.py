@@ -53,7 +53,7 @@ def check_skesa(
 
 
 class FixSKESAGFAArgs:
-    """Fix Skeza GFA arguments."""
+    """Fix SKESA GFA arguments."""
 
     ARG_IN_GFA = typer.Argument(
         help="Input GFA file",
@@ -70,8 +70,8 @@ def fix_skesa(
     out_gfa: Annotated[Path | None, FixSKESAGFAArgs.ARG_OUT_GFA] = None,
     debug: Annotated[bool, common_log.OPT_DEBUG] = False,
 ) -> None:
-    """Fix a Skeza GFA file."""
-    common_log.init_logger(_LOGGER, "Fixing Skeza GFA file.", debug)
+    """Fix a SKESA GFA file."""
+    common_log.init_logger(_LOGGER, "Fixing SKESA GFA file.", debug)
 
     if not in_gfa.exists():
         _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
@@ -85,7 +85,43 @@ def fix_skesa(
     except ValueError as e:
         raise typer.Exit(1) from e
 
-    _LOGGER.info("Fixed Skeza GFA file: %s", out_gfa)
+    _LOGGER.info("Fixed SKESA GFA file: %s", out_gfa)
+
+
+class FixUnicyclerGFAArgs:
+    """Fix Unicycler GFA arguments."""
+
+    ARG_IN_GFA = typer.Argument(
+        help="Input GFA file",
+    )
+
+    ARG_OUT_GFA = typer.Argument(
+        help="Output GFA file, must be different from input if provided",
+    )
+
+
+@APP.command()
+def fix_unicycler(
+    in_gfa: Annotated[Path, FixUnicyclerGFAArgs.ARG_IN_GFA],
+    out_gfa: Annotated[Path | None, FixUnicyclerGFAArgs.ARG_OUT_GFA] = None,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Fix a Unicycler GFA file."""
+    common_log.init_logger(_LOGGER, "Fixing Unicycler GFA file.", debug)
+
+    if not in_gfa.exists():
+        _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
+        raise typer.Exit(1)
+
+    if gfa_ops.is_unicycler_gfa_fixed(in_gfa):
+        _LOGGER.info("Unicycler GFA file is already fixed.")
+        return
+    try:
+        out_gfa = gfa_ops.fix_unicycler_gfa(in_gfa, out_gfa_path=out_gfa)
+    except ValueError as e:
+        raise typer.Exit(1) from e
+
+    _LOGGER.info("Fixed Unicycler GFA file: %s", out_gfa)
 
 
 class ToFASTAArguments:
@@ -187,3 +223,121 @@ def stats(
         raise typer.Exit(1)
 
     gfa_views.print_stats(gfa_path)
+
+
+class SubRadiusArgs:
+    """Argument for extracting subgraph with neighbor radius."""
+
+    GFA_FILE = typer.Argument(
+        help="GFA file path",
+    )
+
+    SEGMENTS_FILE = typer.Argument(
+        help="Segments serving as centers",
+    )
+
+    RADIUS = typer.Argument(
+        help="Radius",
+    )
+
+    SUB_GFA_FILE = typer.Argument(
+        help="Output subgraph GFA file, must be different from input if provided",
+    )
+
+
+@APP.command()
+def sub_radius(
+    gfa_path: Annotated[Path, SubRadiusArgs.GFA_FILE],
+    sub_gfa_path: Annotated[Path, SubRadiusArgs.SUB_GFA_FILE],
+    radius: Annotated[int, SubRadiusArgs.RADIUS],
+    segments_paths: Annotated[list[Path], SubRadiusArgs.SEGMENTS_FILE],
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Extract subgraph with neighbor radius."""
+    common_log.init_logger(_LOGGER, "Extracting subgraph with neighbor radius.", debug)
+
+    if not gfa_path.exists():
+        _LOGGER.critical("Input GFA file does not exist: %s", gfa_path)
+        raise typer.Exit(1)
+
+    if radius < 0:
+        _LOGGER.critical("Radius must be positive.")
+        raise typer.Exit(1)
+
+    for p in segments_paths:
+        if not p.exists():
+            _LOGGER.critical("Input segments file does not exist: %s", p)
+            raise typer.Exit(1)
+
+    gfa_graph = gfa_io.from_file(gfa_path)
+
+    centers: list[str] = []
+    for p in segments_paths:
+        with p.open() as f_in:
+            centers.extend([line.strip() for line in f_in])
+
+    sub_graph = gfa_ops.sub_radius_graph(gfa_graph, centers, radius)
+
+    with root_io.open_file_write(sub_gfa_path) as f_out:
+        for line in sub_graph.lines:
+            f_out.write(f"{line}\n")
+
+
+class RemoveSmallSequencesArgs:
+    """Argument for removing small sequences."""
+
+    ARG_IN_GFA = typer.Argument(
+        help="Input GFA file",
+    )
+
+    ARG_OUT_GFA = typer.Argument(
+        help="Output GFA file, must be different from input if provided",
+    )
+
+
+class RemoveSmallSequencesOpts:
+    """Options for removing small sequences."""
+
+    MIN_LENGTH_DEF = 100
+    MIN_LENGTH = typer.Option(
+        "--min-length",
+        "-m",
+        help="Minimum length threshold (threshold kept)",
+    )
+
+
+@APP.command("rm-small-seq")
+def remove_small_sequences(
+    in_gfa: Annotated[Path, RemoveSmallSequencesArgs.ARG_IN_GFA],
+    out_gfa: Annotated[Path | None, RemoveSmallSequencesArgs.ARG_OUT_GFA] = None,
+    min_length: Annotated[
+        int,
+        RemoveSmallSequencesOpts.MIN_LENGTH,
+    ] = RemoveSmallSequencesOpts.MIN_LENGTH_DEF,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Remove small sequences by preserving the walks."""
+    common_log.init_logger(_LOGGER, "Removing small sequences in a GFA.", debug)
+
+    if not in_gfa.exists():
+        _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
+        raise typer.Exit(1)
+
+    if out_gfa is None:
+        out_gfa = in_gfa
+    elif out_gfa == in_gfa:
+        _LOGGER.error("Output GFA file must be different from input if provided.")
+        raise typer.Exit(1)
+
+    graph = gfa_io.from_file(in_gfa)
+
+    gfa_ops.transform_small_contigs_into_links(graph, min_length)
+
+    with root_io.open_file_write(out_gfa) as f_out:
+        for line in graph.lines:
+            f_out.write(f"{line}\n")
+
+    if out_gfa == in_gfa:
+        _LOGGER.info("Inplace filtered GFA file: %s", out_gfa)
+    else:
+        _LOGGER.info("New filtered GFA file: %s", out_gfa)

@@ -15,6 +15,7 @@ class Tag(StrEnum):
     """GFA header tag types."""
 
     SKESA_FIX = "FX"
+    UNICYCLER_FIX = "FX"
     STANDARDIZED = "Sd"
     PANASSEMBLY_TYPE = "PA"
 
@@ -23,6 +24,7 @@ class TagType(StrEnum):
     """GFA header tag types."""
 
     SKESA_FIX = FieldType.CHAR
+    UNICYCLER_FIX = FieldType.CHAR
     STANDARDIZED = FieldType.CHAR
     PANASSEMBLY_TYPE = FieldType.STRING
 
@@ -43,6 +45,21 @@ class SKESAFixTagValue(StrEnum):
         cls,
         is_fixed: bool,  # noqa: FBT001
     ) -> SKESAFixTagValue:
+        """Initialize from bool."""
+        return cls.YES if is_fixed else cls.NO
+
+
+class UnicyclerFixTagValue(StrEnum):
+    """Unicycler fix header tag values."""
+
+    YES = "Y"
+    NO = "N"
+
+    @classmethod
+    def from_bool(
+        cls,
+        is_fixed: bool,  # noqa: FBT001
+    ) -> UnicyclerFixTagValue:
         """Initialize from bool."""
         return cls.YES if is_fixed else cls.NO
 

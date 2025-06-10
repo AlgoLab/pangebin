@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import contextlib
+import itertools
 import logging
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, cast
 
 import gfapy  # type: ignore[import-untyped]
@@ -15,12 +15,15 @@ import pangebin.gfa.segment as gfa_segment
 import pangebin.gfa.tag as gfa_tag
 import pangebin.input_output as io
 
+from . import link as gfa_link
+
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
     from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
-    from gfapy.line.group.path.path import (
-        Path as GfaPath,  # type: ignore[import-untyped]
+    from gfapy.line.group.path.path import (  # type: ignore[import-untyped]
+        Path as GfaPath,
     )
     from gfapy.line.segment import Segment as GfaSegment  # type: ignore[import-untyped]
 
@@ -29,7 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def is_skesa_gfa_fixed(gfa_path: Path) -> bool:
-    """Check ig the Skeza GFA file is fixed."""
+    """Check ig the SKESA GFA file is fixed."""
     yes_fix_tag = (
         f"{gfa_header.Tag.SKESA_FIX}"
         f":{gfa_header.TagType.SKESA_FIX}"
@@ -47,11 +50,97 @@ def is_skesa_gfa_fixed(gfa_path: Path) -> bool:
     return False
 
 
+def is_unicycler_gfa_fixed(gfa_path: Path) -> bool:
+    """Check ig the Unicycler GFA file is fixed."""
+    yes_fix_tag = (
+        f"{gfa_header.Tag.UNICYCLER_FIX}"
+        f":{gfa_header.TagType.UNICYCLER_FIX}"
+        f":{gfa_header.UnicyclerFixTagValue.YES}"
+    )
+    with io.open_file_read(gfa_path) as f_in:
+        for line in f_in:
+            if (
+                line.startswith(str(gfa_line.Type.HEADER))
+                and yes_fix_tag in line.split()
+            ):
+                _LOGGER.debug("Unicycler GFA file is fixed.")
+                return True
+    _LOGGER.debug("Unicycler GFA file is not fixed.")
+    return False
+
+
 def fix_skesa_gfa(
     in_gfa_path: Path,
     out_gfa_path: Path | None = None,
 ) -> Path:
-    """Fix a Skeza GFA file.
+    """Fix a SKESA GFA file.
+
+    Parameters
+    ----------
+    in_gfa_path : Path
+        Path to input GFA file
+    out_gfa_path : Path | None, optional
+        Path to output GFA file, must be different from input if used, by default None
+
+    Returns
+    -------
+    Path
+        Path to output GFA file
+
+    Warnings
+    --------
+    This function modifies the input GFA file if out_gfa_path is None.
+
+    Raises
+    ------
+    ValueError
+        If input and output files are the same
+
+    """
+    if out_gfa_path is None:
+        _LOGGER.debug("Fixing SKESA GFA file %s", in_gfa_path)
+    else:
+        _LOGGER.debug("Fixing SKESA GFA file %s to %s.", in_gfa_path, out_gfa_path)
+
+    yes_fix_tag = (
+        f"{gfa_header.Tag.SKESA_FIX}"
+        f":{gfa_header.TagType.SKESA_FIX}"
+        f":{gfa_header.SKESAFixTagValue.YES}"
+    )
+    with (
+        io.possible_tmp_file(in_gfa_path, out_gfa_path) as (use_in_path, use_out_path),
+        io.open_file_read(use_in_path) as f_in,
+        io.open_file_write(use_out_path) as f_out,
+    ):
+        f_out.write(f"{gfa_line.Type.HEADER}\t{yes_fix_tag}\n")
+        for line in f_in:
+            if line.startswith(gfa_line.Type.SEGMENT):
+                split_line = line.split()
+                f_out.write(split_line[0])  # S
+                f_out.write("\t")
+                f_out.write(split_line[1])  # segment name
+                f_out.write("\t")
+                f_out.write(split_line[2])  # sequence
+                for optional_field in split_line[3:]:
+                    tag_name, tag_type, value = optional_field.split(":")
+                    if tag_type == gfa_tag.FieldType.SIGNED_INT:
+                        f_out.write(f"\t{tag_name}:{tag_type}:{int(float(value))}")
+                    else:
+                        f_out.write(f"\t{tag_name}:{tag_type}:{value}")
+                f_out.write("\n")
+            else:
+                f_out.write(line)
+
+    return use_out_path
+
+
+def fix_unicycler_gfa(
+    in_gfa_path: Path,
+    out_gfa_path: Path | None = None,
+) -> Path:
+    """Fix a Unicycler GFA file.
+
+    Because of https://github.com/rrwick/Unicycler/issues/355
 
     Parameters
     ----------
@@ -80,10 +169,15 @@ def fix_skesa_gfa(
     else:
         _LOGGER.debug("Fixing Skeza GFA file %s to %s.", in_gfa_path, out_gfa_path)
 
+    entry_point_to_orient = {
+        "-": "+",
+        "+": "-",
+    }
+
     yes_fix_tag = (
-        f"{gfa_header.Tag.SKESA_FIX}"
-        f":{gfa_header.TagType.SKESA_FIX}"
-        f":{gfa_header.SKESAFixTagValue.YES}"
+        f"{gfa_header.Tag.UNICYCLER_FIX}"
+        f":{gfa_header.TagType.UNICYCLER_FIX}"
+        f":{gfa_header.UnicyclerFixTagValue.YES}"
     )
     with (
         io.possible_tmp_file(in_gfa_path, out_gfa_path) as (use_in_path, use_out_path),
@@ -92,19 +186,21 @@ def fix_skesa_gfa(
     ):
         f_out.write(f"{gfa_line.Type.HEADER}\t{yes_fix_tag}\n")
         for line in f_in:
-            if line.startswith(gfa_line.Type.SEGMENT):
+            if line.startswith(gfa_line.Type.LINK):
                 split_line = line.split()
-                f_out.write(split_line[0])  # S
+                f_out.write(split_line[0])  # L
                 f_out.write("\t")
-                f_out.write(split_line[1])  # segment name
+                f_out.write(split_line[1])  # segment 1 name
                 f_out.write("\t")
-                f_out.write(split_line[2])  # sequence
-                for optional_field in split_line[3:]:
-                    tag_name, tag_type, value = optional_field.split(":")
-                    if tag_type == gfa_tag.FieldType.SIGNED_INT:
-                        f_out.write(f"\t{tag_name}:{tag_type}:{int(float(value))}")
-                    else:
-                        f_out.write(f"\t{tag_name}:{tag_type}:{value}")
+                f_out.write(split_line[2])  # from orient
+                f_out.write("\t")
+                f_out.write(split_line[3])  # segment 2 name
+                f_out.write("\t")
+                f_out.write(entry_point_to_orient[split_line[4]])  # to orient
+                f_out.write("\t")
+                f_out.write(split_line[5])  # Overlap
+                for optional_field in split_line[6:]:
+                    f_out.write(f"\t{optional_field}")
                 f_out.write("\n")
             else:
                 f_out.write(line)
@@ -280,3 +376,58 @@ def sub_radius_graph(
             sub_graph.rm(path_to_remove)
 
     return sub_graph
+
+
+def transform_small_contigs_into_links(
+    gfa: gfapy.Gfa,
+    min_contig_length: int,
+) -> None:
+    """Remove small contigs and transform them into links.
+
+    Parameters
+    ----------
+    gfa : gfapy.Gfa
+        GFA graph
+    min_contig_length : int
+        Minimum contig length
+
+    Warnings
+    --------
+    This function mutates the GFA graph
+
+    """
+    for segment in gfa.segments:
+        if gfa_segment.length(segment) < min_contig_length:
+            left_edge_lines = list(segment.dovetails_L)
+            right_edge_lines = list(segment.dovetails_R)
+            predecessors: list[gfa_segment.OrientedFragment] = []
+            successors: list[gfa_segment.OrientedFragment] = []
+
+            for left_link_line in left_edge_lines:
+                pred = gfa_segment.OrientedFragment.from_left_dovetail_line(
+                    left_link_line,
+                    segment.name,
+                )
+                if pred.identifier() != segment.name:
+                    predecessors.append(pred)
+                    gfa.rm(left_link_line)
+
+            for right_link_line in right_edge_lines:
+                succ = gfa_segment.OrientedFragment.from_right_dovetail_line(
+                    right_link_line,
+                    segment.name,
+                )
+                if succ.identifier() != segment.name:
+                    successors.append(succ)
+                    gfa.rm(right_link_line)
+
+            gfa.rm(segment)
+            gfa.validate()
+            for link in (
+                gfa_link.Link(pred, succ)
+                for pred, succ in itertools.product(predecessors, successors)
+            ):
+                with contextlib.suppress(gfapy.NotUniqueError):
+                    # XXX the exception should not happen
+                    gfa.add_line(link.to_gfa_line())
+            gfa.validate()
