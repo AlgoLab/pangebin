@@ -17,13 +17,13 @@ def binning_score(
 ) -> gurobipy.LinExpr:
     """Get linear expression for binning score."""
     frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
-    max_frag_length = pb_lp_obj.max_frag_length(network, frag_set_fn)
+    max_frag_length = net.max_frag_length(network, frag_set_fn)
     return gurobipy.quicksum(
         pb_lp_obj.zeta_i(network, frag_id, max_frag_length)
         * (
             flow_vars.incoming_forward_reverse(network, frag_id)
             - (
-                network.coverage(frag_id) * frag_vars.x(frag_id)
+                network.coverage(frag_id) * frag_vars.frag(frag_id)
                 - flow_vars.incoming_forward_reverse(network, frag_id)
             )
             + network.plasmidness(frag_id)
