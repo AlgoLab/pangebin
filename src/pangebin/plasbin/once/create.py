@@ -248,8 +248,8 @@ def _milp_binning(
     milp_result_values = pb_lp_res.Pangebin.from_optimal_variables(
         network,
         gc_intervals,
-        mgclb_vars.flow(),
-        mgclb_vars.frag(),
+        mgclb_vars.flows(),
+        mgclb_vars.sub_frags(),
         mgclb_vars.gc(),
     )
     return (mgclb_stats, milp_result_values, log_file)
