@@ -28,6 +28,10 @@ import pangebin.plasbin.binlab.milp.input_output as binlab_lp_io
 import pangebin.plasbin.binlab.milp.views as binlab_lp_views
 import pangebin.plasbin.bins.input_output as bins_io
 import pangebin.plasbin.bins.items as bins_items
+import pangebin.plasbin.classbin.create as classbin_create
+import pangebin.plasbin.classbin.milp.views as classbin_lp_views
+import pangebin.plasbin.classbin.multi_flow.milp.file_system as mfb_lp_fs
+import pangebin.plasbin.classbin.multi_flow.milp.views as mfb_lp_views
 import pangebin.plasbin.config as pb_cfg
 import pangebin.plasbin.decomp.config as decomp_cfg
 import pangebin.plasbin.decomp.create as decomp_create
@@ -232,7 +236,7 @@ def binlab(
 
     seeds, plasmidness = _init_plasbin_input(seed_contigs_tsv, contig_plasmidness_tsv)
 
-    for k, (bin_stats, seq_normcovs, all_milp_stats, log_file) in enumerate(
+    for k, (bin_stats, seq_normcovs, all_milp_stats, log_files) in enumerate(
         binlab_create.plasbin_assembly(
             std_gfa,
             seeds,
@@ -252,7 +256,7 @@ def binlab(
             seq_normcovs,
             all_milp_stats,
             binlab_lp_io.Manager.attributes_from_gurobi_log_path,
-            log_file,
+            log_files,
         )
 
     pbf_comp_app.bins(
@@ -306,6 +310,12 @@ def once(
 
     seeds, plasmidness = _init_plasbin_input(seed_contigs_tsv, contig_plasmidness_tsv)
 
+    # XXX PAER TESTS
+    seeds_set = set(seeds)
+    for k, (frag_id, plm) in enumerate(plasmidness):
+        if frag_id in seeds_set:
+            plasmidness[k] = (frag_id, (plm + 1) / 2)
+
     for k, (bin_stats, seq_normcovs, all_milp_stats, log_file) in enumerate(
         once_create.plasbin_assembly(
             std_gfa,
@@ -327,6 +337,90 @@ def once(
             once_lp_io.Manager.attributes_from_gurobi_log_path,
             [log_file],
         )
+
+    return _convert_pangebin_output_to_pbf_output(
+        io_manager.config().output_directory(),
+    )
+
+
+@APP.command(help="Run Pangebin classbin approach.")
+def classbin(
+    assembly_gfa: Annotated[Path, Arguments.ASSEMBLY_GFA],
+    seed_contigs_tsv: Annotated[Path, Arguments.SEED_CONTIGS_TSV],
+    contig_plasmidness_tsv: Annotated[Path, Arguments.CONTIG_PLASMIDNESS_TSV],
+    # pbf options
+    is_skesa: Annotated[bool, Options.SKESA_GFA] = False,
+    gc_scores_tsv: Annotated[Path | None, Options.GC_SCORES_TSV] = None,
+    # Binning options
+    binning_cfg_yaml: Annotated[Path | None, Options.BINNING_CFG_YAML] = None,
+    # Decomposition options
+    # MILP options
+    gurobi_cfg_yaml: Annotated[Path | None, Options.GUROBI_CFG_YAML] = None,
+    # IO options
+    outdir: Annotated[
+        Path,
+        IOOptions.OUTPUT_DIR,
+    ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> Path:
+    """Run Pangebin classbin approach.
+
+    Returns
+    -------
+    Path
+        Path to the PlasBin-flow bin file.
+    """
+    # TODO WORK IN PROGRESS
+    common_log.init_logger(_LOGGER, "Running pangebin classbin approach.", debug)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    std_gfa = _prepare_graph(assembly_gfa, is_skesa, debug)
+
+    intervals, gc_scores = _prepare_gc_scores_tsv(assembly_gfa, gc_scores_tsv)
+
+    io_manager = _init_io_manager(outdir)
+
+    binning_config = _init_binning_cfg(binning_cfg_yaml)
+    gurobi_config = _init_gurobi_cfg(gurobi_cfg_yaml)
+
+    seeds, plasmidness = _init_plasbin_input(seed_contigs_tsv, contig_plasmidness_tsv)
+
+    # XXX PAER TESTS
+    # REFACTOR clarify this logic
+    seeds_set = set(seeds)
+    for k, (frag_id, plm) in enumerate(plasmidness):
+        if frag_id in seeds_set:
+            plasmidness[k] = (frag_id, (plm + 1) / 2)
+
+    # XXX tmp fix
+    _all_nb_flow_fs_managers: list[mfb_lp_fs.NumberOfFlowManager] = []
+    for bin_results, nb_flow_fs_manager in classbin_create.plasbin_assembly(
+        std_gfa,
+        seeds,
+        intervals,
+        gc_scores,
+        plasmidness,
+        binning_config,
+        gurobi_config,
+        io_manager.config().output_directory(),
+    ):
+        _all_nb_flow_fs_managers.append(nb_flow_fs_manager)
+        _write_mfb_outputs(
+            nb_flow_fs_manager,
+            bin_results,
+        )
+
+    if _all_nb_flow_fs_managers:
+        _last_nb_flow_fs_manager = _all_nb_flow_fs_managers[-1]
+        import shutil
+
+        _nb_bin = 0
+        while _last_nb_flow_fs_manager.bin_fs_manager(_nb_bin).dir().exists():
+            shutil.copytree(
+                _last_nb_flow_fs_manager.bin_fs_manager(_nb_bin).dir(),
+                io_manager.bin_directory(_nb_bin),
+            )
+            _nb_bin += 1
 
     return _convert_pangebin_output_to_pbf_output(
         io_manager.config().output_directory(),
@@ -422,7 +516,20 @@ def _init_plasbin_input(
             (seq_id, pbf_comp_ops.pbf_to_pg_plasmidness(plm))
             for seq_id, plm in plasmidness_fin
         ]
-    return seeds, plasmidness
+    # BUG TMP TEST PLASMIDNESS STEP
+    _step = 0.001
+    _corrected_plasmidness: list[tuple[str, float]] = []
+    for ctg_id, plm in plasmidness:
+        q, r = divmod(plm, _step)
+        if r <= 0:
+            new_pl = q * _step if r > -_step / 2 else (q - 1) * _step
+        elif r < _step / 2:
+            new_pl = q * _step
+        else:
+            new_pl = (q + 1) * _step
+        _corrected_plasmidness.append((ctg_id, new_pl))
+
+    return seeds, _corrected_plasmidness  # BUG BEFORE: plasmidness
 
 
 def _write_outputs(
@@ -432,8 +539,10 @@ def _write_outputs(
     seq_normcovs: Iterable[bins_items.SequenceNormCoverage],
     milp_stats: decomp_lp_views.StatsContainer
     | binlab_lp_views.StatsContainer
-    | once_lp_views.MGCLBStats,
-    fn_attributes_from_gurobi_log_path: Callable[[Path], tuple[int, str]],
+    | once_lp_views.MGCLBStats
+    | classbin_lp_views.ClassifyStats,
+    fn_attributes_from_gurobi_log_path: Callable[[Path], tuple[int, str]]
+    | None,  # FIXME tmp fix
     log_files: list[Path],
 ) -> None:
     io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
@@ -445,10 +554,41 @@ def _write_outputs(
                 seq_normcov.normalized_coverage(),
             )
     milp_stats.to_yaml(io_manager.milp_stats_path(k))
-    io_manager.move_gurobi_logs(
-        log_files,
-        fn_attributes_from_gurobi_log_path,
-    )
+
+    # FIXME tmp fix
+    if fn_attributes_from_gurobi_log_path is not None:
+        io_manager.move_gurobi_logs(
+            log_files,
+            fn_attributes_from_gurobi_log_path,
+        )
+
+
+def _write_mfb_outputs(
+    io_manager: mfb_lp_fs.NumberOfFlowManager,
+    bin_results: list[
+        tuple[
+            bins_items.Stats,
+            Iterable[bins_items.SequenceNormCoverage],
+            mfb_lp_views.Stats,
+            Path,
+        ]
+    ],
+) -> None:
+    # REFACTOR already done
+    io_manager.dir().mkdir(parents=True, exist_ok=True)
+    for bin_number, (bin_stats, seq_normcovs, milp_stats, _) in enumerate(
+        bin_results,
+    ):
+        bin_fs_manager = io_manager.bin_fs_manager(bin_number)
+        bin_fs_manager.dir().mkdir(parents=True, exist_ok=True)
+        bin_stats.to_yaml(bin_fs_manager.bin_stats_path())
+        with bins_io.Writer.open(bin_fs_manager.bin_seq_normcov_path()) as fout:
+            for seq_normcov in seq_normcovs:
+                fout.write_sequence_normcov(
+                    seq_normcov.identifier(),
+                    seq_normcov.normalized_coverage(),
+                )
+        milp_stats.to_yaml(bin_fs_manager.milp_stats_path())
 
 
 def _convert_pangebin_output_to_pbf_output(pangebin_outdir: Path) -> Path:
