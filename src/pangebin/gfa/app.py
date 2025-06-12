@@ -331,7 +331,11 @@ def remove_small_sequences(
 
     graph = gfa_io.from_file(in_gfa)
 
-    gfa_ops.transform_small_contigs_into_links(graph, min_length)
+    number_of_segment_removed = sum(
+        1 for _ in gfa_ops.transform_small_contigs_into_links(graph, min_length)
+    )
+
+    _LOGGER.info("Removed %d small sequences", number_of_segment_removed)
 
     with root_io.open_file_write(out_gfa) as f_out:
         for line in graph.lines:
@@ -341,3 +345,65 @@ def remove_small_sequences(
         _LOGGER.info("Inplace filtered GFA file: %s", out_gfa)
     else:
         _LOGGER.info("New filtered GFA file: %s", out_gfa)
+
+
+class ConnectedComponentsArgsOpts:
+    """Options for connected components."""
+
+    GFA_IN = typer.Argument(
+        help="Input GFA file",
+    )
+
+    OUT_DIR = typer.Option(
+        "-o",
+        "--outdir",
+        help="Output folder (by default, same as input GFA file)",
+    )
+
+    GFA_OUT_PREFIX = typer.Option(
+        "-p",
+        "--prefix",
+        help=(
+            "Prefix for output GFA files"
+            " (by default, same as input GFA file separated with `_`)"
+            " e.g. graph.gfa.gz -> graph_1.gfa, graph_2.gfa ..."
+        ),
+    )
+
+
+@APP.command("ccomps")
+def connected_components(
+    gfa_in: Annotated[Path, ConnectedComponentsArgsOpts.GFA_IN],
+    out_dir: Annotated[Path | None, ConnectedComponentsArgsOpts.OUT_DIR] = None,
+    gfa_out_prefix: Annotated[
+        str | None,
+        ConnectedComponentsArgsOpts.GFA_OUT_PREFIX,
+    ] = None,
+    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+) -> None:
+    """Extract connected components (.gfa files)."""
+    common_log.init_logger(_LOGGER, "Extracting connected components.", debug)
+
+    if not gfa_in.exists():
+        _LOGGER.critical("Input GFA file does not exist: %s", gfa_in)
+        raise typer.Exit(1)
+
+    graph = gfa_io.from_file(gfa_in)
+
+    sub_graphs = gfa_ops.connected_components(graph)
+
+    _LOGGER.info("Extracted %d connected components", len(sub_graphs))
+
+    if out_dir is None:
+        out_dir = gfa_in.parent
+
+    if gfa_out_prefix is None:
+        gfa_out_prefix = gfa_in.name.partition(".")[0] + "_"
+
+    for k, sub_graph in enumerate(sub_graphs):
+        sub_gfa_path = out_dir / f"{gfa_out_prefix}{k}.gfa"
+        sub_graph.to_file(sub_gfa_path)
+
+    sub_gfa_template = out_dir / f"{gfa_out_prefix}*.gfa"
+
+    _LOGGER.info("New GFA files: `%s`", sub_gfa_template)

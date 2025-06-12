@@ -8,6 +8,7 @@ import logging
 from typing import TYPE_CHECKING, cast
 
 import gfapy  # type: ignore[import-untyped]
+import networkx as nx
 
 import pangebin.gfa.header as gfa_header
 import pangebin.gfa.line as gfa_line
@@ -18,10 +19,13 @@ import pangebin.input_output as io
 from . import link as gfa_link
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Iterator
     from pathlib import Path
 
-    from gfapy.line.edge import Link as GfaLink  # type: ignore[import-untyped]
+    from gfapy.line.edge import (  # type: ignore[import-untyped]
+        Containment as GfaContainment,
+    )
+    from gfapy.line.edge import Link as GfaLink
     from gfapy.line.group.path.path import (  # type: ignore[import-untyped]
         Path as GfaPath,
     )
@@ -381,7 +385,7 @@ def sub_radius_graph(
 def transform_small_contigs_into_links(
     gfa: gfapy.Gfa,
     min_contig_length: int,
-) -> None:
+) -> Iterator[str]:
     """Remove small contigs and transform them into links.
 
     Parameters
@@ -395,13 +399,20 @@ def transform_small_contigs_into_links(
     --------
     This function mutates the GFA graph
 
+    Yields
+    ------
+    str
+        Segment lines removed
     """
+    segment_lines_to_remove: list[gfa_segment.GfaSegment] = []
     for segment in gfa.segments:
         if gfa_segment.length(segment) < min_contig_length:
             left_edge_lines = list(segment.dovetails_L)
             right_edge_lines = list(segment.dovetails_R)
             predecessors: list[gfa_segment.OrientedFragment] = []
             successors: list[gfa_segment.OrientedFragment] = []
+
+            link_lines_to_remove: list[gfa_link.GfaLink] = []
 
             for left_link_line in left_edge_lines:
                 pred = gfa_segment.OrientedFragment.from_left_dovetail_line(
@@ -410,7 +421,7 @@ def transform_small_contigs_into_links(
                 )
                 if pred.identifier() != segment.name:
                     predecessors.append(pred)
-                    gfa.rm(left_link_line)
+                    link_lines_to_remove.append(left_link_line)
 
             for right_link_line in right_edge_lines:
                 succ = gfa_segment.OrientedFragment.from_right_dovetail_line(
@@ -419,10 +430,14 @@ def transform_small_contigs_into_links(
                 )
                 if succ.identifier() != segment.name:
                     successors.append(succ)
-                    gfa.rm(right_link_line)
+                    link_lines_to_remove.append(right_link_line)
 
-            gfa.rm(segment)
+            for link_line in link_lines_to_remove:
+                gfa.rm(link_line)
             gfa.validate()
+
+            segment_lines_to_remove.append(segment)
+
             for link in (
                 gfa_link.Link(pred, succ)
                 for pred, succ in itertools.product(predecessors, successors)
@@ -431,3 +446,58 @@ def transform_small_contigs_into_links(
                     # XXX the exception should not happen
                     gfa.add_line(link.to_gfa_line())
             gfa.validate()
+
+    for segment in segment_lines_to_remove:
+        gfa.rm(segment)
+
+    gfa.validate()
+
+    return (str(line) for line in segment_lines_to_remove)
+
+
+def connected_components(graph: gfapy.Gfa) -> list[gfapy.Gfa]:
+    """Get connected GFA (GFA1) graphs.
+
+    Warning
+    -------
+    If one sequence is null, it is replaced by a placeholder (*) is the resulting GFA.
+    """
+    if graph.version != "gfa1":
+        raise NotImplementedError
+
+    # Build naive nx graph
+    nx_graph: nx.Graph = nx.Graph()
+    edge_line: GfaLink | GfaContainment
+    for edge_line in graph.edges:
+        nx_graph.add_edge(edge_line.from_segment, edge_line.to_segment)
+
+    # Get connected components on nx graph
+    d_seg_cc: dict[str, int] = {}
+    num_cc = 0
+    for k, component in enumerate(nx.connected_components(nx_graph)):
+        num_cc += 1
+        for segment_name in component:
+            d_seg_cc[segment_name] = k
+
+    connected_graphs: list[gfapy.Gfa] = [
+        gfapy.Gfa(version="gfa1") for _ in range(num_cc)
+    ]
+
+    # Segment lines
+    segment_line: GfaSegment
+    for segment_line in graph.segments:
+        if not segment_line.sequence:
+            segment_line.sequence = gfapy.Placeholder()
+        connected_graphs[d_seg_cc[segment_line.name]].add_line(str(segment_line))
+
+    # Link and containment lines
+    for edge_line in graph.edges:
+        connected_graphs[d_seg_cc[edge_line.from_segment]].add_line(str(edge_line))
+
+    # Path
+    for path_line in graph.paths:
+        connected_graphs[d_seg_cc[path_line.segment_names[0].name]].add_line(
+            str(path_line),
+        )
+
+    return connected_graphs
