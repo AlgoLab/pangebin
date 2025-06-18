@@ -548,11 +548,7 @@ def _write_outputs(
     io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
     bin_stats.to_yaml(io_manager.bin_stats_path(k))
     with bins_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
-        for seq_normcov in seq_normcovs:
-            fout.write_sequence_normcov(
-                seq_normcov.identifier(),
-                seq_normcov.normalized_coverage(),
-            )
+        fout.write_bunch_sequences_normcov(seq_normcovs)
     milp_stats.to_yaml(io_manager.milp_stats_path(k))
 
     # FIXME tmp fix
@@ -583,11 +579,7 @@ def _write_mfb_outputs(
         bin_fs_manager.dir().mkdir(parents=True, exist_ok=True)
         bin_stats.to_yaml(bin_fs_manager.bin_stats_path())
         with bins_io.Writer.open(bin_fs_manager.bin_seq_normcov_path()) as fout:
-            for seq_normcov in seq_normcovs:
-                fout.write_sequence_normcov(
-                    seq_normcov.identifier(),
-                    seq_normcov.normalized_coverage(),
-                )
+            fout.write_bunch_sequences_normcov(seq_normcovs)
         milp_stats.to_yaml(bin_fs_manager.milp_stats_path())
 
 
