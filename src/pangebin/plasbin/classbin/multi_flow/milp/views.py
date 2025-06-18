@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 from pangebin.yaml_interface import YAMLInterface
 
@@ -70,7 +70,7 @@ class Stats(YAMLInterface):
 def stats_from_opt_bin_vars(
     network: net.Network,
     bin_vars: mfb_var.BinVariables,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     partially_circular: bool,  # noqa: FBT001
 ) -> Stats:
     """Create MGCLB stats from optimal variables."""

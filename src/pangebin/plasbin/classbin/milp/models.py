@@ -9,7 +9,7 @@ import gurobipy as gp
 import pangebin.plasbin.classbin.milp.constraints as lp_cst
 import pangebin.plasbin.classbin.milp.objectives as lp_obj
 import pangebin.plasbin.classbin.milp.variables as lp_var
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 
 
@@ -26,7 +26,7 @@ def classify(
     min_flow: float,
     plasmidness_coefficient: float,
     min_cumulative_len: int,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[gp.Model, lp_var.Classify]:
     """Create Classify model."""
     m = gp.Model("Maximum Classification Flow")

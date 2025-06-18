@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pangebin.gc_content.items as gc_items
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.objectives as lp_obj
 import pangebin.plasbin.once.milp.variables as lp_vars
@@ -71,20 +71,20 @@ def mgclb_stats_from_opt_vars(
     network: net.Network,
     intervals: gc_items.Intervals,
     mgclb_vars: lp_vars.MaxGCLabelBinScore,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MGCLBStats:
     """Create MGCLB stats from optimal variables."""
     return MGCLBStats(
-        mgclb_vars.flow().total().X,
+        mgclb_vars.flows().total().X,
         lp_obj.coverage_score(
             network,
-            mgclb_vars.flow(),
-            mgclb_vars.frag(),
+            mgclb_vars.flows(),
+            mgclb_vars.sub_frags(),
             obj_fun_domain,
         ).getValue(),
         lp_obj.plasmidness_score(
             network,
-            mgclb_vars.flow(),
+            mgclb_vars.flows(),
             obj_fun_domain,
         ).getValue(),
         lp_obj.gc_score(

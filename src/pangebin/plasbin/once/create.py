@@ -10,9 +10,9 @@ import rich.progress as rich_prog
 
 import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.bins.items as bins_items
-import pangebin.plasbin.config as pb_cfg
-import pangebin.plasbin.milp.config as pb_lp_cfg
-import pangebin.plasbin.milp.results as pb_lp_res
+import pangebin.plasbin.config as cmn_cfg
+import pangebin.plasbin.milp.config as cmn_lp_cfg
+import pangebin.plasbin.milp.results as cmn_lp_res
 import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.input_output as once_lp_io
 import pangebin.plasbin.once.milp.models as lp_mod
@@ -34,8 +34,8 @@ def plasbin_assembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     contig_gc_scores: Iterable[gc_items.SequenceGCScores],
     contig_plasmidness: Iterable[tuple[str, float]],
-    plasbin_config: pb_cfg.Binning,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    plasbin_config: cmn_cfg.Binning,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path = once_lp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[
@@ -83,8 +83,8 @@ def plasbin_panassembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
     fragment_plasmidness: Iterable[tuple[str, float]],
-    plasbin_config: pb_cfg.Binning,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    plasbin_config: cmn_cfg.Binning,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path = once_lp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[
@@ -129,8 +129,8 @@ def plasbin_panassembly(  # noqa: PLR0913
 def plasbin(
     network: net.Network,
     gc_intervals: gc_items.Intervals,
-    plasbin_config: pb_cfg.Binning,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    plasbin_config: cmn_cfg.Binning,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path,
 ) -> Iterator[
     tuple[
@@ -158,7 +158,7 @@ def plasbin(
     The GFA graph will mute.
     """
     gp.setParam(gp.GRB.Param.LogToConsole, 0)
-    pb_lp_cfg.configurate_global_gurobi(gurobi_config)
+    cmn_lp_cfg.configurate_global_gurobi(gurobi_config)
 
     io_manager = once_lp_io.Manager(output_directory)
 
@@ -181,6 +181,7 @@ def plasbin(
                 fragment_norm_coverages, norm_coverage = (
                     cmn_lp_res.fragment_norm_coverages(milp_result_values)
                 )
+
                 yield (
                     bins_items.Stats(
                         milp_result_values.cumulative_length(),
@@ -192,7 +193,7 @@ def plasbin(
                     milp_stats,
                     log_files,
                 )
-                pb_lp_res.update_network(
+                cmn_lp_res.update_network(
                     network,
                     milp_result_values,
                     plasbin_config.min_flow(),
@@ -215,10 +216,10 @@ def plasbin(
 def _milp_binning(
     network: net.Network,
     gc_intervals: gc_items.Intervals,
-    plasbin_config: pb_cfg.Binning,
+    plasbin_config: cmn_cfg.Binning,
     io_manager: once_lp_io.Manager,
     bin_number: int,
-) -> tuple[once_lp_views.MGCLBStats, pb_lp_res.Pangebin, Path] | None:
+) -> tuple[once_lp_views.MGCLBStats, cmn_lp_res.Pangebin, Path] | None:
     #
     # MGCLB model
     #
@@ -242,7 +243,7 @@ def _milp_binning(
         plasbin_config.obj_fun_domain(),
     )
 
-    milp_result_values = pb_lp_res.Pangebin.from_optimal_variables(
+    milp_result_values = cmn_lp_res.Pangebin.from_optimal_variables(
         network,
         gc_intervals,
         mgclb_vars.flows(),

@@ -9,6 +9,13 @@
 * [ ] PangeBin-flow on pansm from PBf inputs
   * [ ] Correct the contigs names as in the plasmidness and seed files they are not formatted as in the panassembly graph (from std asm graph)
 
+## Working changes
+
+>[!WARNING]
+>
+> * [ ] Clean `once` tmp internal experiments
+> * [ ] Clean `classbin` tmp internal experiments
+
 ## Perspectives
 
 ### Methods

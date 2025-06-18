@@ -3,8 +3,8 @@
 import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
-import pangebin.plasbin.milp.objectives as pb_lp_obj
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 from . import constraints as mfb_cst
@@ -18,11 +18,11 @@ def new(
     min_flow: float,
     plasmidness_coefficient: float,
     min_cumulative_len: int,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[
     gp.Model,
     list[mfb_var.BinVariables],
-    pb_lp_var.SubFragments,
+    cmn_lp_vars.SubFragments,
     mfb_cst.MultiFlowStateConstraints,
 ]:
     """Create Classify model."""

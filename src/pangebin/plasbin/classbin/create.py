@@ -9,11 +9,12 @@ import gurobipy as gp
 import rich.progress as rich_prog
 
 import pangebin.gc_content.items as gc_items
+import pangebin.gfa.ops as gfa_ops
 import pangebin.plasbin.bins.items as bins_items
 import pangebin.plasbin.classbin.file_system as classbin_lp_io
-import pangebin.plasbin.config as pb_cfg
-import pangebin.plasbin.milp.config as pb_lp_cfg
-import pangebin.plasbin.milp.results as pb_lp_res
+import pangebin.plasbin.config as cmn_cfg
+import pangebin.plasbin.milp.config as cmn_lp_cfg
+import pangebin.plasbin.milp.results as cmn_lp_res
 import pangebin.plasbin.network as net
 from pangebin.pblog import CONSOLE
 
@@ -39,8 +40,8 @@ def plasbin_assembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     contig_gc_scores: Iterable[gc_items.SequenceGCScores],
     contig_plasmidness: Iterable[tuple[str, float]],
-    plasbin_config: pb_cfg.Binning,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    plasbin_config: cmn_cfg.Binning,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path,
 ) -> Iterator[
     tuple[
@@ -136,11 +137,68 @@ def plasbin_assembly(  # noqa: PLR0913
 #     )
 
 
+def components(
+    graph: gfapy.Gfa,
+    seeds: Iterable[str],
+    gc_scores: Iterable[gc_items.SequenceGCScores],
+    all_plasmidness: Iterable[tuple[str, float]],
+) -> list[
+    tuple[
+        gfapy.Gfa,
+        list[str],  # seeds
+        list[gc_items.SequenceGCScores],  # gc_scores
+        list[tuple[str, float]],  # plasmidness
+    ]
+]:
+    """Get GFA connected components (and attributes).
+
+    Returns
+    -------
+    list[
+        tuple[
+            Gfa,
+            list[str],
+            list[SequenceGCScores],
+            list[tuple[str, float]],
+        ]
+    ]
+        Sub gfa, and associated seeds, gc_scores, and plasmidness
+    """
+    # OPTIMIZE can do better
+    sub_graphs = gfa_ops.connected_components(graph)
+    seg_cc: dict[str, int] = {
+        seg_name: k
+        for k, sub_graph in enumerate(sub_graphs)
+        for seg_name in sub_graph.segment_names
+    }
+
+    sub_seeds: list[list[str]] = [[] for _ in range(len(sub_graphs))]
+    for seg_name in seeds:
+        sub_seeds[seg_cc[seg_name]].append(seg_name)
+
+    sub_gc_scores: list[list[gc_items.SequenceGCScores]] = [
+        [] for _ in range(len(sub_graphs))
+    ]
+    for gc_score in gc_scores:
+        sub_gc_scores[seg_cc[gc_score.sequence_id()]].append(gc_score)
+
+    sub_plasmidness: list[list[tuple[str, float]]] = [
+        [] for _ in range(len(sub_graphs))
+    ]
+    for plasmidness in all_plasmidness:
+        sub_plasmidness[seg_cc[plasmidness[0]]].append(plasmidness)
+
+    return [
+        (sub_graphs[k], sub_seeds[k], sub_gc_scores[k], sub_plasmidness[k])
+        for k in range(len(sub_graphs))
+    ]
+
+
 def plasbin(
     network: net.Network,
     gc_intervals: gc_items.Intervals,
-    plasbin_config: pb_cfg.Binning,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    plasbin_config: cmn_cfg.Binning,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path,
 ) -> Iterator[
     tuple[
@@ -173,7 +231,7 @@ def plasbin(
     The GFA graph will mute.
     """
     gp.setParam(gp.GRB.Param.LogToConsole, 0)
-    pb_lp_cfg.configurate_global_gurobi(gurobi_config)
+    cmn_lp_cfg.configurate_global_gurobi(gurobi_config)
 
     lp_io_manager = classbin_lp_io.Manager(output_directory)
     # REFACTOR create lp io manager dir here?
@@ -213,7 +271,6 @@ def plasbin(
             )
             result = _solve_multi_flows(
                 network,
-                gc_intervals,
                 plasbin_config,
                 model,
                 bins_vars,
@@ -263,10 +320,7 @@ def plasbin(
                 for k in range(number_of_flows):
                     milp_stats, milp_result_values = milp_results_values[k]
                     fragment_norm_coverages, norm_coverage = (
-                        pb_lp_res.fragment_norm_coverages(
-                            milp_result_values,
-                            plasbin_config.circular(),
-                        )
+                        cmn_lp_res.fragment_norm_coverages(milp_result_values)
                     )
                     bins_results.append(
                         (
@@ -339,7 +393,6 @@ def plasbin(
             )
             result = _solve_multi_flows(
                 network,
-                gc_intervals,
                 plasbin_config,
                 model,
                 bins_vars,
@@ -380,10 +433,7 @@ def plasbin(
                 for k in range(number_of_flows):
                     milp_stats, milp_result_values = milp_results_values[k]
                     fragment_norm_coverages, norm_coverage = (
-                        pb_lp_res.fragment_norm_coverages(
-                            milp_result_values,
-                            plasbin_config.circular(),
-                        )
+                        cmn_lp_res.fragment_norm_coverages(milp_result_values)
                     )
                     bins_results.append(
                         (
@@ -425,20 +475,19 @@ def plasbin(
 # REFACTOR return other than None (class containning log file e.g.)
 def _solve_multi_flows(
     network: net.Network,
-    gc_intervals: gc_items.Intervals,
-    plasbin_config: pb_cfg.Binning,
+    plasbin_config: cmn_cfg.Binning,
     lp_model: gp.Model,
     bins_vars: list[mfb_var.BinVariables],
     number_of_flows: int,
     io_manager: mfb_fs.NumberOfFlowManager,
     is_partially_circular: bool,  # noqa: FBT001
-) -> tuple[list[tuple[mfb_views.Stats, pb_lp_res.Pangebin]], Path] | None:
+) -> tuple[list[tuple[mfb_views.Stats, cmn_lp_res.Pangebin]], Path] | None:
     log_file = _solve_mfb_model(lp_model, io_manager)
 
     if lp_model.Status != gp.GRB.OPTIMAL:
         return None
 
-    bin_results: list[tuple[mfb_views.Stats, pb_lp_res.Pangebin]] = []
+    bin_results: list[tuple[mfb_views.Stats, cmn_lp_res.Pangebin]] = []
     for k in range(number_of_flows):
         result_stats = mfb_views.stats_from_opt_bin_vars(
             network,
@@ -446,9 +495,8 @@ def _solve_multi_flows(
             plasbin_config.obj_fun_domain(),
             is_partially_circular,
         )
-        milp_result_values = pb_lp_res.Pangebin.from_optimal_vars_without_gc_intervals(
+        milp_result_values = cmn_lp_res.Pangebin.from_optimal_vars_without_gc_intervals(
             network,
-            gc_intervals,
             bins_vars[k].flows(),
             bins_vars[k].sub_frag(),
         )

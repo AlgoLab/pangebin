@@ -8,11 +8,10 @@ from typing import Self
 import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
-import pangebin.plasbin.classbin.milp.objectives as lp_obj
 import pangebin.plasbin.milp.connected_component.constraints as ccomp_cst
-import pangebin.plasbin.milp.constraints as lp_cst
-import pangebin.plasbin.milp.objectives as pb_lp_obj
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.constraints as cmn_lp_cst
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 from . import objectives as mfb_obj
@@ -26,11 +25,11 @@ from . import variables as mfb_var
 def set_constraints(  # noqa: PLR0913
     m: gp.Model,
     bins_vars: list[mfb_var.BinVariables],
-    flow_union_frag_vars: pb_lp_var.SubFragments,
+    flow_union_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
     min_flow: float,
     plasmidness_coefficient: float,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     min_cumulative_len: int,
 ) -> MultiFlowStateConstraints:
     """Set binning constraints."""
@@ -90,40 +89,45 @@ def _set_constraints_for_one_bin(  # noqa: PLR0913
     network: net.Network,
     min_flow: float,
     plasmidness_coefficient: float,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     min_cumulative_len: int,
 ) -> tuple[list[gp.Constr], BinStateConstraints]:
     """Set MGCLB constraints."""
     constraints: list[gp.Constr] = []
-    constraints += lp_cst.active_fragments_active_one_of_their_orientations(
+    constraints += cmn_lp_cst.active_fragments_active_one_of_their_orientations(
         m,
         var.sub_vertices(),
         var.sub_frag(),
         network,
     )
     # DOCU change RHS weither bin is active or not
-    lb_seeds_cst = lp_cst.active_seeds_lower_bound(m, var.sub_frag(), network, 0)
+    lb_seeds_cst = cmn_lp_cst.active_seeds_lower_bound(m, var.sub_frag(), network, 0)
     constraints.append(lb_seeds_cst)
 
     #
     # Source-sink constraints
     #
     # DOCU when C, only one source arc
-    source_arcs_ub_cst = lp_cst.source_arcs_upper_bound(m, var.sub_arcs(), network, 1)
+    source_arcs_ub_cst = cmn_lp_cst.source_arcs_upper_bound(
+        m,
+        var.sub_arcs(),
+        network,
+        1,
+    )
     constraints.append(source_arcs_ub_cst)
 
     # DOCU when C, only one sink arc
-    sink_arcs_ub_cst = lp_cst.sink_arcs_upper_bound(m, var.sub_arcs(), network, 1)
+    sink_arcs_ub_cst = cmn_lp_cst.sink_arcs_upper_bound(m, var.sub_arcs(), network, 1)
     constraints.append(sink_arcs_ub_cst)
 
     # DOCU C: RHS = 0, PC: RHS = 1
-    cycle_before_out_csts = lp_cst.cycle_before_out(
+    cycle_before_out_csts = cmn_lp_cst.cycle_before_out(
         m,
         var.sub_vertices(),
         var.sub_arcs(),
         network,
     )
-    cycle_before_in_csts = lp_cst.cycle_before_in(
+    cycle_before_in_csts = cmn_lp_cst.cycle_before_in(
         m,
         var.sub_vertices(),
         var.sub_arcs(),
@@ -135,23 +139,23 @@ def _set_constraints_for_one_bin(  # noqa: PLR0913
     # DOCU when PC, no other in/out link if source/sink connected
     # * PC: no other incoming link if source connected
     incoming_arcs_ub_for_s_connected_orfrag_csts, _nb_preds = (
-        lp_cst.s_connected_orfrag_incoming_arcs_ub(m, var.sub_arcs(), network)
+        cmn_lp_cst.s_connected_orfrag_incoming_arcs_ub(m, var.sub_arcs(), network)
     )
     # * PC: no other outgoing link if sink connected
     outgoing_arcs_ub_for_t_connected_orfrag_csts, _nb_succs = (
-        lp_cst.t_connected_orfrag_outgoing_arcs_ub(m, var.sub_arcs(), network)
+        cmn_lp_cst.t_connected_orfrag_outgoing_arcs_ub(m, var.sub_arcs(), network)
     )
     constraints += incoming_arcs_ub_for_s_connected_orfrag_csts
     constraints += outgoing_arcs_ub_for_t_connected_orfrag_csts
 
     # DOCU C: the seed connected to s is also connected to t
     # Two inequalities to change
-    same_seed_connects_s_and_t_lb_csts = lp_cst.same_seed_connects_s_and_t_lb(
+    same_seed_connects_s_and_t_lb_csts = cmn_lp_cst.same_seed_connects_s_and_t_lb(
         m,
         var.sub_arcs(),
         network,
     )
-    same_seed_connects_s_and_t_ub_csts = lp_cst.same_seed_connects_s_and_t_ub(
+    same_seed_connects_s_and_t_ub_csts = cmn_lp_cst.same_seed_connects_s_and_t_ub(
         m,
         var.sub_arcs(),
         network,
@@ -161,33 +165,33 @@ def _set_constraints_for_one_bin(  # noqa: PLR0913
 
     # DOCU let flow be 0 on source and sink arc when circular bin
     # * C: the flow value on source and sink arcs equal is 0 AND y (must) can still be 1
-    source_arc_flow_ub_csts = lp_cst.source_arc_flow_upper_bound(
+    source_arc_flow_ub_csts = cmn_lp_cst.source_arc_flow_upper_bound(
         m,
         var.flows(),
         network,
         0,
     )
-    sink_arc_flow_ub_csts = lp_cst.sink_arc_flow_upper_bound(
+    sink_arc_flow_ub_csts = cmn_lp_cst.sink_arc_flow_upper_bound(
         m,
         var.flows(),
         network,
         0,
     )
-    source_arc_flow_lb_csts = lp_cst.active_source_arc_has_strict_positive_flow(
+    source_arc_flow_lb_csts = cmn_lp_cst.active_source_arc_has_strict_positive_flow(
         m,
         var.flows(),
         var.sub_arcs(),
         network,
         min_flow,
     )
-    constraints += lp_cst.active_link_arc_has_strict_positive_flow(
+    constraints += cmn_lp_cst.active_link_arc_has_strict_positive_flow(
         m,
         var.flows(),
         var.sub_arcs(),
         network,
         min_flow,
     )
-    sink_arc_flow_lb_csts = lp_cst.active_sink_arc_has_strict_positive_flow(
+    sink_arc_flow_lb_csts = cmn_lp_cst.active_sink_arc_has_strict_positive_flow(
         m,
         var.flows(),
         var.sub_arcs(),
@@ -201,26 +205,26 @@ def _set_constraints_for_one_bin(  # noqa: PLR0913
     source_flow_ub = sum(network.cap_s(a) for a in network.source_arcs())
     sink_flow_ub = sum(network.cap_t(a) for a in network.sink_arcs())
 
-    constraints += lp_cst.arc_capacities_limit_arc_flows(
+    constraints += cmn_lp_cst.arc_capacities_limit_arc_flows(
         m,
         var.flows(),
         var.sub_arcs(),
         network,
     )
-    constraints += lp_cst.fragment_coverages_limit_cumulative_flows(
+    constraints += cmn_lp_cst.fragment_coverages_limit_cumulative_flows(
         m,
         var.flows(),
         network,
     )
-    constraints += lp_cst.flow_conservation(m, var.flows(), network)
-    constraints += lp_cst.total_flow_value(m, var.flows(), network)
-    constraints += lp_cst.active_arcs_implies_active_fragments(
+    constraints += cmn_lp_cst.flow_conservation(m, var.flows(), network)
+    constraints += cmn_lp_cst.total_flow_value(m, var.flows(), network)
+    constraints += cmn_lp_cst.active_arcs_implies_active_fragments(
         m,
         var.sub_vertices(),
         var.sub_arcs(),
         network,
     )
-    constraints += lp_cst.active_fragments_imply_at_least_one_active_arc(
+    constraints += cmn_lp_cst.active_fragments_imply_at_least_one_active_arc(
         m,
         var.sub_vertices(),
         var.sub_arcs(),
@@ -317,7 +321,7 @@ def _set_constraints_for_one_bin(  # noqa: PLR0913
         ),
     )
     # DOCU min cumulative len constraint weither bin active or not
-    min_cumulative_len_cst = lp_cst.minimum_cumulative_length(
+    min_cumulative_len_cst = cmn_lp_cst.minimum_cumulative_length(
         m,
         var.sub_frag(),
         network,
@@ -359,15 +363,15 @@ def _set_constraints_for_one_bin(  # noqa: PLR0913
 
 def _plasmidness_lower_bound(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
+    flow_vars: cmn_lp_vars.Flow,
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     plasmidness_coefficient: float,
 ) -> gp.Constr:
     """Set plasmidness lower bound."""
-    frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
+    frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return m.addConstr(
-        lp_obj.plasmidness_score(network, flow_vars, obj_fun_domain)
+        mfb_obj.plasmidness_score(network, flow_vars, obj_fun_domain)
         >= gp.quicksum(
             mfb_obj.frag_coeff(network, frag_id)
             * plasmidness_coefficient
@@ -381,10 +385,10 @@ def _plasmidness_lower_bound(
 def objective_lower_bound(
     m: gp.Model,
     bins_vars: list[mfb_var.BinVariables],
-    flow_union_frag_vars: pb_lp_var.SubFragments,
+    flow_union_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
     intervals: gc_items.Intervals,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     obj_lower_bound: float,
 ) -> gp.Constr:
     """Set binning objective lower bound."""
@@ -423,7 +427,7 @@ def circular_flows_plasmidness_score_lb(
     m: gp.Model,
     bins_vars: list[mfb_var.BinVariables],
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     number_of_circular_flows: int,
     last_circular_plasmidness_score: float,
 ) -> gp.Constr:
@@ -444,7 +448,7 @@ def plasmidness_score_order(
     m: gp.Model,
     bins_vars: list[mfb_var.BinVariables],
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     bin_interval: tuple[int, int],
 ) -> list[gp.Constr]:
     """Set plasmidness score order for circular flows."""

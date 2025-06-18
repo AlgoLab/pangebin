@@ -3,7 +3,8 @@
 import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
-import pangebin.plasbin.milp.constraints as lp_cst
+import pangebin.plasbin.milp.connected_component.constraints as ccomp_cst
+import pangebin.plasbin.milp.constraints as cmn_lp_cst
 import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.variables as lp_vars
 
@@ -19,67 +20,143 @@ def set_mgclb_constraints(  # noqa: PLR0913
     min_flow: float,
     min_cumulative_len: int,
     circular: bool,  # noqa: FBT001
-) -> None:
+) -> list[gp.Constr]:
     """Set MGCLB constraints."""
-    lp_cst.active_fragments_active_one_of_their_orientations(
+    constraints: list[gp.Constr] = []
+    constraints += cmn_lp_cst.active_fragments_active_one_of_their_orientations(
         m,
-        var.sub_v(),
-        var.frag(),
+        var.sub_vertices(),
+        var.sub_frags(),
         network,
     )
-    lp_cst.exactly_one_active_source_arc(m, var.sub_arc(), network)
-    lp_cst.arc_capacities_limit_arc_flows(m, var.flow(), var.sub_arc(), network)
-    lp_cst.fragment_coverages_limit_cumulative_flows(m, var.flow(), network)
-    lp_cst.flow_conservation(m, var.flow(), network)
-    lp_cst.total_flow_value(m, var.flow(), network)
-    lp_cst.active_arcs_implies_active_fragments(
+    # XXX PAER TESTS
+    constraints.append(
+        cmn_lp_cst.active_seeds_lower_bound(m, var.sub_frags(), network, 1),
+    )
+    # DOCU UB for number of source and sink arcs
+    constraints.append(
+        cmn_lp_cst.source_arcs_upper_bound(m, var.sub_arcs(), network, 1)
+    )
+    constraints.append(cmn_lp_cst.sink_arcs_upper_bound(m, var.sub_arcs(), network, 1))
+
+    # DOCU if source_arc, no other incoming link
+    constraints += cmn_lp_cst.s_connected_orfrag_incoming_arcs_ub(
         m,
-        var.sub_v(),
-        var.sub_arc(),
+        var.sub_arcs(),
+        network,
+    )[0]
+    # DOCU if sink_arc, no other outgoing link
+    constraints += cmn_lp_cst.t_connected_orfrag_outgoing_arcs_ub(
+        m,
+        var.sub_arcs(),
+        network,
+    )[0]
+
+    constraints += cmn_lp_cst.arc_capacities_limit_arc_flows(
+        m,
+        var.flows(),
+        var.sub_arcs(),
         network,
     )
-    lp_cst.active_fragments_imply_at_least_one_active_arc(
+
+    # XXX PAER TESTS perhaps not necessary before thanks to f_a >= F_a
+    constraints += cmn_lp_cst.active_arcs_imply_strict_positive_flow(
         m,
-        var.sub_v(),
-        var.sub_arc(),
+        var.flows(),
+        var.sub_arcs(),
+        network,
+        min_flow,
+    )
+
+    constraints += cmn_lp_cst.fragment_coverages_limit_cumulative_flows(
+        m,
+        var.flows(),
         network,
     )
-    lp_cst.active_arcs_imply_vertices_in_same_component(
+    constraints += cmn_lp_cst.flow_conservation(m, var.flows(), network)
+    constraints += cmn_lp_cst.total_flow_value(m, var.flows(), network)
+    constraints += cmn_lp_cst.active_arcs_implies_active_fragments(
         m,
-        var.sub_v(),
-        var.sub_arc(),
+        var.sub_vertices(),
+        var.sub_arcs(),
+        network,
+    )
+    constraints += cmn_lp_cst.active_fragments_imply_at_least_one_active_arc(
+        m,
+        var.sub_vertices(),
+        var.sub_arcs(),
+        network,
+    )
+    constraints += cmn_lp_cst.active_arcs_imply_vertices_in_same_component(
+        m,
+        var.sub_vertices(),
+        var.sub_arcs(),
         network,
     )
     #
     # Connectivity
     #
-    lp_cst.subtree_depth_min_distance(m, var.ccomp(), network)
-    lp_cst.arcs_in_tree_are_active(m, var.sub_arc(), var.ccomp(), network)
-    lp_cst.alpha_is_the_number_of_vertices_in_the_solution(
+    constraints += ccomp_cst.arcs_in_tree_are_active(
         m,
-        var.sub_v(),
-        var.ccomp(),
+        var.sub_arcs(),
+        var.tree_edges().dtree(),
         network,
     )
-    #
-    # Arc flow lower bound
-    #
-    lp_cst.active_arcs_have_flow_at_least_total_flow(
+
+    # DOCU C: (opti) force each rev beta to be 0
+    constraints += ccomp_cst.beta_rev_upper_bound(m, var.tree_edges(), network)
+
+    constraints += ccomp_cst.rev_link_arcs_in_tree_are_active(
         m,
-        var.sub_arc(),
-        var.flow(),
-        var.pos_flow(),
+        var.sub_arcs(),
+        var.tree_edges(),
         network,
     )
+
+    constraints += ccomp_cst.subtree_size_from_source(
+        m,
+        var.sub_vertices(),
+        var.tree_edges().dtree(),
+        network,
+    )
+    constraints += ccomp_cst.subtree_size_for_sink_rev_version(
+        m,
+        var.tree_edges(),
+        network,
+    )
+
+    constraints += ccomp_cst.subtree_size_fragment_rev_version(
+        m,
+        var.sub_vertices(),
+        var.tree_edges(),
+        network,
+    )
+
+    constraints.append(
+        ccomp_cst.only_one_oriented_fragment_connects_the_source(
+            m,
+            var.root(),
+            network,
+        ),
+    )
+    constraints += ccomp_cst.at_most_one_source_arc_in_tree(
+        m,
+        var.tree_edges(),
+        var.root(),
+        network,
+    )
+    constraints += ccomp_cst.root_priority(m, var.root(), var.sub_arcs(), network)
     #
     # GC
     #
-    lp_cst.exactly_one_interval_is_active(m, var.gc(), intervals)
-    lp_cst.define_inflow_gc(
+    constraints.append(
+        cmn_lp_cst.exactly_one_interval_is_active(m, var.gc(), intervals)
+    )
+    constraints += cmn_lp_cst.define_inflow_gc(
         m,
-        var.frag(),
+        var.sub_frags(),
         var.gc(),
-        var.flow(),
+        var.flows(),
         var.inflow_gc(),
         network,
         intervals,
@@ -88,9 +165,39 @@ def set_mgclb_constraints(  # noqa: PLR0913
     # Plasmid property
     #
     # DOCU MCF: + minimum flow value constraint
-    lp_cst.total_flow_is_strictly_positive(m, var.flow(), min_flow)
+    constraints += cmn_lp_cst.total_flow_is_strictly_positive(m, var.flows(), min_flow)
     # DOCU MCF: + min cumulatie len constraint
-    lp_cst.minimum_cumulative_length(m, var.frag(), network, min_cumulative_len)
+    constraints.append(
+        cmn_lp_cst.minimum_cumulative_length(
+            m,
+            var.sub_frags(),
+            network,
+            min_cumulative_len,
+        ),
+    )
+    # FIXME use other constraint
     if circular:
         # DOCU circularity remove a little flow to the first seed but no problems(?)
-        lp_cst.circularity(m, var.sub_arc(), network)
+        # DOCU new consraints for circularity
+        constraints += cmn_lp_cst.cycle_before_out(
+            m,
+            var.sub_vertices(),
+            var.sub_arcs(),
+            network,
+        )
+        constraints += cmn_lp_cst.cycle_before_in(
+            m,
+            var.sub_vertices(),
+            var.sub_arcs(),
+            network,
+        )
+
+        constraints += cmn_lp_cst.same_oriented_fragment_connects_s_and_t_eq(
+            m,
+            var.sub_arcs(),
+            network,
+        )
+        # DOCU C: [opti] only the seeds can be connected to the source and the sink
+        constraints += ccomp_cst.non_seed_root_upper_bound(m, var.root(), network)
+
+    return constraints

@@ -3,18 +3,18 @@
 import gurobipy as gp
 
 import pangebin.plasbin.classbin.milp.variables as lp_vars
-import pangebin.plasbin.milp.objectives as pb_lp_obj
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 
 def plasmidness_score(
     network: net.Network,
-    flow_vars: pb_lp_var.Flow,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    flow_vars: cmn_lp_vars.Flow,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gp.LinExpr:
     """Get linear expression for coverage score."""
-    frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
+    frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
         net.length(network, frag_id)
         * network.plasmidness(frag_id)
@@ -26,7 +26,7 @@ def plasmidness_score(
 def classify_objective(
     var: lp_vars.Classify,
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gp.LinExpr:
     """Set Classify objective."""
     return plasmidness_score(network, var.flow(), obj_fun_domain)
@@ -36,7 +36,7 @@ def set_classify_objective(
     m: gp.Model,
     var: lp_vars.Classify,
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> None:
     """Set MGCLB objective."""
     m.setObjective(

@@ -4,8 +4,8 @@ import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.classbin.multi_flow.milp.variables as mfb_var
-import pangebin.plasbin.milp.objectives as pb_lp_obj
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 
@@ -16,12 +16,12 @@ def frag_coeff(network: net.Network, frag_id: str) -> float:
 
 def coverage_penalty_all(
     bins_vars: list[mfb_var.BinVariables],
-    flow_union_frag_vars: pb_lp_var.SubFragments,
+    flow_union_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gp.LinExpr:
     """Get linear expression for coverage penalty."""
-    frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
+    frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
         frag_coeff(network, frag_id)
         # BUG TMP PENALTY MULTIPLIED BY PLASMIDNESS
@@ -67,7 +67,7 @@ def bad_plasmidness_chain_penalty(
 
 def repeat_penalty(
     bins_vars: list[mfb_var.BinVariables],
-    flow_union_frag_vars: pb_lp_var.SubFragments,
+    flow_union_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
 ) -> gp.LinExpr:
     return -gp.quicksum(
@@ -84,11 +84,11 @@ def repeat_penalty(
 
 def plasmidness_score(
     network: net.Network,
-    flow_vars: pb_lp_var.Flow,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    flow_vars: cmn_lp_vars.Flow,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gp.LinExpr:
     """Get linear expression for coverage score."""
-    frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
+    frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
         frag_coeff(network, frag_id)
         * network.plasmidness(frag_id)
@@ -100,7 +100,7 @@ def plasmidness_score(
 def circular_flows_plasmidness_score(
     bins_vars: list[mfb_var.BinVariables],
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     number_of_circular_flows: int,
 ) -> gp.LinExpr:
     """Get circular flows plasmidness score linear expression."""
@@ -118,11 +118,11 @@ def circular_flows_plasmidness_score(
 def gc_score(
     network: net.Network,
     intervals: gc_items.Intervals,
-    inflow_gc_vars: pb_lp_var.InflowGC,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    inflow_gc_vars: cmn_lp_vars.InflowGC,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gp.LinExpr:
     """Get linear expression for GC score."""
-    frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
+    frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
         frag_coeff(network, frag_id)
         * network.gc_score(frag_id)[b]
@@ -134,10 +134,10 @@ def gc_score(
 
 def mfb_objective(
     bins_vars: list[mfb_var.BinVariables],
-    flow_union_frag_vars: pb_lp_var.SubFragments,
+    flow_union_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
     intervals: gc_items.Intervals,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gp.LinExpr:
     """Get MFB objective linear expression.
 
@@ -171,10 +171,10 @@ def mfb_objective(
 def set_objective(
     m: gp.Model,
     bin_vars: list[mfb_var.BinVariables],
-    flow_union_frag_vars: pb_lp_var.SubFragments,
+    flow_union_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
     intervals: gc_items.Intervals,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> None:
     """Set MGCLB objective."""
     m.setObjective(

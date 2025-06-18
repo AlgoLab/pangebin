@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pangebin.plasbin.classbin.milp.objectives as lp_obj
 import pangebin.plasbin.classbin.milp.variables as lp_vars
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 from pangebin.yaml_interface import YAMLInterface
 
@@ -51,7 +51,7 @@ class ClassifyStats(YAMLInterface):
 def classify_stats_from_opt_vars(
     network: net.Network,
     mgclb_vars: lp_vars.Classify,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> ClassifyStats:
     """Create MGCLB stats from optimal variables."""
     return ClassifyStats(
