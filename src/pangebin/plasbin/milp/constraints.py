@@ -11,14 +11,14 @@ import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 
 def active_fragments_active_one_of_their_orientations(
     m: gp.Model,
-    sub_v_vars: pb_lp_var.SubVertices,
-    sub_f_vars: pb_lp_var.SubFragments,
+    sub_v_vars: cmn_lp_vars.SubVertices,
+    sub_f_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Active fragment equivalent to at least one active extremity constraint."""
@@ -51,7 +51,7 @@ def active_fragments_active_one_of_their_orientations(
 
 def exactly_one_active_source_arc(
     m: gp.Model,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> gp.Constr:
     """Exactly one out source arc constraint."""
@@ -63,7 +63,7 @@ def exactly_one_active_source_arc(
 
 def circularity(
     m: gp.Model,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Circularity constraint."""
@@ -86,8 +86,8 @@ def circularity(
 
 def arc_capacities_limit_arc_flows(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    flow_vars: cmn_lp_vars.Flow,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Arc capacities limit arc flows."""
@@ -123,8 +123,8 @@ def arc_capacities_limit_arc_flows(
 # ------------------------------------------------------------------------------------ #
 def active_arcs_imply_strict_positive_flow(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    flow_vars: cmn_lp_vars.Flow,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
     flow_lower_bound: float,
 ) -> list[gp.Constr]:
@@ -161,8 +161,8 @@ def active_arcs_imply_strict_positive_flow(
 
 def active_source_arc_has_strict_positive_flow(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    flow_vars: cmn_lp_vars.Flow,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
     flow_lower_bound: float,
 ) -> list[gp.Constr]:
@@ -187,8 +187,8 @@ def active_source_arc_has_strict_positive_flow(
 
 def active_link_arc_has_strict_positive_flow(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    flow_vars: cmn_lp_vars.Flow,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
     flow_lower_bound: float,
 ) -> list[gp.Constr]:
@@ -213,8 +213,8 @@ def active_link_arc_has_strict_positive_flow(
 
 def active_sink_arc_has_strict_positive_flow(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    flow_vars: cmn_lp_vars.Flow,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
     flow_lower_bound: float,
 ) -> list[gp.Constr]:
@@ -240,7 +240,7 @@ def active_sink_arc_has_strict_positive_flow(
 # ------------------------------------------------------------------------------------ #
 def fragment_coverages_limit_cumulative_flows(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
+    flow_vars: cmn_lp_vars.Flow,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Fragment coverages limit cumulative flows."""
@@ -260,7 +260,7 @@ def fragment_coverages_limit_cumulative_flows(
 
 def flow_conservation(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
+    flow_vars: cmn_lp_vars.Flow,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Flow conservation."""
@@ -280,7 +280,7 @@ def flow_conservation(
 
 def total_flow_value(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
+    flow_vars: cmn_lp_vars.Flow,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set the total flow equals the source outgoing flow and the sink incoming flow."""
@@ -304,8 +304,8 @@ def total_flow_value(
 
 def active_arcs_implies_active_fragments(
     m: gp.Model,
-    sub_v_vars: pb_lp_var.SubVertices,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    sub_v_vars: cmn_lp_vars.SubVertices,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Active arcs implies active fragments."""
@@ -352,8 +352,8 @@ def active_arcs_implies_active_fragments(
 # REFACTOR Potentially useless constraint
 def active_fragments_imply_at_least_one_active_arc(
     m: gp.Model,
-    sub_v_vars: pb_lp_var.SubVertices,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    sub_v_vars: cmn_lp_vars.SubVertices,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Active fragments imply at least one active arc."""
@@ -372,8 +372,8 @@ def active_fragments_imply_at_least_one_active_arc(
 
 def active_arcs_imply_vertices_in_same_component(
     m: gp.Model,
-    sub_v_vars: pb_lp_var.SubVertices,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    sub_v_vars: cmn_lp_vars.SubVertices,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Active arcs imply vertices in the same connected component."""
@@ -412,7 +412,7 @@ def active_arcs_imply_vertices_in_same_component(
 
 def subtree_depth_min_distance(
     m: gp.Model,
-    ccomp_vars: pb_lp_var.ConnectedComponent,
+    ccomp_vars: cmn_lp_vars.ConnectedComponent,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Subtree depth min distance."""
@@ -461,8 +461,8 @@ def subtree_depth_min_distance(
 
 def arcs_in_tree_are_active(
     m: gp.Model,
-    sub_arc_vars: pb_lp_var.SubArcs,
-    ccomp_vars: pb_lp_var.ConnectedComponent,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
+    ccomp_vars: cmn_lp_vars.ConnectedComponent,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Arcs in tree are active."""
@@ -511,8 +511,8 @@ def arcs_in_tree_are_active(
 
 def alpha_is_the_number_of_vertices_in_the_solution(
     m: gp.Model,
-    sub_v_vars: pb_lp_var.SubVertices,
-    ccomp_vars: pb_lp_var.ConnectedComponent,
+    sub_v_vars: cmn_lp_vars.SubVertices,
+    ccomp_vars: cmn_lp_vars.ConnectedComponent,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Alpha is the number of vertices in the solution connected subgraph."""
@@ -532,9 +532,9 @@ def alpha_is_the_number_of_vertices_in_the_solution(
 
 def active_arcs_have_flow_at_least_total_flow(
     m: gp.Model,
-    sub_arc_vars: pb_lp_var.SubArcs,
-    flow_vars: pb_lp_var.Flow,
-    pos_flow_vars: pb_lp_var.PositiveFlow,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
+    flow_vars: cmn_lp_vars.Flow,
+    pos_flow_vars: cmn_lp_vars.PositiveFlow,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Active links have flow at least total flow."""
@@ -618,7 +618,7 @@ def active_arcs_have_flow_at_least_total_flow(
 
 def total_flow_is_strictly_positive(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
+    flow_vars: cmn_lp_vars.Flow,
     epsilon_total_flow: float,
 ) -> list[gp.Constr]:
     """Total flow is strictly positive."""
@@ -637,7 +637,7 @@ def total_flow_is_strictly_positive(
 
 def minimum_cumulative_length(
     m: gp.Model,
-    frag_vars: pb_lp_var.SubFragments,
+    frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
     minimum_cumulative_length: int,
 ) -> gp.Constr:
@@ -659,7 +659,7 @@ def minimum_cumulative_length(
 # ------------------------------------------------------------------------------------ #
 def exactly_one_interval_is_active(
     m: gp.Model,
-    gc_vars: pb_lp_var.GCIntervals,
+    gc_vars: cmn_lp_vars.GCIntervals,
     intervals: gc_items.Intervals,
 ) -> gp.Constr:
     """Exactly one interval is active."""
@@ -671,9 +671,9 @@ def exactly_one_interval_is_active(
 
 def define_frag_gc(  # noqa: PLR0913
     m: gp.Model,
-    frag_vars: pb_lp_var.SubFragments,
-    gc_vars: pb_lp_var.GCIntervals,
-    frag_gc_vars: pb_lp_var.FragmentGC,
+    frag_vars: cmn_lp_vars.SubFragments,
+    gc_vars: cmn_lp_vars.GCIntervals,
+    frag_gc_vars: cmn_lp_vars.FragmentGC,
     network: net.Network,
     intervals: gc_items.Intervals,
 ) -> list[gp.Constr]:
@@ -717,10 +717,10 @@ def define_frag_gc(  # noqa: PLR0913
 
 def define_inflow_gc(  # noqa: PLR0913
     m: gp.Model,
-    frag_vars: pb_lp_var.SubFragments,
-    gc_vars: pb_lp_var.GCIntervals,
-    flow_vars: pb_lp_var.Flow,
-    inflow_gc_vars: pb_lp_var.InflowGC,
+    frag_vars: cmn_lp_vars.SubFragments,
+    gc_vars: cmn_lp_vars.GCIntervals,
+    flow_vars: cmn_lp_vars.Flow,
+    inflow_gc_vars: cmn_lp_vars.InflowGC,
     network: net.Network,
     intervals: gc_items.Intervals,
 ) -> list[gp.Constr]:
@@ -771,8 +771,8 @@ def define_inflow_gc(  # noqa: PLR0913
 # ------------------------------------------------------------------------------------ #
 def arc_in_seed_tree_is_active(
     m: gp.Model,
-    seed_tree_vars: pb_lp_var.SeedTreeArcs,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    seed_tree_vars: cmn_lp_vars.SeedTreeArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set arc in seed tree is active."""
@@ -808,8 +808,8 @@ def arc_in_seed_tree_is_active(
 
 def size_of_seed_tree_under_the_source(
     m: gp.Model,
-    sub_vertices_vars: pb_lp_var.SubVertices,
-    seed_tree_vars: pb_lp_var.SeedTreeArcs,
+    sub_vertices_vars: cmn_lp_vars.SubVertices,
+    seed_tree_vars: cmn_lp_vars.SeedTreeArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set size of seed tree under the source."""
@@ -831,8 +831,8 @@ def size_of_seed_tree_under_the_source(
 
 def size_of_seed_subtree(
     m: gp.Model,
-    sub_vertices_vars: pb_lp_var.SubVertices,
-    seed_tree_vars: pb_lp_var.SeedTreeArcs,
+    sub_vertices_vars: cmn_lp_vars.SubVertices,
+    seed_tree_vars: cmn_lp_vars.SeedTreeArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set size of seed subtree."""
@@ -861,8 +861,8 @@ def size_of_seed_subtree(
 
 def active_source_arc_implies_subgraph_contains_seed(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
-    seed_tree_vars: pb_lp_var.SeedTreeArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
+    seed_tree_vars: cmn_lp_vars.SeedTreeArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set active source arc implies subgraph contains seeds."""
@@ -879,8 +879,8 @@ def active_source_arc_implies_subgraph_contains_seed(
 # ------------------------------------------------------------------------------------ #
 def no_more_starter_than_active_seeds(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
-    sub_frag_vars: pb_lp_var.SubFragments,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
+    sub_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
 ) -> gp.Constr:
     """Set no more starter than seeds."""
@@ -893,7 +893,7 @@ def no_more_starter_than_active_seeds(
 
 def active_seeds_lower_bound(
     m: gp.Model,
-    sub_frag_vars: pb_lp_var.SubFragments,
+    sub_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
     min_number_of_seeds: int,
 ) -> gp.Constr:
@@ -907,7 +907,7 @@ def active_seeds_lower_bound(
 
 def source_arc_flow_upper_bound(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
+    flow_vars: cmn_lp_vars.Flow,
     network: net.Network,
     max_source_arc_flow: float,
 ) -> list[gp.Constr]:
@@ -925,7 +925,7 @@ def source_arc_flow_upper_bound(
 
 def sink_arc_flow_upper_bound(
     m: gp.Model,
-    flow_vars: pb_lp_var.Flow,
+    flow_vars: cmn_lp_vars.Flow,
     network: net.Network,
     max_sink_arc_flow: float,
 ) -> list[gp.Constr]:
@@ -943,7 +943,7 @@ def sink_arc_flow_upper_bound(
 
 def same_oriented_fragment_connects_s_and_t_eq(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set same oriented fragment connects s and t equality."""
@@ -963,7 +963,7 @@ def same_oriented_fragment_connects_s_and_t_eq(
 
 def same_seed_connects_s_and_t_lb(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set same seed connects s and t lower bound.
@@ -989,7 +989,7 @@ def same_seed_connects_s_and_t_lb(
 
 def same_seed_connects_s_and_t_ub(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set same seed connects s and t upper bound.
@@ -1013,9 +1013,69 @@ def same_seed_connects_s_and_t_ub(
     )
 
 
+def same_orfrag_connects_s_and_t_lb(
+    m: gp.Model,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
+    network: net.Network,
+) -> list[gp.Constr]:
+    """Set same oriented fragment connects s and t lower bound.
+
+    Notes
+    -----
+    (Default) activate the constraint: set RHS to `0`.
+    Deactivate the constraint: set RHS to `-1`.
+    """
+    return list(
+        m.addConstrs(
+            (
+                sub_arcs_vars.s((network.SOURCE_VERTEX, oriented_fragment))
+                - sub_arcs_vars.t((oriented_fragment, network.SINK_VERTEX))
+                >= 0
+                for frag_id in (
+                    fid
+                    for fid in network.source_connected_fragment_ids()
+                    if network.is_sink_connected(fid)
+                )
+                for oriented_fragment in network.to_oriented(frag_id)
+            ),
+            name="same_orfrag_connects_s_and_t_lb",
+        ).values(),
+    )
+
+
+def same_orfrag_connects_s_and_t_ub(
+    m: gp.Model,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
+    network: net.Network,
+) -> list[gp.Constr]:
+    """Set same oriented fragment connects s and t upper bound.
+
+    Notes
+    -----
+    (Default) activate the constraint: set RHS to `0`.
+    Deactivate the constraint: set RHS to `1`.
+    """
+    return list(
+        m.addConstrs(
+            (
+                sub_arcs_vars.s((network.SOURCE_VERTEX, oriented_fragment))
+                - sub_arcs_vars.t((oriented_fragment, network.SINK_VERTEX))
+                <= 0
+                for frag_id in (
+                    fid
+                    for fid in network.source_connected_fragment_ids()
+                    if network.is_sink_connected(fid)
+                )
+                for oriented_fragment in network.to_oriented(frag_id)
+            ),
+            name="same_orfrag_connects_s_and_t_ub",
+        ).values(),
+    )
+
+
 def s_connected_orfrag_incoming_arcs_ub(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> tuple[list[gp.Constr], list[int]]:
     """Set s connected orfrag incoming arcs upper bound.
@@ -1061,7 +1121,7 @@ def s_connected_orfrag_incoming_arcs_ub(
 
 def t_connected_orfrag_outgoing_arcs_ub(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> tuple[list[gp.Constr], list[int]]:
     """Set t connected orfrag outgoing arcs upper bound.
@@ -1105,8 +1165,8 @@ def t_connected_orfrag_outgoing_arcs_ub(
 
 def cycle_before_out(
     m: gp.Model,
-    sub_vertices_vars: pb_lp_var.SubVertices,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_vertices_vars: cmn_lp_vars.SubVertices,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set cycle before out to the target.
@@ -1135,8 +1195,8 @@ def cycle_before_out(
 
 def cycle_before_in(
     m: gp.Model,
-    sub_vertices_vars: pb_lp_var.SubVertices,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_vertices_vars: cmn_lp_vars.SubVertices,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set cycle before in from the source.
@@ -1165,7 +1225,7 @@ def cycle_before_in(
 
 def source_arcs_upper_bound(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
     max_number_of_source_arcs: int,
 ) -> gp.Constr:
@@ -1179,7 +1239,7 @@ def source_arcs_upper_bound(
 
 def sink_arcs_upper_bound(
     m: gp.Model,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
     max_number_of_sink_arcs: int,
 ) -> gp.Constr:

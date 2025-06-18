@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.segment as gfa_segment
 import pangebin.plasbin.bins.items as bins_items
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ _BINARY_MIN_ACTIVATION = 0.5
 
 def active_fragments(
     network: net.Network,
-    frag_vars: pb_lp_var.SubFragments,
+    frag_vars: cmn_lp_vars.SubFragments,
 ) -> Iterator[str]:
     """Get active fragments."""
     return (
@@ -42,7 +42,7 @@ def active_fragments(
 
 def active_gc_content_interval(
     intervals: gc_items.Intervals,
-    gc_vars: pb_lp_var.GCIntervals,
+    gc_vars: cmn_lp_vars.GCIntervals,
 ) -> tuple[float, float]:
     """Get active GC content interval."""
     for interval in intervals:
@@ -61,9 +61,8 @@ class Pangebin:
     def from_optimal_vars_without_gc_intervals(
         cls,
         network: net.Network,
-        intervals: gc_items.Intervals,
-        flow_vars: pb_lp_var.Flow,
-        frag_vars: pb_lp_var.SubFragments,
+        flow_vars: cmn_lp_vars.Flow,
+        frag_vars: cmn_lp_vars.SubFragments,
     ) -> Pangebin:
         """Get result from variable values."""
         return cls(
@@ -79,7 +78,7 @@ class Pangebin:
                 gfa_segment.length(network.gfa_graph().segment(frag_id))
                 for frag_id in active_fragments(network, frag_vars)
             ),
-            next(iter(intervals)),  # XXX tmp fix
+            (0, 1),  # XXX tmp fix
         )
 
     @classmethod
@@ -87,9 +86,9 @@ class Pangebin:
         cls,
         network: net.Network,
         intervals: gc_items.Intervals,
-        flow_vars: pb_lp_var.Flow,
-        frag_vars: pb_lp_var.SubFragments,
-        gc_vars: pb_lp_var.GCIntervals,
+        flow_vars: cmn_lp_vars.Flow,
+        frag_vars: cmn_lp_vars.SubFragments,
+        gc_vars: cmn_lp_vars.GCIntervals,
     ) -> Pangebin:
         """Get result from variable values."""
         return cls(
@@ -165,7 +164,6 @@ def update_network(
 
 def fragment_norm_coverages(
     milp_result_values: Pangebin,
-    circular: bool,  # noqa: FBT001
 ) -> tuple[Iterable[bins_items.SequenceNormCoverage], float]:
     """Get fragment normalized coverages."""
     norm_cst = min(inflow for _, inflow in milp_result_values.fragments_incoming_flow())

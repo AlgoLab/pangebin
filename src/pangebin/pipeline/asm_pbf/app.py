@@ -32,13 +32,13 @@ import pangebin.plasbin.classbin.create as classbin_create
 import pangebin.plasbin.classbin.milp.views as classbin_lp_views
 import pangebin.plasbin.classbin.multi_flow.milp.file_system as mfb_lp_fs
 import pangebin.plasbin.classbin.multi_flow.milp.views as mfb_lp_views
-import pangebin.plasbin.config as pb_cfg
+import pangebin.plasbin.config as cmn_cfg
 import pangebin.plasbin.decomp.config as decomp_cfg
 import pangebin.plasbin.decomp.create as decomp_create
 import pangebin.plasbin.decomp.milp.input_output as decomp_lp_io
 import pangebin.plasbin.decomp.milp.views as decomp_lp_views
 import pangebin.plasbin.input_output as pb_io
-import pangebin.plasbin.milp.config as pb_lp_cfg
+import pangebin.plasbin.milp.config as cmn_lp_cfg
 import pangebin.plasbin.once.create as once_create
 import pangebin.plasbin.once.milp.input_output as once_lp_io
 import pangebin.plasbin.once.milp.views as once_lp_views
@@ -463,11 +463,11 @@ def _prepare_gc_scores_tsv(
     return intervals, gc_scores
 
 
-def _init_binning_cfg(binning_cfg_yaml: Path | None) -> pb_cfg.Binning:
+def _init_binning_cfg(binning_cfg_yaml: Path | None) -> cmn_cfg.Binning:
     binning_config = (
-        pb_cfg.Binning.from_yaml(binning_cfg_yaml)
+        cmn_cfg.Binning.from_yaml(binning_cfg_yaml)
         if binning_cfg_yaml is not None
-        else pb_cfg.Binning.default()
+        else cmn_cfg.Binning.default()
     )
     _LOGGER.debug("Binning config:\n%s", binning_config.to_dict())
     return binning_config
@@ -493,11 +493,11 @@ def _init_binlab_cfg(binlab_cfg_yaml: Path | None) -> binlab_cfg.Binlab:
     return binlab_config
 
 
-def _init_gurobi_cfg(gurobi_cfg_yaml: Path | None) -> pb_lp_cfg.Gurobi:
+def _init_gurobi_cfg(gurobi_cfg_yaml: Path | None) -> cmn_lp_cfg.Gurobi:
     gurobi_config = (
-        pb_lp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
+        cmn_lp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
         if gurobi_cfg_yaml is not None
-        else pb_lp_cfg.Gurobi.default()
+        else cmn_lp_cfg.Gurobi.default()
     )
     _LOGGER.debug("Gurobi config:\n%s", gurobi_config.to_dict())
     return gurobi_config
@@ -610,8 +610,8 @@ ARG_CONFIGS_OUTDIR = typer.Argument(help="Output directory")
 
 
 def _write_binning_config(output_dir: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
-    binning_config = pb_cfg.Binning.default()
-    binning_cfg_yaml = output_dir / pb_cfg.Binning.DEFAULT_YAML_FILE
+    binning_config = cmn_cfg.Binning.default()
+    binning_cfg_yaml = output_dir / cmn_cfg.Binning.DEFAULT_YAML_FILE
     binning_config.to_yaml(binning_cfg_yaml)
     _LOGGER.info("Write general binning config: %s", binning_cfg_yaml)
 
@@ -631,8 +631,8 @@ def _write_binlab_config(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) 
 
 
 def _write_gurobi_config(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) -> None:
-    gurobi_config = pb_lp_cfg.Gurobi.default()
-    gurobi_cfg_yaml = output_directory / pb_lp_cfg.Gurobi.DEFAULT_YAML_FILE
+    gurobi_config = cmn_lp_cfg.Gurobi.default()
+    gurobi_cfg_yaml = output_directory / cmn_lp_cfg.Gurobi.DEFAULT_YAML_FILE
     gurobi_config.to_yaml(gurobi_cfg_yaml)
     _LOGGER.info("Write gurobi config: %s", gurobi_cfg_yaml)
 

@@ -179,10 +179,7 @@ def plasbin(
             if result is not None:
                 milp_stats, milp_result_values, log_files = result
                 fragment_norm_coverages, norm_coverage = (
-                    pb_lp_res.fragment_norm_coverages(
-                        milp_result_values,
-                        plasbin_config.circular(),
-                    )
+                    cmn_lp_res.fragment_norm_coverages(milp_result_values)
                 )
                 yield (
                     bins_items.Stats(

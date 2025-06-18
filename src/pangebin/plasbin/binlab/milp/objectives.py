@@ -4,22 +4,22 @@ import gurobipy
 
 import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.binlab.milp.variables as lp_vars
-import pangebin.plasbin.milp.objectives as pb_lp_obj
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 
 def binning_score(
     network: net.Network,
-    flow_vars: pb_lp_var.Flow,
-    frag_vars: pb_lp_var.SubFragments,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    flow_vars: cmn_lp_vars.Flow,
+    frag_vars: cmn_lp_vars.SubFragments,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gurobipy.LinExpr:
     """Get linear expression for binning score."""
-    frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
+    frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     max_frag_length = net.max_frag_length(network, frag_set_fn)
     return gurobipy.quicksum(
-        pb_lp_obj.zeta_i(network, frag_id, max_frag_length)
+        cmn_lp_objs.zeta_i(network, frag_id, max_frag_length)
         * (
             flow_vars.incoming_forward_reverse(network, frag_id)
             - (
@@ -37,7 +37,7 @@ def set_mbs_objective(
     m: gurobipy.Model,
     var: lp_vars.MaxBinScore,
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> None:
     """Set MBS objective."""
     m.setObjective(
@@ -49,11 +49,11 @@ def set_mbs_objective(
 def gc_score(
     network: net.Network,
     intervals: gc_items.Intervals,
-    frag_gc_vars: pb_lp_var.FragmentGC,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    frag_gc_vars: cmn_lp_vars.FragmentGC,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gurobipy.LinExpr:
     """Get linear expression for GC score."""
-    frag_set_fn = pb_lp_obj.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
+    frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gurobipy.quicksum(
         network.gc_score(frag_id)[b] * frag_gc_vars.x(frag_id, interval)
         for b, interval in enumerate(intervals)
@@ -66,7 +66,7 @@ def set_mls_objective(
     var: lp_vars.MaxLabScore,
     network: net.Network,
     intervals: gc_items.Intervals,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> None:
     """Set MLS objective."""
     m.setObjective(
@@ -78,7 +78,7 @@ def set_mls_objective(
 def set_mrbs_objective(
     m: gurobipy.Model,
     var: lp_vars.MaxRefBinScore,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     network: net.Network,
 ) -> None:
     """Set MRBS objective."""

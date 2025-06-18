@@ -10,7 +10,7 @@ import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.binlab.milp.constraints as lp_cst
 import pangebin.plasbin.binlab.milp.objectives as lp_obj
 import pangebin.plasbin.binlab.milp.variables as lp_var
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 
 
@@ -27,7 +27,7 @@ def mbs(
     min_flow: float,
     min_cumulative_len: int,
     circular: bool,  # noqa: FBT001
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[gp.Model, lp_var.MaxBinScore]:
     """Create MBS model."""
     m = gp.Model("Maximum Binning Score")
@@ -47,7 +47,7 @@ def mbs(
 def mls_from_mbs(  # noqa: PLR0913
     mbs_model: gp.Model,
     mbs_var: lp_var.MaxBinScore,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     network: net.Network,
     intervals: gc_items.Intervals,
     gamma_mbs: float,
@@ -75,7 +75,7 @@ def mrbs_from_mls(
     mls_var: lp_var.MaxLabScore,
     network: net.Network,
     intervals: gc_items.Intervals,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[gp.Model, lp_var.MaxRefBinScore]:
     """Create MRBS model from MLS model."""
     previous_labelling_score = mls_model.ObjVal

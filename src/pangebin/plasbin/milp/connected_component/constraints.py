@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import gurobipy as gp
 
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 
 from . import variables as ccomp_var
@@ -15,7 +15,7 @@ from . import variables as ccomp_var
 
 def arcs_in_tree_are_active(
     m: gp.Model,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     dtree_vars: ccomp_var.TreeArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
@@ -65,7 +65,7 @@ def arcs_in_tree_are_active(
 
 def subtree_size_from_source(
     m: gp.Model,
-    sub_vertices_vars: pb_lp_var.SubVertices,
+    sub_vertices_vars: cmn_lp_vars.SubVertices,
     dtree_vars: ccomp_var.TreeArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
@@ -96,7 +96,7 @@ def subtree_size_from_source(
 
 def subtree_size_but_the_source(
     m: gp.Model,
-    sub_vertices_vars: pb_lp_var.SubVertices,
+    sub_vertices_vars: cmn_lp_vars.SubVertices,
     dtree_vars: ccomp_var.TreeArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
@@ -136,7 +136,7 @@ def subtree_size_but_the_source(
 # ------------------------------------------------------------------------------------ #
 def rev_link_arcs_in_tree_are_active(
     m: gp.Model,
-    sub_arc_vars: pb_lp_var.SubArcs,
+    sub_arc_vars: cmn_lp_vars.SubArcs,
     tree_vars: ccomp_var.TreeEdges,
     network: net.Network,
 ) -> list[gp.Constr]:
@@ -158,7 +158,7 @@ def rev_link_arcs_in_tree_are_active(
 
 def subtree_size_fragment_rev_version(
     m: gp.Model,
-    sub_vertices_vars: pb_lp_var.SubVertices,
+    sub_vertices_vars: cmn_lp_vars.SubVertices,
     tree_vars: ccomp_var.TreeEdges,
     network: net.Network,
 ) -> list[gp.Constr]:
@@ -247,7 +247,7 @@ def at_most_one_source_arc_in_tree(
 def root_priority(
     m: gp.Model,
     root_vars: ccomp_var.Root,
-    sub_arcs_vars: pb_lp_var.SubArcs,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
     network: net.Network,
 ) -> list[gp.Constr]:
     """Set root priority."""

@@ -7,7 +7,7 @@ from typing import Any
 
 import typer
 
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 from pangebin.yaml_interface import YAMLInterface
 
@@ -19,7 +19,7 @@ class Binning(YAMLInterface):
     DEFAULT_MIN_FLOW = 0.0001
     DEFAULT_MIN_CUMULATIVE_LENGTH = 1000
     DEFAULT_CIRCULAR = False
-    DEFAULT_OBJ_FUN_DOMAIN = pb_lp_obj.ObjectiveFunctionDomain.ALL
+    DEFAULT_OBJ_FUN_DOMAIN = cmn_lp_objs.ObjectiveFunctionDomain.ALL
 
     KEY_SINK_ARC_DEFINITION = "sink_arc_definition"
     KEY_MIN_FLOW = "min_flow"
@@ -58,7 +58,7 @@ class Binning(YAMLInterface):
                 cls.DEFAULT_MIN_CUMULATIVE_LENGTH,
             ),
             config_dict.get(cls.KEY_CIRCULAR, cls.DEFAULT_CIRCULAR),
-            pb_lp_obj.ObjectiveFunctionDomain(
+            cmn_lp_objs.ObjectiveFunctionDomain(
                 config_dict.get(cls.KEY_OBJ_FUN_DOMAIN, cls.DEFAULT_OBJ_FUN_DOMAIN),
             ),
         )
@@ -69,7 +69,7 @@ class Binning(YAMLInterface):
         min_flow: float,
         min_cumulative_len: int,
         circular: bool,  # noqa: FBT001
-        obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+        obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     ) -> None:
         """Initialize object."""
         self.__sink_arcs_domain = sink_arcs_domain
@@ -94,7 +94,7 @@ class Binning(YAMLInterface):
         """Get circular."""
         return self.__circular
 
-    def obj_fun_domain(self) -> pb_lp_obj.ObjectiveFunctionDomain:
+    def obj_fun_domain(self) -> cmn_lp_objs.ObjectiveFunctionDomain:
         """Get objective function domain."""
         return self.__obj_fun_domain
 
