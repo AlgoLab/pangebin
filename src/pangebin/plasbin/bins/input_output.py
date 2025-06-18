@@ -7,9 +7,11 @@ from contextlib import contextmanager
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from . import items
+
 if TYPE_CHECKING:
     import _csv
-    from collections.abc import Generator, Iterator
+    from collections.abc import Generator, Iterable, Iterator
     from pathlib import Path
 
 
@@ -43,9 +45,19 @@ class Writer:
         """Write header."""
         self.__csv_writer.writerow([Header.SEQUENCE_ID, Header.NORMALIZED_COVERAGE])
 
-    def write_sequence_normcov(self, sequence_id: str, normcov: float) -> None:
+    def write_sequence_normcov(self, seq_normcov: items.SequenceNormCoverage) -> None:
         """Write sequence probability scores."""
-        self.__csv_writer.writerow([sequence_id, normcov])
+        self.__csv_writer.writerow(
+            [seq_normcov.identifier(), seq_normcov.normalized_coverage()],
+        )
+
+    def write_bunch_sequences_normcov(
+        self,
+        bunch_sequences_normcov: Iterable[items.SequenceNormCoverage],
+    ) -> None:
+        """Write bunch sequences normalized coverage."""
+        for seq_normcov in bunch_sequences_normcov:
+            self.write_sequence_normcov(seq_normcov)
 
 
 class Reader:
@@ -64,6 +76,9 @@ class Reader:
         """Initialize object."""
         self.__csv_reader = csv_reader
 
-    def __iter__(self) -> Iterator[tuple[str, float]]:
+    def __iter__(self) -> Iterator[items.SequenceNormCoverage]:
         """Iterate sequence probability scores."""
-        return ((row[0], float(row[1])) for row in self.__csv_reader)
+        return (
+            items.SequenceNormCoverage(row[0], float(row[1]))
+            for row in self.__csv_reader
+        )

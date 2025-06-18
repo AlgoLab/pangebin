@@ -18,13 +18,13 @@ import pangebin.gfa.input_output as gfa_io
 import pangebin.pblog as common_log
 import pangebin.plasbin.bins.input_output as bins_io
 import pangebin.plasbin.bins.items as bins_items
-import pangebin.plasbin.config as pb_cfg
+import pangebin.plasbin.config as cmn_cfg
 import pangebin.plasbin.decomp.config as decomp_cfg
 import pangebin.plasbin.decomp.milp.input_output as lp_io
 import pangebin.plasbin.decomp.milp.views as lp_views
 import pangebin.plasbin.input_output as pb_io
-import pangebin.plasbin.milp.config as pb_lp_cfg
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.config as cmn_lp_cfg
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
@@ -68,27 +68,27 @@ def plasbin_assembly(
     # Binning options
     sink_arcs_domain: Annotated[
         net.SinkArcsDomain,
-        pb_cfg.BinningOptions.SINK_ARCS_DOMAIN,
-    ] = pb_cfg.Binning.DEFAULT_SINK_ARCS_DOMAIN,
+        cmn_cfg.BinningOptions.SINK_ARCS_DOMAIN,
+    ] = cmn_cfg.Binning.DEFAULT_SINK_ARCS_DOMAIN,
     min_flow: Annotated[
         float,
-        pb_cfg.BinningOptions.MIN_FLOW,
-    ] = pb_cfg.Binning.DEFAULT_MIN_FLOW,
+        cmn_cfg.BinningOptions.MIN_FLOW,
+    ] = cmn_cfg.Binning.DEFAULT_MIN_FLOW,
     min_cumulative_len: Annotated[
         int,
-        pb_cfg.BinningOptions.MIN_CUMULATIVE_LENGTH,
-    ] = pb_cfg.Binning.DEFAULT_MIN_CUMULATIVE_LENGTH,
+        cmn_cfg.BinningOptions.MIN_CUMULATIVE_LENGTH,
+    ] = cmn_cfg.Binning.DEFAULT_MIN_CUMULATIVE_LENGTH,
     circular: Annotated[
         bool,
-        pb_cfg.BinningOptions.CIRCULAR,
-    ] = pb_cfg.Binning.DEFAULT_CIRCULAR,
+        cmn_cfg.BinningOptions.CIRCULAR,
+    ] = cmn_cfg.Binning.DEFAULT_CIRCULAR,
     obj_fun_domain: Annotated[
-        pb_lp_obj.ObjectiveFunctionDomain,
-        pb_cfg.BinningOptions.OBJ_FUN_DOMAIN,
-    ] = pb_cfg.Binning.DEFAULT_OBJ_FUN_DOMAIN,
+        cmn_lp_objs.ObjectiveFunctionDomain,
+        cmn_cfg.BinningOptions.OBJ_FUN_DOMAIN,
+    ] = cmn_cfg.Binning.DEFAULT_OBJ_FUN_DOMAIN,
     binning_cfg_yaml: Annotated[
         Path | None,
-        pb_cfg.BinningOptions.CONFIG_FILE,
+        cmn_cfg.BinningOptions.CONFIG_FILE,
     ] = None,
     # Decomp options
     gamma_mcf: Annotated[
@@ -106,17 +106,20 @@ def plasbin_assembly(
     # Gurobi options
     mip_gap: Annotated[
         float | None,
-        pb_lp_cfg.GurobiOptions.MIP_GAP,
-    ] = pb_lp_cfg.Gurobi.DEFAULT_MIP_GAP,
+        cmn_lp_cfg.GurobiOptions.MIP_GAP,
+    ] = cmn_lp_cfg.Gurobi.DEFAULT_MIP_GAP,
     time_limit: Annotated[
         float | None,
-        pb_lp_cfg.GurobiOptions.TIME_LIMIT,
-    ] = pb_lp_cfg.Gurobi.DEFAULT_TIME_LIMIT,
+        cmn_lp_cfg.GurobiOptions.TIME_LIMIT,
+    ] = cmn_lp_cfg.Gurobi.DEFAULT_TIME_LIMIT,
     threads: Annotated[
         int | None,
-        pb_lp_cfg.GurobiOptions.THREADS,
-    ] = pb_lp_cfg.Gurobi.DEFAULT_THREADS,
-    gurobi_cfg_yaml: Annotated[Path | None, pb_lp_cfg.GurobiOptions.CONFIG_FILE] = None,
+        cmn_lp_cfg.GurobiOptions.THREADS,
+    ] = cmn_lp_cfg.Gurobi.DEFAULT_THREADS,
+    gurobi_cfg_yaml: Annotated[
+        Path | None,
+        cmn_lp_cfg.GurobiOptions.CONFIG_FILE,
+    ] = None,
     # IO options
     outdir: Annotated[
         Path,
@@ -197,27 +200,27 @@ def plasbin_panassembly(
     # Binning options
     sink_arcs_domain: Annotated[
         net.SinkArcsDomain,
-        pb_cfg.BinningOptions.SINK_ARCS_DOMAIN,
-    ] = pb_cfg.Binning.DEFAULT_SINK_ARCS_DOMAIN,
+        cmn_cfg.BinningOptions.SINK_ARCS_DOMAIN,
+    ] = cmn_cfg.Binning.DEFAULT_SINK_ARCS_DOMAIN,
     min_flow: Annotated[
         float,
-        pb_cfg.BinningOptions.MIN_FLOW,
-    ] = pb_cfg.Binning.DEFAULT_MIN_FLOW,
+        cmn_cfg.BinningOptions.MIN_FLOW,
+    ] = cmn_cfg.Binning.DEFAULT_MIN_FLOW,
     min_cumulative_len: Annotated[
         int,
-        pb_cfg.BinningOptions.MIN_CUMULATIVE_LENGTH,
-    ] = pb_cfg.Binning.DEFAULT_MIN_CUMULATIVE_LENGTH,
+        cmn_cfg.BinningOptions.MIN_CUMULATIVE_LENGTH,
+    ] = cmn_cfg.Binning.DEFAULT_MIN_CUMULATIVE_LENGTH,
     circular: Annotated[
         bool,
-        pb_cfg.BinningOptions.CIRCULAR,
-    ] = pb_cfg.Binning.DEFAULT_CIRCULAR,
+        cmn_cfg.BinningOptions.CIRCULAR,
+    ] = cmn_cfg.Binning.DEFAULT_CIRCULAR,
     obj_fun_domain: Annotated[
-        pb_lp_obj.ObjectiveFunctionDomain,
-        pb_cfg.BinningOptions.OBJ_FUN_DOMAIN,
-    ] = pb_cfg.Binning.DEFAULT_OBJ_FUN_DOMAIN,
+        cmn_lp_objs.ObjectiveFunctionDomain,
+        cmn_cfg.BinningOptions.OBJ_FUN_DOMAIN,
+    ] = cmn_cfg.Binning.DEFAULT_OBJ_FUN_DOMAIN,
     binning_cfg_yaml: Annotated[
         Path | None,
-        pb_cfg.BinningOptions.CONFIG_FILE,
+        cmn_cfg.BinningOptions.CONFIG_FILE,
     ] = None,
     # Decomp options
     gamma_mcf: Annotated[
@@ -235,17 +238,20 @@ def plasbin_panassembly(
     # Gurobi options
     mip_gap: Annotated[
         float | None,
-        pb_lp_cfg.GurobiOptions.MIP_GAP,
-    ] = pb_lp_cfg.Gurobi.DEFAULT_MIP_GAP,
+        cmn_lp_cfg.GurobiOptions.MIP_GAP,
+    ] = cmn_lp_cfg.Gurobi.DEFAULT_MIP_GAP,
     time_limit: Annotated[
         float | None,
-        pb_lp_cfg.GurobiOptions.TIME_LIMIT,
-    ] = pb_lp_cfg.Gurobi.DEFAULT_TIME_LIMIT,
+        cmn_lp_cfg.GurobiOptions.TIME_LIMIT,
+    ] = cmn_lp_cfg.Gurobi.DEFAULT_TIME_LIMIT,
     threads: Annotated[
         int | None,
-        pb_lp_cfg.GurobiOptions.THREADS,
-    ] = pb_lp_cfg.Gurobi.DEFAULT_THREADS,
-    gurobi_cfg_yaml: Annotated[Path | None, pb_lp_cfg.GurobiOptions.CONFIG_FILE] = None,
+        cmn_lp_cfg.GurobiOptions.THREADS,
+    ] = cmn_lp_cfg.Gurobi.DEFAULT_THREADS,
+    gurobi_cfg_yaml: Annotated[
+        Path | None,
+        cmn_lp_cfg.GurobiOptions.CONFIG_FILE,
+    ] = None,
     # IO options
     outdir: Annotated[
         Path,
@@ -307,13 +313,13 @@ def _init_binning_cfg(
     min_flow: float,
     min_cumulative_len: int,
     circular: bool,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     binning_cfg_yaml: Path | None,
-) -> pb_cfg.Binning:
+) -> cmn_cfg.Binning:
     binning_config = (
-        pb_cfg.Binning.from_yaml(binning_cfg_yaml)
+        cmn_cfg.Binning.from_yaml(binning_cfg_yaml)
         if binning_cfg_yaml is not None
-        else pb_cfg.Binning(
+        else cmn_cfg.Binning(
             sink_arcs_domain,
             min_flow,
             min_cumulative_len,
@@ -344,11 +350,11 @@ def _init_gurobi_cfg(
     time_limit: float | None,
     threads: int | None,
     gurobi_cfg_yaml: Path | None,
-) -> pb_lp_cfg.Gurobi:
+) -> cmn_lp_cfg.Gurobi:
     gurobi_config = (
-        pb_lp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
+        cmn_lp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
         if gurobi_cfg_yaml is not None
-        else pb_lp_cfg.Gurobi(mip_gap=mip_gap, time_limit=time_limit, threads=threads)
+        else cmn_lp_cfg.Gurobi(mip_gap=mip_gap, time_limit=time_limit, threads=threads)
     )
     _LOGGER.debug("Gurobi config:\n%s", gurobi_config.to_dict())
     return gurobi_config
@@ -385,11 +391,7 @@ def _write_outputs(
     io_manager.bin_directory(k).mkdir(parents=True, exist_ok=True)
     bin_stats.to_yaml(io_manager.bin_stats_path(k))
     with bins_io.Writer.open(io_manager.bin_seq_normcov_path(k)) as fout:
-        for seq_normcov in seq_normcovs:
-            fout.write_sequence_normcov(
-                seq_normcov.identifier(),
-                seq_normcov.normalized_coverage(),
-            )
+        fout.write_bunch_sequences_normcov(seq_normcovs)
     all_milp_stats.to_yaml(io_manager.milp_stats_path(k))
     io_manager.move_gurobi_logs(
         log_files,
