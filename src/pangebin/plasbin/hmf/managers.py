@@ -93,6 +93,7 @@ class BinClass:
     def new_bin(self) -> int:
         """Add new bin."""
         new_mf_idx = self.__stats.number_of_active_bins()
+        self.__stats.add_bin()
         self.__model.activate_flow(new_mf_idx)
         return new_mf_idx
 
