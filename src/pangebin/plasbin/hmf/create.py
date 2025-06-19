@@ -51,8 +51,13 @@ def plasbin_assembly(  # noqa: PLR0913
     results.RootReader
         Reader for the results
     """
+    cmn_lp_cfg.configurate_global_gurobi(gurobi_config)
+
     best_instances = results.Root.new()
-    hmf_fs_manager = fs.Root(output_directory)
+
+    hmf_root_file_system = fs.Root(output_directory)
+    hmf_root_file_system.dir().mkdir(parents=True)
+
     for ccomp_idx, (subgraph, seeds, gc_scores, plasmidness) in enumerate(
         components(
             assembly_graph,
@@ -72,14 +77,13 @@ def plasbin_assembly(  # noqa: PLR0913
             ),
             config.bin_properties(),
             config.model(),
-            gurobi_config,
-            hmf_fs_manager.ccomp_file_system(ccomp_idx),
+            hmf_root_file_system.ccomp_file_system(ccomp_idx),
         )
         best_instances.add_connected_component(best_ccomp)
 
-    best_instances.to_yaml(hmf_fs_manager.best_instances_yaml())
+    best_instances.to_yaml(hmf_root_file_system.best_instances_yaml())
 
-    return results.RootReader(best_instances, hmf_fs_manager)
+    return results.RootReader(best_instances, hmf_root_file_system)
 
 
 def components(
@@ -143,7 +147,6 @@ def bin_ccomp(
     network: net.Network,
     bin_properties: cfg.BinProperties,
     model_config: lp_cfg.Config,
-    gurobi_config: cmn_lp_cfg.Gurobi,
     ccomp_fs_manager: fs.ConnectedComponent,
 ) -> results.ConnectedComponent:
     """Bin DNA sequences of a GFA graph.
@@ -152,8 +155,7 @@ def bin_ccomp(
     -------
     The network and the associated GFA will mute.
     """
-    gp.setParam(gp.GRB.Param.LogToConsole, 0)
-    cmn_lp_cfg.configurate_global_gurobi(gurobi_config)
+    ccomp_fs_manager.dir().mkdir()
 
     # Test circular bins
     # * With seeds
@@ -278,15 +280,17 @@ def search_best_bin_class_instance(
 def _solve_instance(
     network: net.Network,
     bin_class_manager: managers.BinClass,
-    bin_class_fs_manager: fs.BinClass,
+    bin_class_file_system: fs.BinClass,
 ) -> results.FeasibleInstance | None:
-    _solve_mfb_model(bin_class_manager.model().gurobi_model(), bin_class_fs_manager)
+    bin_class_file_system.dir().mkdir()
+    _solve_mfb_model(bin_class_manager.model().gurobi_model(), bin_class_file_system)
 
     if bin_class_manager.model().gurobi_model().Status != gp.GRB.OPTIMAL:
         return None
 
     for k in range(bin_class_manager.stats().number_of_active_bins()):
-        bin_fs_manager = bin_class_fs_manager.bin_file_system(k)
+        bin_file_system = bin_class_file_system.bin_file_system(k)
+        bin_file_system.dir().mkdir()
 
         milp_result = cmn_lp_res.Pangebin.from_optimal_vars_without_gc_intervals(
             network,
@@ -311,7 +315,7 @@ def _solve_instance(
             norm_coverage,
         )
 
-        results.BinWriter(bin_fs_manager).write(
+        results.BinWriter(bin_file_system).write(
             bin_stats,
             milp_stats,
             fragment_norm_coverages,
@@ -322,11 +326,10 @@ def _solve_instance(
 
 def _solve_mfb_model(
     model: gp.Model,
-    io_manager: fs.BinClass,
+    bin_class_fs: fs.BinClass,
 ) -> Path:
     """Run model."""
-    io_manager.dir().mkdir(parents=True)
-    log_file = io_manager.gurobi_log()
+    log_file = bin_class_fs.gurobi_log()
     model.Params.LogFile = str(log_file)
     model.optimize()
     return log_file
