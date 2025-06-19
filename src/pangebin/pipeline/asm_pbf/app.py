@@ -21,7 +21,6 @@ import pangebin.gfa.ops as gfa_ops
 import pangebin.pbf_comp.app as pbf_comp_app
 import pangebin.pbf_comp.input_output as pbf_comp_io
 import pangebin.pbf_comp.ops as pbf_comp_ops
-import pangebin.pblog as common_log
 import pangebin.plasbin.binlab.config as binlab_cfg
 import pangebin.plasbin.binlab.create as binlab_create
 import pangebin.plasbin.binlab.milp.input_output as binlab_lp_io
@@ -42,6 +41,9 @@ import pangebin.plasbin.milp.config as cmn_lp_cfg
 import pangebin.plasbin.once.create as once_create
 import pangebin.plasbin.once.milp.input_output as once_lp_io
 import pangebin.plasbin.once.milp.views as once_lp_views
+from pangebin import pblog
+
+from . import hmf as asm_pbf_hmf
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,9 +53,23 @@ APP = typer.Typer(
     rich_markup_mode="rich",
 )
 
+APP.add_typer(asm_pbf_hmf.APP)
+
+
+CONFIG_APP = typer.Typer(
+    name="config",
+    help="PangeBin asm-pbf configuration",
+    rich_markup_mode="rich",
+)
+CONFIG_APP.command(name="hmf")(asm_pbf_hmf.write_default_configs)
+
+APP.add_typer(CONFIG_APP)
+
 
 class Arguments:
     """Pangebin asm-pbf arguments."""
+
+    # REFACTOR use common
 
     ASSEMBLY_GFA = typer.Argument(
         help="Assembly GFA file",
@@ -70,6 +86,8 @@ class Arguments:
 
 class Options:
     """Pangebin asm-pbf options."""
+
+    # REFACTOR use common
 
     _RICH_HELP_PANEL = "Configurations"
 
@@ -112,6 +130,8 @@ class Options:
 class IOOptions:
     """Input-output options."""
 
+    # REFACTOR use common
+
     _RICH_HELP_PANEL = "Input/Output options"
 
     OUTPUT_DIR = typer.Option(
@@ -141,7 +161,7 @@ def decomp(
     gurobi_cfg_yaml: Annotated[Path | None, Options.GUROBI_CFG_YAML] = None,
     # IO options
     outdir: Annotated[Path, IOOptions.OUTPUT_DIR] = pb_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Run Pangebin decomp approach.
 
@@ -150,7 +170,7 @@ def decomp(
     Path
         Path to the PlasBin-flow bin file.
     """
-    common_log.init_logger(_LOGGER, "Running pangebin decomp approach.", debug)
+    pblog.init_logger(_LOGGER, "Running pangebin decomp approach.", debug)
     outdir.mkdir(parents=True, exist_ok=True)
 
     std_gfa = _prepare_graph(assembly_gfa, is_skesa, debug)
@@ -212,7 +232,7 @@ def binlab(
         Path,
         IOOptions.OUTPUT_DIR,
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Run Pangebin binlab approach.
 
@@ -221,7 +241,7 @@ def binlab(
     Path
         Path to the PlasBin-flow bin file.
     """
-    common_log.init_logger(_LOGGER, "Running pangebin binlab approach.", debug)
+    pblog.init_logger(_LOGGER, "Running pangebin binlab approach.", debug)
     outdir.mkdir(parents=True, exist_ok=True)
 
     std_gfa = _prepare_graph(assembly_gfa, is_skesa, debug)
@@ -287,7 +307,7 @@ def once(
         Path,
         IOOptions.OUTPUT_DIR,
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Run Pangebin once approach.
 
@@ -296,7 +316,7 @@ def once(
     Path
         Path to the PlasBin-flow bin file.
     """
-    common_log.init_logger(_LOGGER, "Running pangebin once approach.", debug)
+    pblog.init_logger(_LOGGER, "Running pangebin once approach.", debug)
     outdir.mkdir(parents=True, exist_ok=True)
 
     std_gfa = _prepare_graph(assembly_gfa, is_skesa, debug)
@@ -361,7 +381,7 @@ def classbin(
         Path,
         IOOptions.OUTPUT_DIR,
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Run Pangebin classbin approach.
 
@@ -371,7 +391,7 @@ def classbin(
         Path to the PlasBin-flow bin file.
     """
     # TODO WORK IN PROGRESS
-    common_log.init_logger(_LOGGER, "Running pangebin classbin approach.", debug)
+    pblog.init_logger(_LOGGER, "Running pangebin classbin approach.", debug)
     outdir.mkdir(parents=True, exist_ok=True)
 
     std_gfa = _prepare_graph(assembly_gfa, is_skesa, debug)
@@ -433,6 +453,7 @@ def _init_io_manager(outdir: Path) -> pb_io.Manager:
 
 
 def _prepare_graph(gfa_path: Path, is_skesa: bool, debug: bool) -> gfapy.Gfa:
+    # REFACTOR use common
     if is_skesa:
         gfa_app.fix_skesa(gfa_path, gfa_path, debug=debug)
     gfa = gfa_io.from_file(gfa_path)
@@ -446,6 +467,7 @@ def _prepare_gc_scores_tsv(
     assembly_gfa: Path,
     gc_scores_tsv: Path | None,
 ) -> tuple[gc_items.Intervals, list[gc_items.SequenceGCScores]]:
+    # REFACTOR use common
     if gc_scores_tsv is None:
         with gc_io.IntervalStepsReader.open(
             gc_app.DEFAULT_GC_CONTENT_INTERVAL_FILE,
@@ -494,19 +516,19 @@ def _init_binlab_cfg(binlab_cfg_yaml: Path | None) -> binlab_cfg.Binlab:
 
 
 def _init_gurobi_cfg(gurobi_cfg_yaml: Path | None) -> cmn_lp_cfg.Gurobi:
-    gurobi_config = (
+    # REFACTOR use common
+    return (
         cmn_lp_cfg.Gurobi.from_yaml(gurobi_cfg_yaml)
         if gurobi_cfg_yaml is not None
         else cmn_lp_cfg.Gurobi.default()
     )
-    _LOGGER.debug("Gurobi config:\n%s", gurobi_config.to_dict())
-    return gurobi_config
 
 
 def _init_plasbin_input(
     seed_sequences_tsv: Path,
     sequence_plasmidness_tsv: Path,
 ) -> tuple[list[str], list[tuple[str, float]]]:
+    # REFACTOR use common
     with pbf_comp_io.SeedReader.open(seed_sequences_tsv) as seeds_fin:
         seeds = list(seeds_fin)
     with pbf_comp_io.PlmReader.open(sequence_plasmidness_tsv) as plasmidness_fin:
@@ -632,10 +654,10 @@ def _write_gurobi_config(output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR]) 
 @CONFIGS_APP.command(name="decomp")
 def write_decomp_configs(
     output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Write the configuration files for the decomp approach."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Write the configuration files for the decomp approach.",
         debug,
@@ -648,10 +670,10 @@ def write_decomp_configs(
 @CONFIGS_APP.command(name="binlab")
 def write_binlab_configs(
     output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Write the configuration files for the binlab approach."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Write the configuration files for the binlab approach.",
         debug,
@@ -664,10 +686,10 @@ def write_binlab_configs(
 @CONFIGS_APP.command(name="once")
 def write_once_configs(
     output_directory: Annotated[Path, ARG_CONFIGS_OUTDIR],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Write the configuration files for the once approach."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Write the configuration files for the once approach.",
         debug,
