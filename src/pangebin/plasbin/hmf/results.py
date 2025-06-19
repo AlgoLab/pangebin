@@ -417,6 +417,10 @@ class RootReader:
             for bin_rdr_info in ccomp_reader.all_bins()
         )
 
+    def file_system(self) -> fs.Root:
+        """Get root file system manager."""
+        return self.__root_fs
+
 
 class BinReaderWithInfo:
     """Bin reader with info."""
