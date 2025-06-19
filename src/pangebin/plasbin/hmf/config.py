@@ -17,6 +17,13 @@ class _SeedConstraint(YAMLInterface):
     KEY_WITH_SEEDS = "with_seeds"
     KEY_MAX_NUMBER_FREE_OF_SEEDS = "max_number_free_of_seeds"
 
+    DEFAULT_WITH_SEEDS = True
+    DEFAULT_MAX_NUMBER_FREE_OF_SEEDS = 0
+
+    @classmethod
+    def default(cls) -> _SeedConstraint:
+        return cls(cls.DEFAULT_WITH_SEEDS, cls.DEFAULT_MAX_NUMBER_FREE_OF_SEEDS)
+
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> _SeedConstraint:
         return cls(
@@ -48,11 +55,20 @@ class BinProperties(YAMLInterface):
     KEY_PARTIALLY_CIRCULAR = "partially_circular"
 
     @classmethod
+    def default(cls) -> BinProperties:
+        """Get default config."""
+        return cls(_SeedConstraint.default(), _SeedConstraint.default())
+
+    @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> BinProperties:
         """Convert dict to object."""
         return cls(
-            _SeedConstraint.from_dict(config_dict[cls.KEY_CIRCULAR]),
-            _SeedConstraint.from_dict(config_dict[cls.KEY_PARTIALLY_CIRCULAR]),
+            _SeedConstraint.from_dict(config_dict[cls.KEY_CIRCULAR])
+            if cls.KEY_CIRCULAR in config_dict
+            else _SeedConstraint.default(),
+            _SeedConstraint.from_dict(config_dict[cls.KEY_PARTIALLY_CIRCULAR])
+            if cls.KEY_PARTIALLY_CIRCULAR in config_dict
+            else _SeedConstraint.default(),
         )
 
     def __init__(
@@ -98,6 +114,11 @@ class Network(YAMLInterface):
     KEY_SINK_ARC_DEFINITION = "sink_arc_definition"
 
     @classmethod
+    def default(cls) -> Network:
+        """Get default config."""
+        return cls(cls.DEFAULT_SINK_ARCS_DOMAIN)
+
+    @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Network:
         """Convert dict to object."""
         return cls(
@@ -130,6 +151,15 @@ class Config(YAMLInterface):
     KEY_BIN_PROPERTIES = "bin_properties"
     KEY_NETWORK = "network"
     KEY_MILP = "milp"
+
+    @classmethod
+    def default(cls) -> Config:
+        """Get default config."""
+        return cls(
+            BinProperties.default(),
+            Network.default(),
+            milp_cfg.Config.default(),
+        )
 
     @classmethod
     def from_dict(cls, config_dict: dict[str, Any]) -> Config:
@@ -170,3 +200,10 @@ class Config(YAMLInterface):
             self.KEY_NETWORK: self.__network_config.to_dict(),
             self.KEY_MILP: self.__milp_config.to_dict(),
         }
+
+
+if __name__ == "__main__":
+    from pathlib import Path
+
+    config_yaml = Path("./hmf_config.yaml")
+    Config.default().to_yaml(config_yaml)
