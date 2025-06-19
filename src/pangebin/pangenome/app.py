@@ -16,7 +16,7 @@ import pangebin.input_output as common_io
 import pangebin.pangenome.config as pangenome_config
 import pangebin.pangenome.create as pangenome_create
 import pangebin.pangenome.input_output as pangenome_io
-import pangebin.pblog as common_log
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -99,10 +99,10 @@ def pangenome(
     config_file: Annotated[Path | None, ProcessOpts.CONFIG_FILE] = None,
     # Input/Output options
     outdir: Annotated[Path, IOOpts.OUTPUT_DIR] = pangenome_io.Config.DEFAULT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Produce a pangenome using nf-core/pangenome."""
-    common_log.init_logger(_LOGGER, "Producing pangenome.", debug)
+    pblog.init_logger(_LOGGER, "Producing pangenome.", debug)
 
     config = (
         pangenome_config.Pangenome.from_yaml(config_file)

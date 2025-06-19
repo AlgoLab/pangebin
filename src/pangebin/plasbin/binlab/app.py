@@ -15,7 +15,6 @@ import typer
 import pangebin.gc_content.input_output as gc_io
 import pangebin.gc_content.items as gc_items
 import pangebin.gfa.input_output as gfa_io
-import pangebin.pblog as common_log
 import pangebin.plasbin.binlab.config as binlab_cfg
 import pangebin.plasbin.binlab.milp.input_output as lp_io
 import pangebin.plasbin.binlab.milp.views as lp_views
@@ -28,6 +27,7 @@ import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
+from pangebin import pblog
 from pangebin.plasbin.binlab import create
 
 _LOGGER = logging.getLogger(__name__)
@@ -121,10 +121,10 @@ def plasbin_assembly(
         Path,
         pb_io.IOOptions.OUTPUT_DIR,
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """PlasBin an assembly graph with the binlab approach."""
-    common_log.init_logger(_LOGGER, "Running PlasBin on assembly.", debug)
+    pblog.init_logger(_LOGGER, "Running PlasBin on assembly.", debug)
     io_manager = _init_io_manager(outdir)
 
     binning_config = _init_binning_cfg(
@@ -249,10 +249,10 @@ def plasbin_panassembly(
         Path,
         pb_io.IOOptions.OUTPUT_DIR,
     ] = pb_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """PlasBin a pan-assembly graph with the binlab approach."""
-    common_log.init_logger(_LOGGER, "Running PlasBin on pan-assembly.", debug)
+    pblog.init_logger(_LOGGER, "Running PlasBin on pan-assembly.", debug)
     io_manager = _init_io_manager(outdir)
 
     binning_config = _init_binning_cfg(

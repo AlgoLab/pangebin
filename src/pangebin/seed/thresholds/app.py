@@ -11,10 +11,10 @@ from typing import Annotated
 
 import typer
 
-import pangebin.pblog as common_log
 import pangebin.seed.thresholds.config as seed_thr_config
 import pangebin.seed.thresholds.create as seed_thr_create
 import pangebin.seed.thresholds.input_output as seed_thr_io
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -116,10 +116,10 @@ def thresholds(
         Path,
         IOOptions.OUTPUT_DIR,
     ] = seed_thr_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> seed_thr_io.Manager:
     """Seed thresholds."""
-    common_log.init_logger(_LOGGER, "Creating seed thresholds.", debug)
+    pblog.init_logger(_LOGGER, "Creating seed thresholds.", debug)
 
     threshold_ranges = (
         seed_thr_config.ThresholdRanges.from_yaml(config_file)

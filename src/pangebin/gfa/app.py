@@ -17,7 +17,7 @@ import pangebin.gfa.ops as gfa_ops
 import pangebin.gfa.segment as gfa_segment
 import pangebin.gfa.views as gfa_views
 import pangebin.input_output as root_io
-import pangebin.pblog as common_log
+from pangebin import pblog
 from pangebin.gfa import iter as gfa_iter
 
 APP = typer.Typer(rich_markup_mode="rich")
@@ -36,10 +36,10 @@ class CheckSKESAGFAArgs:
 @APP.command()
 def check_skesa(
     in_gfa: Annotated[Path, CheckSKESAGFAArgs.ARG_IN_GFA],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> bool:
     """Check a Skeza GFA file."""
-    common_log.init_logger(_LOGGER, "Checking Skeza GFA file.", debug)
+    pblog.init_logger(_LOGGER, "Checking Skeza GFA file.", debug)
 
     if not in_gfa.exists():
         _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
@@ -68,10 +68,10 @@ class FixSKESAGFAArgs:
 def fix_skesa(
     in_gfa: Annotated[Path, FixSKESAGFAArgs.ARG_IN_GFA],
     out_gfa: Annotated[Path | None, FixSKESAGFAArgs.ARG_OUT_GFA] = None,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Fix a SKESA GFA file."""
-    common_log.init_logger(_LOGGER, "Fixing SKESA GFA file.", debug)
+    pblog.init_logger(_LOGGER, "Fixing SKESA GFA file.", debug)
 
     if not in_gfa.exists():
         _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
@@ -104,10 +104,10 @@ class FixUnicyclerGFAArgs:
 def fix_unicycler(
     in_gfa: Annotated[Path, FixUnicyclerGFAArgs.ARG_IN_GFA],
     out_gfa: Annotated[Path | None, FixUnicyclerGFAArgs.ARG_OUT_GFA] = None,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Fix a Unicycler GFA file."""
-    common_log.init_logger(_LOGGER, "Fixing Unicycler GFA file.", debug)
+    pblog.init_logger(_LOGGER, "Fixing Unicycler GFA file.", debug)
 
     if not in_gfa.exists():
         _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
@@ -155,10 +155,10 @@ def to_fasta(
         str,
         ToFASTAOptions.OPT_ATTRIBUTE_STRING_SEPARATOR,
     ] = gfa_segment.DEFAULT_ATTRIBUTE_STR_SEP,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Convert GFA to FASTA (write to stdout)."""
-    common_log.init_logger(_LOGGER, "Converting GFA to FASTA.", debug)
+    pblog.init_logger(_LOGGER, "Converting GFA to FASTA.", debug)
 
     if not gfa_path.exists():
         _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
@@ -185,10 +185,10 @@ class ISGFAStandardizeArgs:
 @APP.command()
 def is_standardized(
     gfa_path: Annotated[Path, ISGFAStandardizeArgs.ARG_IN_GFA],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Check if a GFA is standardized."""
-    common_log.init_logger(_LOGGER, "Checking if GFA is standardized.", debug)
+    pblog.init_logger(_LOGGER, "Checking if GFA is standardized.", debug)
 
     if not gfa_path.exists():
         _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
@@ -213,10 +213,10 @@ class PrintStatsArgs:
 @APP.command()
 def stats(
     gfa_path: Annotated[Path, PrintStatsArgs.GFA_FILE],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Print GFA stats."""
-    common_log.init_logger(_LOGGER, "Printing GFA stats.", debug)
+    pblog.init_logger(_LOGGER, "Printing GFA stats.", debug)
 
     if not gfa_path.exists():
         _LOGGER.error("Input GFA file does not exist: %s", gfa_path)
@@ -251,10 +251,10 @@ def sub_radius(
     sub_gfa_path: Annotated[Path, SubRadiusArgs.SUB_GFA_FILE],
     radius: Annotated[int, SubRadiusArgs.RADIUS],
     segments_paths: Annotated[list[Path], SubRadiusArgs.SEGMENTS_FILE],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Extract subgraph with neighbor radius."""
-    common_log.init_logger(_LOGGER, "Extracting subgraph with neighbor radius.", debug)
+    pblog.init_logger(_LOGGER, "Extracting subgraph with neighbor radius.", debug)
 
     if not gfa_path.exists():
         _LOGGER.critical("Input GFA file does not exist: %s", gfa_path)
@@ -314,10 +314,10 @@ def remove_small_sequences(
         int,
         RemoveSmallSequencesOpts.MIN_LENGTH,
     ] = RemoveSmallSequencesOpts.MIN_LENGTH_DEF,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Remove small sequences by preserving the walks."""
-    common_log.init_logger(_LOGGER, "Removing small sequences in a GFA.", debug)
+    pblog.init_logger(_LOGGER, "Removing small sequences in a GFA.", debug)
 
     if not in_gfa.exists():
         _LOGGER.error("Input GFA file does not exist: %s", in_gfa)
@@ -379,10 +379,10 @@ def connected_components(
         str | None,
         ConnectedComponentsArgsOpts.GFA_OUT_PREFIX,
     ] = None,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Extract connected components (.gfa files)."""
-    common_log.init_logger(_LOGGER, "Extracting connected components.", debug)
+    pblog.init_logger(_LOGGER, "Extracting connected components.", debug)
 
     if not gfa_in.exists():
         _LOGGER.critical("Input GFA file does not exist: %s", gfa_in)

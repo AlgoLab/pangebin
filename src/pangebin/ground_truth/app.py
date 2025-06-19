@@ -15,7 +15,7 @@ import pangebin.entrez as pg_entrez
 import pangebin.ground_truth.config as gt_config
 import pangebin.ground_truth.create as gt_create
 import pangebin.ground_truth.input_output as gt_io
-import pangebin.pblog as common_log
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -108,10 +108,10 @@ def create(
         Path,
         GroundTruthIOOptions.OUTPUT_DIR,
     ] = gt_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> gt_io.Manager:
     """Create ground truth."""
-    common_log.init_logger(_LOGGER, "Creating ground truth.", debug)
+    pblog.init_logger(_LOGGER, "Creating ground truth.", debug)
     config = (
         gt_config.Config.from_yaml(config_file)
         if config_file
