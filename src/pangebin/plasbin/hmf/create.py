@@ -61,6 +61,7 @@ def plasbin_assembly(  # noqa: PLR0913
             contig_plasmidness,
         ),
     ):
+        _LOGGER.debug("Processing connected component %d", ccomp_idx)
         best_ccomp = bin_ccomp(
             net.Network.from_asm_graph(
                 subgraph,
@@ -252,7 +253,7 @@ def search_best_bin_class_instance(
                     bin_class_manager.model().gurobi_model().ObjVal
                 )
 
-                bin_class_manager.set_objective_lb(best_multi_flow_objective, network)
+                bin_class_manager.set_objective_lb(best_multi_flow_objective)
 
                 circ_progress.update(
                     circ_task,

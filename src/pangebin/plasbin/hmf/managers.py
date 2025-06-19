@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from itertools import product
 from typing import TYPE_CHECKING, Self
 
@@ -56,18 +55,6 @@ class BinClass:
     """Base manager."""
 
     @classmethod
-    @abstractmethod
-    def topology(cls) -> bins.Topology:
-        """Get topology."""
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def seed_constraint(cls) -> bins.SeedConstraint:
-        """Get seed constraint."""
-        raise NotImplementedError
-
-    @classmethod
     def new(
         cls,
         network: net.Network,
@@ -109,36 +96,27 @@ class BinClass:
         self.__model.activate_flow(new_mf_idx)
         return new_mf_idx
 
-    def set_objective_lb(self, lower_bound: float, network: net.Network) -> None:
+    def set_objective_lb(self, lower_bound: float) -> None:
         """Set objective lower bound."""
         if self.__obj_lb_cst is None:
-            # FIXME specialize for PC
             self.__obj_lb_cst = lp_csts.objective_lower_bound(
                 self.__model.gurobi_model(),
                 lower_bound,
             )
         else:
-            # FIXME specialize for PC
             lp_csts.update_binning_objective_lower_bound(
                 self.__model.gurobi_model(),
                 self.__obj_lb_cst,
                 lower_bound,
             )
 
-
-class _Circular(BinClass):
-    """Circular multi-flows manager."""
-
-    @classmethod
-    def topology(cls) -> bins.Topology:
+    def topology(self) -> bins.Topology:
         """Get topology."""
-        return bins.Topology.CIRCULAR
+        return self.__model.topology()
 
-    def _define_topology(self) -> None:
-        """Define topology."""
-        self.__model.state_constraints()[
-            self.__stats.number_of_active_bins()
-        ].define_circular()
+    def seed_constraint(self) -> bins.SeedConstraint:
+        """Get seed constraint."""
+        return self.__model.seed_constraint()
 
 
 def iter_bin_class_manager(
