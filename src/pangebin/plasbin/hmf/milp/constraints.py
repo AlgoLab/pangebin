@@ -441,7 +441,7 @@ def plasmidness_score_order(
                     bins_vars[k + 1].flows(),
                     obj_fun_domain,
                 )
-                for k in range(bin_interval[0], bin_interval[1])
+                for k in range(bin_interval[0], bin_interval[1] - 1)
             ),
             name=f"circular_flow_plasmidness_score_order_{bin_interval_str}",
         ).values(),
