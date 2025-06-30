@@ -77,7 +77,6 @@ def set_mbs_constraints(  # noqa: PLR0913
     #
     # DOCU MCF: + minimum flow value constraint
     cmn_lp_cst.total_flow_is_strictly_positive(m, var.flow(), min_flow)
-    # DOCU MCF: + min cumulatie len constraint
     cmn_lp_cst.minimum_cumulative_length(m, var.frag(), network, min_cumulative_len)
     if circular:
         # DOCU circularity remove a little flow to the first seed but no problems(?)
