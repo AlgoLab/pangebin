@@ -61,7 +61,6 @@ def hmf(
         Path to the PlasBin-flow bin file.
     """
     pblog.init_logger(_LOGGER, "Running pangebin classbin approach.", debug)
-    outdir.mkdir(parents=True, exist_ok=True)
 
     std_gfa = cmn.prepare_graph(assembly_gfa, is_skesa, debug)
 
@@ -85,6 +84,11 @@ def hmf(
         hmf_config,
         gurobi_config,
         outdir,
+    )
+
+    _LOGGER.info(
+        "Total number of bins: %d",
+        best_instances_reader.best_instances().total_number_of_bins(),
     )
 
     return _convert_output_to_pbf_output(best_instances_reader)
