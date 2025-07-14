@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, cast, final, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, Self, cast, final, runtime_checkable
 
 import gurobipy as gp
 
@@ -75,7 +75,7 @@ def set_constraints(
             const.ConstrName = f"bin_{b}_{const.ConstrName}"
 
         m.update()
-        bin_state_csts.deactivate_bin()
+        bin_state_csts.define_state(InactiveBin())
 
         multi_flow_state_csts.append(bin_state_csts)
 
@@ -245,7 +245,7 @@ def _set_constraints_for_one_bin(
 
     m.update()  # necessary to change the rhs
     # REFACTOR use compositions (and perhaps sub compositions): Protocol
-    return constraints, BinStateConstraints(structural_constraints)
+    return constraints, BinStateConstraints(structural_constraints, InactiveBin())
 
 
 def _plasmidness_lower_bound(
@@ -354,6 +354,44 @@ def each_seed_must_be_in_at_least_one_bin(
             for seed_id in network.seeds()
         ).values(),
     )
+
+
+class BinState:
+    """Bin state."""
+
+
+class InactiveBin(BinState):
+    """State inactive for a bin."""
+
+    # Singleton pattern to ensure that only one instance of Inactive is created.
+
+    _instance = None
+
+    def __new__(cls) -> Self:
+        """Get the only instance."""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+
+class ActiveBin(BinState):
+    """State active for a bin."""
+
+    def __init__(
+        self,
+        topology: hmf_bins.Topology,
+        seed_constraint: hmf_bins.SeedConstraint,
+    ) -> None:
+        self.__topology = topology
+        self.__seed_constraint = seed_constraint
+
+    def topology(self) -> hmf_bins.Topology:
+        """Get the topology."""
+        return self.__topology
+
+    def seed_constraint(self) -> hmf_bins.SeedConstraint:
+        """Get the seed constraint."""
+        return self.__seed_constraint
 
 
 @runtime_checkable
@@ -1089,7 +1127,7 @@ class BinStateConstraints:
     and to set it circular or partially circular
     """
 
-    def __init__(self, constraints: Iterable[StructuralCst]) -> None:
+    def __init__(self, constraints: Iterable[StructuralCst], state: BinState) -> None:
         self.__constraints = list(constraints)
 
         self.__c_csts = [cst for cst in self.__constraints if isinstance(cst, Circular)]
@@ -1110,36 +1148,31 @@ class BinStateConstraints:
             cst for cst in self.__constraints if isinstance(cst, CircularWithSeed)
         ]
 
-        self.__topology = hmf_bins.Topology.CIRCULAR
-        self.define_topology(self.__topology)
+        self.__state = state
+        self.define_state(self.__state)
 
-        self.__seed_constraint = hmf_bins.SeedConstraint.REQUIRED
-        self.define_seed_constraint(self.__seed_constraint)
-
-        self.__activate = False
-        self.deactivate_bin()
-
-    def topology(self) -> hmf_bins.Topology:
-        """Get the topology of the bin."""
-        return self.__topology
-
-    def seed_constraint(self) -> hmf_bins.SeedConstraint:
-        """Get the seed constraint."""
-        return self.__seed_constraint
-
-    def activate_bin(
-        self,
-        topology: hmf_bins.Topology,
-        seed_constraint: hmf_bins.SeedConstraint,
-    ) -> None:
+    def __activate_bin(self, state: ActiveBin) -> None:  # noqa: C901, PLR0912
         """Activate the bin."""
-        for cst in self.__activate_csts:
-            cst.activate()
+        for act_cst in self.__activate_csts:
+            act_cst.activate()
 
-        self.define_topology(topology)
-        self.define_seed_constraint(seed_constraint)
+        match state.topology():
+            case hmf_bins.Topology.CIRCULAR:
+                for c_cst in self.__c_csts:
+                    c_cst.define_circular()
+            case hmf_bins.Topology.PARTIALLY_CIRCULAR:
+                for pc_cst in self.__pc_csts:
+                    pc_cst.define_partially_circular()
 
-        if (topology, seed_constraint) == (
+        match state.seed_constraint():
+            case hmf_bins.SeedConstraint.REQUIRED:
+                for s_cst in self.__s_csts:
+                    s_cst.define_must_have_a_seed()
+            case hmf_bins.SeedConstraint.NOT_REQUIRED:
+                for fs_cst in self.__fs_csts:
+                    fs_cst.define_can_be_free_of_seed()
+
+        if (state.topology(), state.seed_constraint()) == (
             hmf_bins.Topology.CIRCULAR,
             hmf_bins.SeedConstraint.REQUIRED,
         ):
@@ -1149,54 +1182,20 @@ class BinStateConstraints:
             for c_s_cst in self.__c_s_csts:
                 c_s_cst.define_other()
 
-        self.__activate = True
-
-    def deactivate_bin(self) -> None:
+    def __deactivate_bin(self) -> None:
         """Deactivate the bin."""
         for cst in self.__deactivate_csts:
             cst.deactivate()
-        self.__activate = False
 
-    def define_circular(self) -> None:
-        """Define the bin as circular."""
-        for cst in self.__c_csts:
-            cst.define_circular()
-        self.__topology = hmf_bins.Topology.CIRCULAR
+    def define_state(self, state: BinState) -> None:
+        """Define the state of the bin."""
+        match state:
+            case ActiveBin():
+                self.__activate_bin(state)
+            case InactiveBin():
+                self.__deactivate_bin()
+        self.__state = state
 
-    def define_partially_circular(self) -> None:
-        """Define the bin as partially circular."""
-        for cst in self.__pc_csts:
-            cst.define_partially_circular()
-        self.__topology = hmf_bins.Topology.PARTIALLY_CIRCULAR
-
-    def define_topology(self, topology: hmf_bins.Topology) -> None:
-        """Define the topology of the bin."""
-        match topology:
-            case hmf_bins.Topology.CIRCULAR:
-                self.define_circular()
-            case hmf_bins.Topology.PARTIALLY_CIRCULAR:
-                self.define_partially_circular()
-
-    def define_must_have_a_seed(self) -> None:
-        """Constrain the bin to have a seed."""
-        for cst in self.__s_csts:
-            cst.define_must_have_a_seed()
-        self.__seed_constraint = hmf_bins.SeedConstraint.REQUIRED
-
-    def define_can_be_free_of_seed(self) -> None:
-        """Relax the must-have-a-seed constraint."""
-        for cst in self.__fs_csts:
-            cst.define_can_be_free_of_seed()
-        self.__seed_constraint = hmf_bins.SeedConstraint.NOT_REQUIRED
-
-    def define_seed_constraint(self, seed_constraint: hmf_bins.SeedConstraint) -> None:
-        """Set the seed constraint."""
-        match seed_constraint:
-            case hmf_bins.SeedConstraint.REQUIRED:
-                self.define_must_have_a_seed()
-            case hmf_bins.SeedConstraint.NOT_REQUIRED:
-                self.define_can_be_free_of_seed()
-
-    def is_activate(self) -> bool:
-        """Check if the bin is activated."""
-        return self.__activate
+    def state(self) -> BinState:
+        """Get the state of the bin."""
+        return self.__state

@@ -73,9 +73,8 @@ class Model:
 
     def activate_flow(self, index: int) -> None:
         """Activate the flow at the index."""
-        self.__state_constraints[index].activate_bin(
-            self.__topology,
-            self.__seed_constraint,
+        self.__state_constraints[index].define_state(
+            lp_csts.ActiveBin(self.__topology, self.__seed_constraint),
         )
 
     def _init_obj_linexpr(self, network: net.Network) -> gp.LinExpr:
