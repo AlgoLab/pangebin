@@ -76,6 +76,8 @@ def repeat_penalty(
             flow_union_frag_vars.frag(frag_id)
             - gp.quicksum(bin_var.sub_frag().frag(frag_id) for bin_var in bins_vars)
         )
+        # BUG repeat penalty coeff on coverage
+        * (network.coverage(frag_id) / 3)
         for frag_id in network.fragment_ids()
         # BUG TMP only for positive plasmidness
         if network.plasmidness(frag_id) > 0
@@ -122,12 +124,19 @@ def circular_objective(
 ) -> gp.LinExpr:
     """Get MFB circular objective linear expression."""
     return (
-        active_coverage_penalty(
-            bins_vars,
-            flow_union_frag_vars,
-            network,
-            obj_fun_domain,
-        )
+        # BUG TMP
+        # active_coverage_penalty(
+        #     bins_vars,
+        #     flow_union_frag_vars,
+        #     network,
+        #     obj_fun_domain,
+        # )
+        # all_coverage_penalty(
+        #     bins_vars,
+        #     network,
+        #     obj_fun_domain,
+        # )
+        0  # BUG TMP REMOVE COV PENALTY
         + gp.quicksum(
             plasmidness_score(network, var.flows(), obj_fun_domain) for var in bins_vars
         )

@@ -102,6 +102,13 @@ class BinClass(YAMLInterface):
             case bins.SeedConstraint.REQUIRED:
                 self.set_best_with_seeds(best)
 
+    def total_number_of_bins(self) -> int:
+        """Get total number of bins."""
+        return (
+            self.best_with_seeds().number_of_bins()
+            + self.best_free_of_seeds().number_of_bins()
+        )
+
     def to_dict(self) -> dict[str, int]:
         """Convert to dict."""
         return {
@@ -170,6 +177,13 @@ class ConnectedComponent(YAMLInterface):
             case bins.Topology.PARTIALLY_CIRCULAR:
                 self.set_best_partially_circular(best)
 
+    def total_number_of_bins(self) -> int:
+        """Get total number of bins."""
+        return (
+            self.best_circular().total_number_of_bins()
+            + self.best_partially_circular().total_number_of_bins()
+        )
+
     def to_dict(self) -> dict:
         """Convert to dict."""
         return {
@@ -209,6 +223,10 @@ class Root(YAMLInterface):
     def add_connected_component(self, connected_component: ConnectedComponent) -> None:
         """Add connected component."""
         self.__connected_components.append(connected_component)
+
+    def total_number_of_bins(self) -> int:
+        """Get total number of bins."""
+        return sum(cc.total_number_of_bins() for cc in self.__connected_components)
 
     def to_dict(self) -> dict[str, list[dict]]:
         """Convert to dict."""
@@ -399,6 +417,14 @@ class RootReader:
         self.__best_root_instances = best_root_instances
         self.__root_fs = root_fs
 
+    def best_instances(self) -> Root:
+        """Get best root instances."""
+        return self.__best_root_instances
+
+    def file_system(self) -> fs.Root:
+        """Get root file system manager."""
+        return self.__root_fs
+
     def connected_component_readers(self) -> Iterable[ConnectedComponentReader]:
         """Get connected component readers."""
         for ccomp_idx, best_ccomp_instances in enumerate(
@@ -416,10 +442,6 @@ class RootReader:
             for ccomp_reader in self.connected_component_readers()
             for bin_rdr_info in ccomp_reader.all_bins()
         )
-
-    def file_system(self) -> fs.Root:
-        """Get root file system manager."""
-        return self.__root_fs
 
 
 class BinReaderWithInfo:

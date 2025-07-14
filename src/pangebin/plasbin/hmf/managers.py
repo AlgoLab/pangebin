@@ -133,7 +133,7 @@ def iter_bin_class_manager(
         match seed_constraint:
             case bins.SeedConstraint.REQUIRED:
                 max_number_of_bins = (
-                    len(network.seeds())
+                    min(len(network.seeds()), 10)  # BUG min seed to consider
                     if bin_properties.seed_constraint_for_topology(
                         topology,
                     ).with_seeds()

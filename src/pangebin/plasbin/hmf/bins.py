@@ -24,8 +24,8 @@ class SeedConstraint(StrEnum):
 class Stats(YAMLInterface):
     """Bin stats."""
 
-    KEY_BIN_TYPE = "bin_type"
-    KEY_SEED_STATUS = "seed_status"
+    KEY_TOPOLOGY = "topology"
+    KEY_SEED_CONSTRAINT = "seed_constraint"
     KEY_CUMULATIVE_SEQUENCE_LENGTH = "cumulative_sequence_length"
     KEY_TOTAL_FLOW = "total_flow"
     KEY_NORMALIZING_COVERAGE = "normalizing_coverage"
@@ -34,8 +34,8 @@ class Stats(YAMLInterface):
     def from_dict(cls, obj_dict: dict) -> Stats:
         """Convert dict to object."""
         return cls(
-            Topology(obj_dict[cls.KEY_BIN_TYPE]),
-            SeedConstraint(obj_dict[cls.KEY_SEED_STATUS]),
+            Topology(obj_dict[cls.KEY_TOPOLOGY]),
+            SeedConstraint(obj_dict[cls.KEY_SEED_CONSTRAINT]),
             obj_dict[cls.KEY_CUMULATIVE_SEQUENCE_LENGTH],
             obj_dict[cls.KEY_TOTAL_FLOW],
             obj_dict[cls.KEY_NORMALIZING_COVERAGE],
@@ -43,26 +43,26 @@ class Stats(YAMLInterface):
 
     def __init__(
         self,
-        bin_type: Topology,
-        seed_status: SeedConstraint,
+        topology: Topology,
+        seed_constraint: SeedConstraint,
         cumultative_sequence_length: int,
         total_flow: float,
         normalizing_coverage: float,
     ) -> None:
         """Initialize object."""
-        self.__bin_type = bin_type
-        self.__seed_status = seed_status
+        self.__topology = topology
+        self.__seed_constraint = seed_constraint
         self.__cumultative_sequence_length = cumultative_sequence_length
         self.__total_flow = total_flow
         self.__normalizing_coverage = normalizing_coverage
 
-    def bin_type(self) -> Topology:
-        """Bin type."""
-        return self.__bin_type
+    def topology(self) -> Topology:
+        """Bin topology."""
+        return self.__topology
 
-    def seed_status(self) -> SeedConstraint:
-        """Seed status."""
-        return self.__seed_status
+    def seed_constraint(self) -> SeedConstraint:
+        """Seed constraint."""
+        return self.__seed_constraint
 
     def cumultative_sequence_length(self) -> int:
         """Cumulative sequence length."""
@@ -79,7 +79,8 @@ class Stats(YAMLInterface):
     def to_dict(self) -> dict:
         """Convert to dict."""
         return {
-            self.KEY_BIN_TYPE: self.__bin_type.value,
+            self.KEY_TOPOLOGY: self.__topology.value,
+            self.KEY_SEED_CONSTRAINT: self.__seed_constraint.value,
             self.KEY_CUMULATIVE_SEQUENCE_LENGTH: self.__cumultative_sequence_length,
             self.KEY_TOTAL_FLOW: self.__total_flow,
             self.KEY_NORMALIZING_COVERAGE: self.__normalizing_coverage,

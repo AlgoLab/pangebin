@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import cast
+from typing import TYPE_CHECKING, Protocol, cast, final, runtime_checkable
 
 import gurobipy as gp
 
@@ -17,6 +16,9 @@ import pangebin.plasbin.network as net
 from . import config as lp_cfg
 from . import objectives as lp_obj
 from . import variables as lp_vars
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
 
 # REFACTOR use config dataclass for each model
 
@@ -88,128 +90,46 @@ def _set_constraints_for_one_bin(
 ) -> tuple[list[gp.Constr], BinStateConstraints]:
     """Set MGCLB constraints."""
     constraints: list[gp.Constr] = []
+    structural_constraints: list[StructuralCst] = []
+
     constraints += cmn_lp_cst.active_fragments_active_one_of_their_orientations(
         m,
         var.sub_vertices(),
         var.sub_frag(),
         network,
     )
-    # DOCU change RHS weither bin is active or not
-    lb_seeds_cst = cmn_lp_cst.active_seeds_lower_bound(m, var.sub_frag(), network, 0)
-    constraints.append(lb_seeds_cst)
+
+    structural_constraints.append(SeedsLB(m, var, network))
 
     #
     # Source-sink constraints
     #
-    # DOCU when C, only one source arc
-    source_arcs_ub_cst = cmn_lp_cst.source_arcs_upper_bound(
-        m,
-        var.sub_arcs(),
-        network,
-        1,
-    )
-    constraints.append(source_arcs_ub_cst)
+    structural_constraints.append(SourceArcsUB(m, var, network))
+    structural_constraints.append(SinkArcsUB(m, var, network))
 
-    # DOCU when C, only one sink arc
-    sink_arcs_ub_cst = cmn_lp_cst.sink_arcs_upper_bound(m, var.sub_arcs(), network, 1)
-    constraints.append(sink_arcs_ub_cst)
+    structural_constraints.append(CycleBeforeOut(m, var, network))
+    structural_constraints.append(CycleBeforeIn(m, var, network))
 
-    # DOCU C: RHS = 0, PC: RHS = 1
-    cycle_before_out_csts = cmn_lp_cst.cycle_before_out(
-        m,
-        var.sub_vertices(),
-        var.sub_arcs(),
-        network,
-    )
-    cycle_before_in_csts = cmn_lp_cst.cycle_before_in(
-        m,
-        var.sub_vertices(),
-        var.sub_arcs(),
-        network,
-    )
-    constraints += cycle_before_out_csts
-    constraints += cycle_before_in_csts
-
-    # DOCU when PC, no other in/out link if source/sink connected
+    # DOCU trick on parcirc cst for s and t connected repeated frag
+    # In fact, if we begin with a repeat looping at the beginning,
+    # we cannot loop over it because the beginning is connected to the source
+    # However, we can out at the end of the loop with T
     # * PC: no other incoming link if source connected
-    incoming_arcs_ub_for_s_connected_orfrag_csts, _nb_preds = (
-        cmn_lp_cst.s_connected_orfrag_incoming_arcs_ub(m, var.sub_arcs(), network)
-    )
+    structural_constraints.append(SourceVerticesInArcUB(m, var, network))
     # * PC: no other outgoing link if sink connected
-    outgoing_arcs_ub_for_t_connected_orfrag_csts, _nb_succs = (
-        cmn_lp_cst.t_connected_orfrag_outgoing_arcs_ub(m, var.sub_arcs(), network)
-    )
-    constraints += incoming_arcs_ub_for_s_connected_orfrag_csts
-    constraints += outgoing_arcs_ub_for_t_connected_orfrag_csts
+    structural_constraints.append(SinkVerticesOutArcUB(m, var, network))
 
-    # DOCU C: the seed connected to s is also connected to t
     # Two inequalities to change
-    same_seed_connects_s_and_t_lb_csts = cmn_lp_cst.same_seed_connects_s_and_t_lb(
-        m,
-        var.sub_arcs(),
-        network,
-    )
-    same_seed_connects_s_and_t_ub_csts = cmn_lp_cst.same_seed_connects_s_and_t_ub(
-        m,
-        var.sub_arcs(),
-        network,
-    )
-    constraints += same_seed_connects_s_and_t_lb_csts
-    constraints += same_seed_connects_s_and_t_ub_csts
+    structural_constraints.append(STConnexionLB(m, var, network))
+    structural_constraints.append(STConnexionUB(m, var, network))
 
-    # DOCU let flow be 0 on source and sink arc when circular bin
-    # * C: the flow value on source and sink arcs equal is 0 AND y (must) can still be 1
-    source_arc_flow_ub_csts = cmn_lp_cst.source_arc_flow_upper_bound(
-        m,
-        var.flows(),
-        network,
-        0,
-    )
-    sink_arc_flow_ub_csts = cmn_lp_cst.sink_arc_flow_upper_bound(
-        m,
-        var.flows(),
-        network,
-        0,
-    )
-    source_arc_flow_lb_csts = cmn_lp_cst.active_source_arc_has_strict_positive_flow(
-        m,
-        var.flows(),
-        var.sub_arcs(),
-        network,
-        config.min_flow(),
-    )
-    constraints += cmn_lp_cst.active_link_arc_has_strict_positive_flow(
-        m,
-        var.flows(),
-        var.sub_arcs(),
-        network,
-        config.min_flow(),
-    )
-    sink_arc_flow_lb_csts = cmn_lp_cst.active_sink_arc_has_strict_positive_flow(
-        m,
-        var.flows(),
-        var.sub_arcs(),
-        network,
-        config.min_flow(),
-    )
-    constraints += source_arc_flow_lb_csts
-    constraints += sink_arc_flow_lb_csts
-    constraints += source_arc_flow_ub_csts
-    constraints += sink_arc_flow_ub_csts
-    source_flow_ub = sum(network.cap_s(a) for a in network.source_arcs())
-    sink_flow_ub = sum(network.cap_t(a) for a in network.sink_arcs())
+    structural_constraints.append(NonSeedSourceArcsUB(m, var, network))
+    structural_constraints.append(NonSeedSinkArcsUB(m, var, network))
 
-    constraints += cmn_lp_cst.arc_capacities_limit_arc_flows(
-        m,
-        var.flows(),
-        var.sub_arcs(),
-        network,
-    )
-    constraints += cmn_lp_cst.fragment_coverages_limit_cumulative_flows(
-        m,
-        var.flows(),
-        network,
-    )
+    #
+    # Flow constraints
+    #
+    # DOCU LATEX CONTINUE HERE
     constraints += cmn_lp_cst.flow_conservation(m, var.flows(), network)
     constraints += cmn_lp_cst.total_flow_value(m, var.flows(), network)
     constraints += cmn_lp_cst.active_arcs_implies_active_fragments(
@@ -224,12 +144,38 @@ def _set_constraints_for_one_bin(
         var.sub_arcs(),
         network,
     )
-    # constraints += lp_cst.active_arcs_imply_vertices_in_same_component(
-    #     m,
-    #     var.sub_vertices(),
-    #     var.sub_arcs(),
-    #     network,
-    # )
+
+    # DOCU let flow be 0 on source and sink arc when circular bin
+    # * C: the flow value on source and sink arcs equal is 0 AND y (must) can still be 1
+
+    structural_constraints.append(
+        ActiveSourceArcFlowLB(m, var, network, config.min_flow()),
+    )
+    structural_constraints.append(SourceArcFlowUB(m, var, network))
+    constraints += cmn_lp_cst.active_link_arc_has_strict_positive_flow(
+        m,
+        var.flows(),
+        var.sub_arcs(),
+        network,
+        config.min_flow(),
+    )
+    structural_constraints.append(
+        ActiveSinkArcFlowLB(m, var, network, config.min_flow()),
+    )
+    structural_constraints.append(SinkArcFlowUB(m, var, network))
+
+    constraints += cmn_lp_cst.arc_capacities_limit_arc_flows(
+        m,
+        var.flows(),
+        var.sub_arcs(),
+        network,
+    )
+    constraints += cmn_lp_cst.fragment_coverages_limit_cumulative_flows(
+        m,
+        var.flows(),
+        network,
+    )
+
     #
     # Connectivity
     #
@@ -241,8 +187,7 @@ def _set_constraints_for_one_bin(
     )
 
     # DOCU C: (opti) force each rev beta to be 0
-    beta_rev_ub_csts = ccomp_cst.beta_rev_upper_bound(m, var.tree_edges(), network)
-    constraints += beta_rev_ub_csts
+    structural_constraints.append(BetaRevUB(m, var, network))
 
     constraints += ccomp_cst.rev_link_arcs_in_tree_are_active(
         m,
@@ -252,22 +197,9 @@ def _set_constraints_for_one_bin(
     )
 
     # DOCU change RHS weither bin is active or not
-    subtree_size_from_source_csts = ccomp_cst.subtree_size_from_source(
-        m,
-        var.sub_vertices(),
-        var.tree_edges().dtree(),
-        network,
-    )
+    structural_constraints.append(SourceSubtreeSize(m, var, network))
     # DOCU change RHS weither bin is active or not
-    subtree_size_for_sink_rev_version_csts = (
-        ccomp_cst.subtree_size_for_sink_rev_version(
-            m,
-            var.tree_edges(),
-            network,
-        )
-    )
-    constraints += subtree_size_from_source_csts
-    constraints += subtree_size_for_sink_rev_version_csts
+    structural_constraints.append(SinkSubtreeSizeRevVersion(m, var, network))
 
     constraints += ccomp_cst.subtree_size_fragment_rev_version(
         m,
@@ -277,22 +209,11 @@ def _set_constraints_for_one_bin(
     )
 
     # DOCU C: [opti] only the seeds can be connected to the source and the sink
-    non_seed_root_ub_csts = ccomp_cst.non_seed_root_upper_bound(
-        m,
-        var.root(),
-        network,
-    )
-    constraints += non_seed_root_ub_csts
+    structural_constraints.append(NonSeedRootUB(m, var, network))
 
     # DOCU change RHS weither bin is active or not
-    nb_of_source_connected_orientfrag_cst = (
-        ccomp_cst.only_one_oriented_fragment_connects_the_source(
-            m,
-            var.root(),
-            network,
-        )
-    )
-    constraints.append(nb_of_source_connected_orientfrag_cst)
+    structural_constraints.append(NumberOfRootVertices(m, var, network))
+
     constraints += ccomp_cst.at_most_one_source_arc_in_tree(
         m,
         var.tree_edges(),
@@ -315,44 +236,16 @@ def _set_constraints_for_one_bin(
         ),
     )
     # DOCU min cumulative len constraint weither bin active or not
-    min_cumulative_len_cst = cmn_lp_cst.minimum_cumulative_length(
-        m,
-        var.sub_frag(),
-        network,
-        config.min_cumulative_len(),
+    structural_constraints.append(
+        CumulativeLengthLB(m, var, network, config.min_cumulative_len()),
     )
-    constraints.append(min_cumulative_len_cst)
+
+    for structural_cst in structural_constraints:
+        constraints.extend(structural_cst.constraints())
 
     m.update()  # necessary to change the rhs
-    # REFACTOR use compositions (and perhaps sub compositions)
-    return constraints, BinStateConstraints(
-        lb_seeds_cst,
-        source_arcs_ub_cst,
-        sink_arcs_ub_cst,
-        network.number_of_vertices(),
-        cycle_before_out_csts,
-        cycle_before_in_csts,
-        incoming_arcs_ub_for_s_connected_orfrag_csts,
-        outgoing_arcs_ub_for_t_connected_orfrag_csts,
-        _nb_preds,
-        _nb_succs,
-        network.ub_number_of_edges(),
-        same_seed_connects_s_and_t_lb_csts,
-        same_seed_connects_s_and_t_ub_csts,
-        subtree_size_from_source_csts,
-        subtree_size_for_sink_rev_version_csts,
-        beta_rev_ub_csts,
-        non_seed_root_ub_csts,
-        source_arc_flow_lb_csts,
-        sink_arc_flow_lb_csts,
-        source_arc_flow_ub_csts,
-        sink_arc_flow_ub_csts,
-        source_flow_ub,
-        sink_flow_ub,
-        nb_of_source_connected_orientfrag_cst,
-        min_cumulative_len_cst,
-        config.min_cumulative_len(),
-    )
+    # REFACTOR use compositions (and perhaps sub compositions): Protocol
+    return constraints, BinStateConstraints(structural_constraints)
 
 
 def _plasmidness_lower_bound(
@@ -463,6 +356,732 @@ def each_seed_must_be_in_at_least_one_bin(
     )
 
 
+@runtime_checkable
+class ContainsCsts(Protocol):
+    """Class that can return constraints."""
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Iterate over the constraints."""
+        ...
+
+
+@runtime_checkable
+class Circular(Protocol, ContainsCsts):
+    """Constraints that define a circular bin."""
+
+    def define_circular(self) -> None:
+        """Change the constraints to define a circular bin."""
+
+
+@runtime_checkable
+class PartiallyCircular(Protocol, ContainsCsts):
+    """Constraints that define a partially circular bin."""
+
+    def define_partially_circular(self) -> None:
+        """Change the constraints to define a partially circular bin."""
+
+
+@runtime_checkable
+class Seed(Protocol, ContainsCsts):
+    """Constraints that define a seed constraint."""
+
+    def define_must_have_a_seed(self) -> None:
+        """Change the constraints to define a must-have-a-seed bin."""
+
+
+@runtime_checkable
+class FreeOfSeed(Protocol, ContainsCsts):
+    """Constraints that define a free-of-seed constraint."""
+
+    def define_can_be_free_of_seed(self) -> None:
+        """Change the constraints to define a free-of-seed bin."""
+
+
+@runtime_checkable
+class Activate(Protocol, ContainsCsts):
+    """Constraints that define a seed constraint."""
+
+    def activate(self) -> None:
+        """Change the constraints to define a must-have-a-seed bin."""
+
+
+@runtime_checkable
+class Deactivate(Protocol, ContainsCsts):
+    """Constraints that define a free-of-seed constraint."""
+
+    def deactivate(self) -> None:
+        """Change the constraints to define a free-of-seed bin."""
+
+
+@runtime_checkable
+class CircularWithSeed(Protocol, ContainsCsts):
+    """Constraints that define a circular bin with a seed."""
+
+    def define_circular_with_seed(self) -> None:
+        """Change the constraints to define a circular bin."""
+        ...
+
+    def define_other(self) -> None:
+        """Change the constraints to define a circular bin."""
+        ...
+
+
+StructuralCst = (
+    Circular
+    | PartiallyCircular
+    | Seed
+    | FreeOfSeed
+    | Activate
+    | Deactivate
+    | CircularWithSeed
+)
+
+
+@final
+class SeedsLB(Seed, FreeOfSeed, Deactivate):
+    """Active seeds lower bound constraints (s + fs + deact)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__cst = cmn_lp_cst.active_seeds_lower_bound(m, var.sub_frag(), network, 0)
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield self.__cst
+
+    def define_must_have_a_seed(self) -> None:
+        """Define the bin as must-have-a-seed."""
+        self.__cst.RHS = 1
+
+    def define_can_be_free_of_seed(self) -> None:
+        """Define the bin as free-of-seed."""
+        self.__cst.RHS = 0
+
+    def deactivate(self) -> None:
+        """Deactivate the constraint."""
+        self.__cst.RHS = 0
+
+
+@final
+class SourceArcsUB(Circular, PartiallyCircular, Deactivate):
+    """Source arcs upper bound constraints (c + pc + deact)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__cst = cmn_lp_cst.source_arcs_upper_bound(m, var.sub_arcs(), network, 0)
+        self.__number_of_source_arcs = sum(1 for _ in network.source_arcs())
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield self.__cst
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        self.__cst.RHS = 1
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        self.__cst.RHS = self.__number_of_source_arcs
+
+    def deactivate(self) -> None:
+        """Deactivate the constraint."""
+        self.__cst.RHS = 0
+
+
+@final
+class SinkArcsUB(Circular, PartiallyCircular, Deactivate):
+    """Sink arcs upper bound constraints (c + pc + deact)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__cst = cmn_lp_cst.sink_arcs_upper_bound(m, var.sub_arcs(), network, 0)
+        self.__number_of_sink_arcs = sum(1 for _ in network.sink_arcs())
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield self.__cst
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        self.__cst.RHS = 1
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        self.__cst.RHS = self.__number_of_sink_arcs
+
+    def deactivate(self) -> None:
+        """Deactivate the constraint."""
+        self.__cst.RHS = 0
+
+
+@final
+class CycleBeforeOut(Circular, PartiallyCircular):
+    """Cycle before out constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.cycle_before_out(
+            m,
+            var.sub_vertices(),
+            var.sub_arcs(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+
+@final
+class CycleBeforeIn(Circular, PartiallyCircular):
+    """Cycle before in constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.cycle_before_in(
+            m,
+            var.sub_vertices(),
+            var.sub_arcs(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+
+@final
+class SourceVerticesInArcUB(Circular, PartiallyCircular):
+    """Source vertices in arc upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts, self.__number_of_preds = (
+            cmn_lp_cst.s_connected_orfrag_incoming_arcs_ub(m, var.sub_arcs(), network)
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for k, cst in enumerate(self.__csts):
+            cst.RHS = 1 + 2 * self.__number_of_preds[k]
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for k, cst in enumerate(self.__csts):
+            cst.RHS = 1 + self.__number_of_preds[k]
+
+
+@final
+class SinkVerticesOutArcUB(Circular, PartiallyCircular):
+    """Sink vertices out arc upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts, self.__number_of_succs = (
+            cmn_lp_cst.t_connected_orfrag_outgoing_arcs_ub(m, var.sub_arcs(), network)
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for k, cst in enumerate(self.__csts):
+            cst.RHS = 1 + 2 * self.__number_of_succs[k]
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for k, cst in enumerate(self.__csts):
+            cst.RHS = 1 + self.__number_of_succs[k]
+
+
+@final
+class STConnexionLB(Circular, PartiallyCircular):
+    """ST connexion lower bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.same_orfrag_connects_s_and_t_lb(
+            m,
+            var.sub_arcs(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = -1
+
+
+@final
+class STConnexionUB(Circular, PartiallyCircular):
+    """ST connexion upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.same_orfrag_connects_s_and_t_ub(
+            m,
+            var.sub_arcs(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+
+@final
+class NonSeedSourceArcsUB(CircularWithSeed):
+    """Non seed source arcs upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.non_seed_source_arc_ub(m, var.sub_arcs(), network, 1)
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular_with_seed(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_other(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+
+@final
+class NonSeedSinkArcsUB(CircularWithSeed):
+    """Non seed sink arcs upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.non_seed_sink_arc_ub(m, var.sub_arcs(), network, 1)
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular_with_seed(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_other(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+
+@final
+class ActiveSourceArcFlowLB(Circular, PartiallyCircular):
+    """Source arc flow lower bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+        min_active_flow: float,
+    ) -> None:
+        self.__csts = cmn_lp_cst.active_source_arc_has_strict_positive_flow(
+            m,
+            var.flows(),
+            var.sub_arcs(),
+            network,
+            min_active_flow,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+
+@final
+class SourceArcFlowUB(Circular, PartiallyCircular):
+    """Source arc flow upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.source_arc_flow_upper_bound(
+            m,
+            var.flows(),
+            network,
+            0,
+        )
+        self.__source_arc_flow_ub = sum(network.cap_s(a) for a in network.source_arcs())
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = self.__source_arc_flow_ub
+
+
+@final
+class ActiveSinkArcFlowLB(Circular, PartiallyCircular):
+    """Sink arc flow lower bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+        min_active_flow: float,
+    ) -> None:
+        self.__csts = cmn_lp_cst.active_sink_arc_has_strict_positive_flow(
+            m,
+            var.flows(),
+            var.sub_arcs(),
+            network,
+            min_active_flow,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+
+@final
+class SinkArcFlowUB(Circular, PartiallyCircular):
+    """Sink arc flow upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = cmn_lp_cst.sink_arc_flow_upper_bound(
+            m,
+            var.flows(),
+            network,
+            0,
+        )
+        self.__sink_arc_flow_ub = sum(network.cap_t(a) for a in network.sink_arcs())
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = self.__sink_arc_flow_ub
+
+
+@final
+class BetaRevUB(Circular, PartiallyCircular):
+    """Beta_rev upper bound constraints (c + pc)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = ccomp_cst.beta_rev_upper_bound(m, var.tree_edges(), network)
+        self.__number_of_vertices = network.number_of_vertices()
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular(self) -> None:
+        """Define the bin as circular."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_partially_circular(self) -> None:
+        """Define the bin as partially circular."""
+        for cst in self.__csts:
+            cst.RHS = self.__number_of_vertices
+
+
+@final
+class SourceSubtreeSize(Activate, Deactivate):
+    """Source subtree size constraints."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = ccomp_cst.subtree_size_from_source(
+            m,
+            var.sub_vertices(),
+            var.tree_edges().dtree(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def activate(self) -> None:
+        """Define the bin as active."""
+        for cst in self.__csts:
+            cst.RHS = -1
+
+    def deactivate(self) -> None:
+        """Define the bin as inactive."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+
+@final
+class SinkSubtreeSizeRevVersion(Activate, Deactivate):
+    """Sink subtree size constraints."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = ccomp_cst.subtree_size_for_sink_rev_version(
+            m,
+            var.tree_edges(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def activate(self) -> None:
+        """Define the bin as active."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+    def deactivate(self) -> None:
+        """Define the bin as inactive."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+
+@final
+class NonSeedRootUB(CircularWithSeed):
+    """Non seed root upper bound constraints (c & s)."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__csts = ccomp_cst.non_seed_root_upper_bound(
+            m,
+            var.root(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield from self.__csts
+
+    def define_circular_with_seed(self) -> None:
+        """Define the bin as circular with seed."""
+        for cst in self.__csts:
+            cst.RHS = 0
+
+    def define_other(self) -> None:
+        """Define the bin as circular free of seed or partially circular."""
+        for cst in self.__csts:
+            cst.RHS = 1
+
+
+@final
+class NumberOfRootVertices(Activate, Deactivate):
+    """Number of root vertices constraints."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__cst = ccomp_cst.only_one_oriented_fragment_connects_the_source(
+            m,
+            var.root(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield self.__cst
+
+    def activate(self) -> None:
+        """Define the bin as active."""
+        self.__cst.RHS = 1
+
+    def deactivate(self) -> None:
+        """Define the bin as inactive."""
+        self.__cst.RHS = 0
+
+
+@final
+class CumulativeLengthLB(Activate, Deactivate):
+    """Cumulative length lower bound constraints."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+        min_cumulative_len: int,
+    ) -> None:
+        self.__cst = cmn_lp_cst.minimum_cumulative_length(
+            m,
+            var.sub_frag(),
+            network,
+            min_cumulative_len,
+        )
+        self.__min_cumulative_len = min_cumulative_len
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield self.__cst
+
+    def activate(self) -> None:
+        """Define the bin as active."""
+        self.__cst.RHS = self.__min_cumulative_len
+
+    def deactivate(self) -> None:
+        """Define the bin as inactive."""
+        self.__cst.RHS = 0
+
+
+# REFACTOR use State: Inactive, otherwise Active with properties
 class BinStateConstraints:
     """Bin state constraints.
 
@@ -470,81 +1089,26 @@ class BinStateConstraints:
     and to set it circular or partially circular
     """
 
-    def __init__(
-        self,
-        lb_seeds_cst: gp.Constr,
-        source_arcs_ub_cst: gp.Constr,
-        sink_arcs_ub_cst: gp.Constr,
-        number_of_vertices: int,
-        cycle_before_out_csts: Iterable[gp.Constr],
-        cycle_before_in_csts: Iterable[gp.Constr],
-        incoming_arcs_ub_for_s_connected_orfrag_csts: Iterable[gp.Constr],
-        outgoing_arcs_ub_for_t_connected_orfrag_csts: Iterable[gp.Constr],
-        nb_pred: Iterable[int],
-        nb_succ: Iterable[int],
-        ub_number_of_edges: int,
-        same_seed_connects_s_and_t_lb_csts: Iterable[gp.Constr],
-        same_seed_connects_s_and_t_ub_csts: Iterable[gp.Constr],
-        subtree_size_from_source_csts: Iterable[gp.Constr],
-        subtree_size_for_sink_rev_version_csts: Iterable[gp.Constr],
-        beta_rev_ub_csts: Iterable[gp.Constr],
-        non_seed_root_ub_csts: Iterable[gp.Constr],
-        source_arc_flow_lb_csts: Iterable[gp.Constr],
-        sink_arc_flow_lb_csts: Iterable[gp.Constr],
-        source_arc_flow_ub_csts: Iterable[gp.Constr],
-        sink_arc_flow_ub_csts: Iterable[gp.Constr],
-        source_flow_ub: float,
-        sink_flow_ub: float,
-        nb_of_source_connected_orientfrag_csts: gp.Constr,
-        min_cumulative_len_cst: gp.Constr,
-        min_cumulative_len: int,
-    ) -> None:
-        self.__lb_seeds_cst = lb_seeds_cst
+    def __init__(self, constraints: Iterable[StructuralCst]) -> None:
+        self.__constraints = list(constraints)
 
-        self.__source_arcs_ub_cst = source_arcs_ub_cst
-        self.__sink_arcs_ub_cst = sink_arcs_ub_cst
-        self.__number_of_vertices = number_of_vertices
-
-        self.__cycle_before_out_csts = list(cycle_before_out_csts)
-        self.__cycle_before_in_csts = list(cycle_before_in_csts)
-
-        self.__incoming_arcs_ub_for_s_connected_orfrag_csts = list(
-            incoming_arcs_ub_for_s_connected_orfrag_csts,
-        )
-        self.__outgoing_arcs_ub_for_t_connected_orfrag_csts = list(
-            outgoing_arcs_ub_for_t_connected_orfrag_csts,
-        )
-        self.__nb_pred = list(nb_pred)
-        self.__nb_succ = list(nb_succ)
-        self.__ub_number_of_edges = ub_number_of_edges
-
-        self.__same_seed_connects_s_and_t_lb_csts = list(
-            same_seed_connects_s_and_t_lb_csts,
-        )
-        self.__same_seed_connects_s_and_t_ub_csts = list(
-            same_seed_connects_s_and_t_ub_csts,
-        )
-
-        self.__subtree_size_from_source_csts = list(subtree_size_from_source_csts)
-        self.__subtree_size_for_sink_rev_version_csts = list(
-            subtree_size_for_sink_rev_version_csts,
-        )
-        self.__beta_rev_ub_csts = list(beta_rev_ub_csts)
-        self.__non_seed_root_ub_csts = list(non_seed_root_ub_csts)
-
-        self.__source_arc_flow_lb_csts = list(source_arc_flow_lb_csts)
-        self.__sink_arc_flow_lb_csts = list(sink_arc_flow_lb_csts)
-        self.__source_arc_flow_ub_csts = list(source_arc_flow_ub_csts)
-        self.__sink_arc_flow_ub_csts = list(sink_arc_flow_ub_csts)
-        self.__source_flow_ub = source_flow_ub
-        self.__sink_flow_ub = sink_flow_ub
-
-        self.__nb_of_source_connected_orientfrag_cst = (
-            nb_of_source_connected_orientfrag_csts
-        )
-
-        self.__min_cumulative_len_cst = min_cumulative_len_cst
-        self.__min_cumulative_len = min_cumulative_len
+        self.__c_csts = [cst for cst in self.__constraints if isinstance(cst, Circular)]
+        self.__pc_csts = [
+            cst for cst in self.__constraints if isinstance(cst, PartiallyCircular)
+        ]
+        self.__s_csts = [cst for cst in self.__constraints if isinstance(cst, Seed)]
+        self.__fs_csts = [
+            cst for cst in self.__constraints if isinstance(cst, FreeOfSeed)
+        ]
+        self.__activate_csts = [
+            cst for cst in self.__constraints if isinstance(cst, Activate)
+        ]
+        self.__deactivate_csts = [
+            cst for cst in self.__constraints if isinstance(cst, Deactivate)
+        ]
+        self.__c_s_csts = [
+            cst for cst in self.__constraints if isinstance(cst, CircularWithSeed)
+        ]
 
         self.__topology = hmf_bins.Topology.CIRCULAR
         self.define_topology(self.__topology)
@@ -563,102 +1127,46 @@ class BinStateConstraints:
         """Get the seed constraint."""
         return self.__seed_constraint
 
-    def activate_bin(self) -> None:
+    def activate_bin(
+        self,
+        topology: hmf_bins.Topology,
+        seed_constraint: hmf_bins.SeedConstraint,
+    ) -> None:
         """Activate the bin."""
-        self.__lb_seeds_cst.RHS = 1
-        self.__source_arcs_ub_cst.RHS = self.__number_of_vertices
-        self.__sink_arcs_ub_cst.RHS = self.__number_of_vertices
-        for constraint in self.__subtree_size_from_source_csts:
-            constraint.RHS = -1
-        for constraint in self.__subtree_size_for_sink_rev_version_csts:
-            constraint.RHS = 1
-        self.__nb_of_source_connected_orientfrag_cst.RHS = 1
-        self.__min_cumulative_len_cst.RHS = self.__min_cumulative_len
+        for cst in self.__activate_csts:
+            cst.activate()
+
+        self.define_topology(topology)
+        self.define_seed_constraint(seed_constraint)
+
+        if (topology, seed_constraint) == (
+            hmf_bins.Topology.CIRCULAR,
+            hmf_bins.SeedConstraint.REQUIRED,
+        ):
+            for c_s_cst in self.__c_s_csts:
+                c_s_cst.define_circular_with_seed()
+        else:
+            for c_s_cst in self.__c_s_csts:
+                c_s_cst.define_other()
+
         self.__activate = True
 
     def deactivate_bin(self) -> None:
         """Deactivate the bin."""
-        self.__lb_seeds_cst.RHS = 0
-        self.__source_arcs_ub_cst.RHS = 0
-        self.__sink_arcs_ub_cst.RHS = 0
-        for constraint in self.__subtree_size_from_source_csts:
-            constraint.RHS = 0
-        for constraint in self.__subtree_size_for_sink_rev_version_csts:
-            constraint.RHS = 0
-        self.__nb_of_source_connected_orientfrag_cst.RHS = 0
-        self.__min_cumulative_len_cst.RHS = 0
+        for cst in self.__deactivate_csts:
+            cst.deactivate()
         self.__activate = False
 
     def define_circular(self) -> None:
         """Define the bin as circular."""
-        self.__source_arcs_ub_cst.RHS = 1
-        self.__sink_arcs_ub_cst.RHS = 1
-        for constraint in self.__cycle_before_out_csts:
-            constraint.RHS = 0
-        for constraint in self.__cycle_before_in_csts:
-            constraint.RHS = 0
-        for k, constraint in enumerate(
-            self.__incoming_arcs_ub_for_s_connected_orfrag_csts,
-        ):
-            constraint.RHS = 1 + 2 * self.__nb_pred[k]
-        for k, constraint in enumerate(
-            self.__outgoing_arcs_ub_for_t_connected_orfrag_csts,
-        ):
-            constraint.RHS = 1 + 2 * self.__nb_succ[k]
-        for constraint in self.__same_seed_connects_s_and_t_lb_csts:
-            constraint.RHS = 0
-        for constraint in self.__same_seed_connects_s_and_t_ub_csts:
-            constraint.RHS = 0
-        for constraint in self.__beta_rev_ub_csts:
-            constraint.RHS = 0
-        for constraint in self.__non_seed_root_ub_csts:
-            constraint.RHS = 0
-        for constraint in self.__source_arc_flow_lb_csts:
-            constraint.RHS = 1
-        for constraint in self.__sink_arc_flow_lb_csts:
-            constraint.RHS = 1
-        for constraint in self.__source_arc_flow_ub_csts:
-            constraint.RHS = 0
-        for constraint in self.__sink_arc_flow_ub_csts:
-            constraint.RHS = 0
+        for cst in self.__c_csts:
+            cst.define_circular()
         self.__topology = hmf_bins.Topology.CIRCULAR
 
     def define_partially_circular(self) -> None:
         """Define the bin as partially circular."""
-        self.__source_arcs_ub_cst.RHS = self.__ub_number_of_edges
-        self.__sink_arcs_ub_cst.RHS = self.__ub_number_of_edges
-        for constraint in self.__cycle_before_out_csts:
-            constraint.RHS = 1
-        for constraint in self.__cycle_before_in_csts:
-            constraint.RHS = 1
-        # DOCU trick on parcirc cst for s and t connected repeated frag
-        # In fact, if we begin with a repeat looping at the beginning,
-        # we cannot loop over it because the beginning is connected to the source
-        # However, we can out at the end of the loop with T
-        for k, constraint in enumerate(
-            self.__incoming_arcs_ub_for_s_connected_orfrag_csts,
-        ):
-            constraint.RHS = 1 + self.__nb_pred[k]
-        for k, constraint in enumerate(
-            self.__outgoing_arcs_ub_for_t_connected_orfrag_csts,
-        ):
-            constraint.RHS = 1 + self.__nb_succ[k]
-        for constraint in self.__same_seed_connects_s_and_t_lb_csts:
-            constraint.RHS = -1
-        for constraint in self.__same_seed_connects_s_and_t_ub_csts:
-            constraint.RHS = 1
-        for constraint in self.__beta_rev_ub_csts:
-            constraint.RHS = self.__number_of_vertices
-        for constraint in self.__non_seed_root_ub_csts:
-            constraint.RHS = 1
-        for constraint in self.__source_arc_flow_lb_csts:
-            constraint.RHS = 0
-        for constraint in self.__sink_arc_flow_lb_csts:
-            constraint.RHS = 0
-        for constraint in self.__source_arc_flow_ub_csts:
-            constraint.RHS = self.__source_flow_ub
-        for constraint in self.__sink_arc_flow_ub_csts:
-            constraint.RHS = self.__sink_flow_ub
+        for cst in self.__pc_csts:
+            cst.define_partially_circular()
         self.__topology = hmf_bins.Topology.PARTIALLY_CIRCULAR
 
     def define_topology(self, topology: hmf_bins.Topology) -> None:
@@ -671,17 +1179,14 @@ class BinStateConstraints:
 
     def define_must_have_a_seed(self) -> None:
         """Constrain the bin to have a seed."""
-        self.__lb_seeds_cst.RHS = 1
+        for cst in self.__s_csts:
+            cst.define_must_have_a_seed()
         self.__seed_constraint = hmf_bins.SeedConstraint.REQUIRED
 
     def define_can_be_free_of_seed(self) -> None:
         """Relax the must-have-a-seed constraint."""
-        self.__lb_seeds_cst.RHS = 0
-        if self.__topology == hmf_bins.Topology.CIRCULAR:
-            # DOCU C-FS: A non-seed can connect the source in the tree
-            for constraint in self.__non_seed_root_ub_csts:
-                constraint.RHS = 1
-            # OPTIMIZE C-FS: help the solver to logic tree root and only one source-arc
+        for cst in self.__fs_csts:
+            cst.define_can_be_free_of_seed()
         self.__seed_constraint = hmf_bins.SeedConstraint.NOT_REQUIRED
 
     def define_seed_constraint(self, seed_constraint: hmf_bins.SeedConstraint) -> None:

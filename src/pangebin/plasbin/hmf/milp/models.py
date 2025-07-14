@@ -73,9 +73,8 @@ class Model:
 
     def activate_flow(self, index: int) -> None:
         """Activate the flow at the index."""
-        self.__state_constraints[index].activate_bin()
-        self.__state_constraints[index].define_topology(self.__topology)
-        self.__state_constraints[index].define_seed_constraint(
+        self.__state_constraints[index].activate_bin(
+            self.__topology,
             self.__seed_constraint,
         )
 

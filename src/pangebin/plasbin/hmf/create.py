@@ -56,7 +56,7 @@ def plasbin_assembly(  # noqa: PLR0913
     best_instances = results.Root.new()
 
     hmf_root_file_system = fs.Root(output_directory)
-    hmf_root_file_system.dir().mkdir(parents=True)
+    hmf_root_file_system.dir().mkdir(parents=True, exist_ok=True)
 
     for ccomp_idx, (subgraph, seeds, gc_scores, plasmidness) in enumerate(
         components(
@@ -66,7 +66,7 @@ def plasbin_assembly(  # noqa: PLR0913
             contig_plasmidness,
         ),
     ):
-        _LOGGER.debug("Processing connected component %d", ccomp_idx)
+        _LOGGER.info("Processing connected component %d", ccomp_idx)
         best_ccomp = bin_ccomp(
             net.Network.from_asm_graph(
                 subgraph,
@@ -80,6 +80,11 @@ def plasbin_assembly(  # noqa: PLR0913
             hmf_root_file_system.ccomp_file_system(ccomp_idx),
         )
         best_instances.add_connected_component(best_ccomp)
+        _LOGGER.info(
+            "Found %d bins for connected component `%d`",
+            best_ccomp.total_number_of_bins(),
+            ccomp_idx,
+        )
 
     best_instances.to_yaml(hmf_root_file_system.best_instances_yaml())
 
@@ -238,6 +243,11 @@ def search_best_bin_class_instance(
                 bin_class_manager,
                 bin_class_fs_manager,
             )
+
+            circ_progress.update(
+                circ_task,
+                advance=1,
+            )
             # REFACTOR avoid if-else here, flatten with function
             # Infeasible because: no circular or not better
             if feasible_instance is None or (
@@ -256,11 +266,6 @@ def search_best_bin_class_instance(
                 )
 
                 bin_class_manager.set_objective_lb(best_multi_flow_objective)
-
-                circ_progress.update(
-                    circ_task,
-                    advance=1,
-                )
 
                 test_new_bin = (
                     bin_class_manager.stats().number_of_active_bins()
