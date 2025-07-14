@@ -70,7 +70,6 @@ class MaxGCLabelBinScore:
 
     def inflow_gc(self) -> cmn_lp_vars.InflowGC:
         """Get inflow GC variables."""
-        # REFACTOR inflowgc is completely useless: use inflow instead
         return self.__inflow_gc
 
 
