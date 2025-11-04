@@ -152,7 +152,7 @@ def set_mgclb_constraints(  # noqa: PLR0913
         ),
     )
     # DOCU needed if several source arcs
-    constraints += ccomp_cst.at_most_one_source_arc_in_tree(
+    constraints += ccomp_cst.only_root_source_arc_is_active_in_tree(
         m,
         var.tree_edges(),
         var.root(),

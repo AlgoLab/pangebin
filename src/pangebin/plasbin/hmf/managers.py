@@ -111,6 +111,23 @@ class BinClass:
                 lower_bound,
             )
 
+    # BUG new set objective LB
+    def set_objective_lb_2(self, lower_bound: float, config: lp_cfg.Config) -> None:
+        """Set objective lower bound."""
+        if self.__obj_lb_cst is None:
+            self.__obj_lb_cst = lp_csts.objective_lower_bound_2(
+                self.__model.gurobi_model(),
+                lower_bound,
+                config,
+            )
+        else:
+            lp_csts.update_binning_objective_lower_bound_2(
+                self.__model.gurobi_model(),
+                self.__obj_lb_cst,
+                lower_bound,
+                config,
+            )
+
     def topology(self) -> bins.Topology:
         """Get topology."""
         return self.__model.topology()

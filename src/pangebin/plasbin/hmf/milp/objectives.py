@@ -14,7 +14,7 @@ def frag_coeff(network: net.Network, frag_id: str) -> float:
     return net.length(network, frag_id)
 
 
-def active_coverage_penalty(
+def active_pos_plm_coverage_penalty(
     bins_vars: list[lp_vars.BinVariables],
     flow_union_frag_vars: cmn_lp_vars.SubFragments,
     network: net.Network,
@@ -24,7 +24,6 @@ def active_coverage_penalty(
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
         frag_coeff(network, frag_id)
-        # BUG TMP PENALTY MULTIPLIED BY PLASMIDNESS
         * network.plasmidness(frag_id)
         * (
             gp.quicksum(
@@ -34,12 +33,11 @@ def active_coverage_penalty(
             - network.coverage(frag_id) * flow_union_frag_vars.frag(frag_id)
         )
         for frag_id in frag_set_fn(network)
-        # BUG TMP only for positive plasmidness
         if network.plasmidness(frag_id) > 0
     )
 
 
-def all_coverage_penalty(
+def all_pos_plm_coverage_penalty(
     bins_vars: list[lp_vars.BinVariables],
     network: net.Network,
     obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
@@ -48,7 +46,6 @@ def all_coverage_penalty(
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
         frag_coeff(network, frag_id)
-        # BUG TMP PENALTY MULTIPLIED BY PLASMIDNESS
         * network.plasmidness(frag_id)
         * (
             gp.quicksum(
@@ -58,7 +55,6 @@ def all_coverage_penalty(
             - network.coverage(frag_id)
         )
         for frag_id in frag_set_fn(network)
-        # BUG TMP only for positive plasmidness
         if network.plasmidness(frag_id) > 0
     )
 
@@ -76,10 +72,8 @@ def repeat_penalty(
             flow_union_frag_vars.frag(frag_id)
             - gp.quicksum(bin_var.sub_frag().frag(frag_id) for bin_var in bins_vars)
         )
-        # BUG repeat penalty coeff on coverage
         * (network.coverage(frag_id) / 3)
         for frag_id in network.fragment_ids()
-        # BUG TMP only for positive plasmidness
         if network.plasmidness(frag_id) > 0
     )
 
@@ -124,28 +118,26 @@ def circular_objective(
 ) -> gp.LinExpr:
     """Get MFB circular objective linear expression."""
     return (
-        # BUG TMP
-        # active_coverage_penalty(
+        # active_pos_plm_coverage_penalty(
         #     bins_vars,
         #     flow_union_frag_vars,
         #     network,
         #     obj_fun_domain,
         # )
-        # all_coverage_penalty(
-        #     bins_vars,
-        #     network,
-        #     obj_fun_domain,
-        # )
-        0  # BUG TMP REMOVE COV PENALTY
+        all_pos_plm_coverage_penalty(
+            bins_vars,
+            network,
+            obj_fun_domain,
+        )
         + gp.quicksum(
             plasmidness_score(network, var.flows(), obj_fun_domain) for var in bins_vars
         )
-        # BUG repeat penalty
-        + repeat_penalty(
-            bins_vars,
-            flow_union_frag_vars,
-            network,
-        )
+        # BUG no repeat penalty
+        # + repeat_penalty(
+        #     bins_vars,
+        #     flow_union_frag_vars,
+        #     network,
+        # )
     )
 
 
@@ -157,7 +149,7 @@ def partially_circular_objective(
 ) -> gp.LinExpr:
     """Get MFB partially circular objective linear expression."""
     return (
-        all_coverage_penalty(
+        all_pos_plm_coverage_penalty(
             bins_vars,
             network,
             obj_fun_domain,
@@ -165,10 +157,10 @@ def partially_circular_objective(
         + gp.quicksum(
             plasmidness_score(network, var.flows(), obj_fun_domain) for var in bins_vars
         )
-        # BUG repeat penalty
-        + repeat_penalty(
-            bins_vars,
-            flow_union_frag_vars,
-            network,
-        )
+        # BUG no repeat penalty
+        # + repeat_penalty(
+        #     bins_vars,
+        #     flow_union_frag_vars,
+        #     network,
+        # )
     )

@@ -103,6 +103,8 @@ class BinClass:
     GUROBI_LOG_NAME = Path("gurobi.log")
     __BIN_DIR_PREFIX = "bin"
 
+    MILP_SOLUTION_FILENAME = Path("milp_solution.sol")
+
     def __init__(self, directory: Path) -> None:
         """Initialize object."""
         self.__directory = directory
@@ -118,6 +120,11 @@ class BinClass:
     def bin_file_system(self, bin_number: int) -> Bin:
         """Get bin file system manager."""
         return Bin(self.dir() / f"{self.__BIN_DIR_PREFIX}_{bin_number}")
+
+    # TODO use MILP Solution file
+    def milp_solution_path(self) -> Path:
+        """Get MILP solution YAML file path."""
+        return self.dir() / self.MILP_SOLUTION_FILENAME
 
 
 class Bin:

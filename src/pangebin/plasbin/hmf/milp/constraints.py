@@ -98,6 +98,18 @@ def _set_constraints_for_one_bin(
         var.sub_frag(),
         network,
     )
+    constraints += cmn_lp_cst.active_arcs_implies_active_fragments(
+        m,
+        var.sub_vertices(),
+        var.sub_arcs(),
+        network,
+    )
+    constraints += cmn_lp_cst.active_fragments_imply_at_least_one_active_arc(
+        m,
+        var.sub_vertices(),
+        var.sub_arcs(),
+        network,
+    )
 
     structural_constraints.append(SeedsLB(m, var, network))
 
@@ -129,25 +141,10 @@ def _set_constraints_for_one_bin(
     #
     # Flow constraints
     #
-    # DOCU LATEX CONTINUE HERE
     constraints += cmn_lp_cst.flow_conservation(m, var.flows(), network)
     constraints += cmn_lp_cst.total_flow_value(m, var.flows(), network)
-    constraints += cmn_lp_cst.active_arcs_implies_active_fragments(
-        m,
-        var.sub_vertices(),
-        var.sub_arcs(),
-        network,
-    )
-    constraints += cmn_lp_cst.active_fragments_imply_at_least_one_active_arc(
-        m,
-        var.sub_vertices(),
-        var.sub_arcs(),
-        network,
-    )
 
-    # DOCU let flow be 0 on source and sink arc when circular bin
     # * C: the flow value on source and sink arcs equal is 0 AND y (must) can still be 1
-
     structural_constraints.append(
         ActiveSourceArcFlowLB(m, var, network, config.min_flow()),
     )
@@ -185,36 +182,27 @@ def _set_constraints_for_one_bin(
         var.tree_edges().dtree(),
         network,
     )
-
-    # DOCU C: (opti) force each rev beta to be 0
-    structural_constraints.append(BetaRevUB(m, var, network))
-
     constraints += ccomp_cst.rev_link_arcs_in_tree_are_active(
         m,
         var.sub_arcs(),
         var.tree_edges(),
         network,
     )
+    structural_constraints.append(BetaRevUB(m, var, network))
 
-    # DOCU change RHS weither bin is active or not
     structural_constraints.append(SourceSubtreeSize(m, var, network))
-    # DOCU change RHS weither bin is active or not
-    structural_constraints.append(SinkSubtreeSizeRevVersion(m, var, network))
-
     constraints += ccomp_cst.subtree_size_fragment_rev_version(
         m,
         var.sub_vertices(),
         var.tree_edges(),
         network,
     )
+    structural_constraints.append(SinkSubtreeSizeRevVersion(m, var, network))
 
-    # DOCU C: [opti] only the seeds can be connected to the source and the sink
+    structural_constraints.append(NumberOfRootVertices(m, var, network))
     structural_constraints.append(NonSeedRootUB(m, var, network))
 
-    # DOCU change RHS weither bin is active or not
-    structural_constraints.append(NumberOfRootVertices(m, var, network))
-
-    constraints += ccomp_cst.at_most_one_source_arc_in_tree(
+    constraints += ccomp_cst.only_root_source_arc_is_active_in_tree(
         m,
         var.tree_edges(),
         var.root(),
@@ -224,8 +212,7 @@ def _set_constraints_for_one_bin(
     #
     # Plasmid property
     #
-    # DOCU Plasmidness lower bound still correct if bin deactivate
-    # BUG TMP REMOVE PLASMIDNESS LOWER BOUND CST
+    # DOCU Plasmidness lower bound still correct if bin inactive
     constraints.append(
         _plasmidness_lower_bound(
             m,
@@ -244,7 +231,7 @@ def _set_constraints_for_one_bin(
         constraints.extend(structural_cst.constraints())
 
     m.update()  # necessary to change the rhs
-    # REFACTOR use compositions (and perhaps sub compositions): Protocol
+
     return constraints, BinStateConstraints(structural_constraints, InactiveBin())
 
 
@@ -292,6 +279,38 @@ def update_binning_objective_lower_bound(
     # DOCU update objective lower bound
     m.update()
     obj_lower_bound_cst.RHS = new_obj_lower_bound
+    m.update()
+
+
+# BUG new bin cost satisfied
+def objective_lower_bound_2(
+    m: gp.Model,
+    obj_lower_bound: float,
+    config: lp_cfg.Config,
+) -> gp.Constr:
+    """Set objective lower bound."""
+    cst = m.addConstr(
+        m.getObjective()
+        >= obj_lower_bound + config.min_cumulative_len() * config.min_flow(),
+        name="objective_function_lower_bound",
+    )
+    m.update()
+    return cast("gp.Constr", cst)
+
+
+# BUG new bin cost satisfied update fn
+def update_binning_objective_lower_bound_2(
+    m: gp.Model,
+    obj_lower_bound_cst: gp.Constr,
+    new_obj_lower_bound: float,
+    config: lp_cfg.Config,
+) -> None:
+    """Update binning objective lower bound."""
+    # DOCU update objective lower bound
+    m.update()
+    obj_lower_bound_cst.RHS = (
+        new_obj_lower_bound + config.min_cumulative_len() * config.min_flow()
+    )
     m.update()
 
 
@@ -404,7 +423,7 @@ class ContainsCsts(Protocol):
 
 
 @runtime_checkable
-class Circular(Protocol, ContainsCsts):
+class Circular(ContainsCsts, Protocol):
     """Constraints that define a circular bin."""
 
     def define_circular(self) -> None:
@@ -412,7 +431,7 @@ class Circular(Protocol, ContainsCsts):
 
 
 @runtime_checkable
-class PartiallyCircular(Protocol, ContainsCsts):
+class PartiallyCircular(ContainsCsts, Protocol):
     """Constraints that define a partially circular bin."""
 
     def define_partially_circular(self) -> None:
@@ -420,7 +439,7 @@ class PartiallyCircular(Protocol, ContainsCsts):
 
 
 @runtime_checkable
-class Seed(Protocol, ContainsCsts):
+class Seed(ContainsCsts, Protocol):
     """Constraints that define a seed constraint."""
 
     def define_must_have_a_seed(self) -> None:
@@ -428,7 +447,7 @@ class Seed(Protocol, ContainsCsts):
 
 
 @runtime_checkable
-class FreeOfSeed(Protocol, ContainsCsts):
+class FreeOfSeed(ContainsCsts, Protocol):
     """Constraints that define a free-of-seed constraint."""
 
     def define_can_be_free_of_seed(self) -> None:
@@ -436,7 +455,7 @@ class FreeOfSeed(Protocol, ContainsCsts):
 
 
 @runtime_checkable
-class Activate(Protocol, ContainsCsts):
+class Activate(ContainsCsts, Protocol):
     """Constraints that define a seed constraint."""
 
     def activate(self) -> None:
@@ -444,7 +463,7 @@ class Activate(Protocol, ContainsCsts):
 
 
 @runtime_checkable
-class Deactivate(Protocol, ContainsCsts):
+class Deactivate(ContainsCsts, Protocol):
     """Constraints that define a free-of-seed constraint."""
 
     def deactivate(self) -> None:
@@ -452,7 +471,7 @@ class Deactivate(Protocol, ContainsCsts):
 
 
 @runtime_checkable
-class CircularWithSeed(Protocol, ContainsCsts):
+class CircularWithSeed(ContainsCsts, Protocol):
     """Constraints that define a circular bin with a seed."""
 
     def define_circular_with_seed(self) -> None:
@@ -1028,6 +1047,35 @@ class SinkSubtreeSizeRevVersion(Activate, Deactivate):
 
 
 @final
+class NumberOfRootVertices(Activate, Deactivate):
+    """Number of root vertices constraints."""
+
+    def __init__(
+        self,
+        m: gp.Model,
+        var: lp_vars.BinVariables,
+        network: net.Network,
+    ) -> None:
+        self.__cst = ccomp_cst.only_one_oriented_fragment_connects_the_source(
+            m,
+            var.root(),
+            network,
+        )
+
+    def constraints(self) -> Iterator[gp.Constr]:
+        """Get the constraint."""
+        yield self.__cst
+
+    def activate(self) -> None:
+        """Define the bin as active."""
+        self.__cst.RHS = 1
+
+    def deactivate(self) -> None:
+        """Define the bin as inactive."""
+        self.__cst.RHS = 0
+
+
+@final
 class NonSeedRootUB(CircularWithSeed):
     """Non seed root upper bound constraints (c & s)."""
 
@@ -1056,35 +1104,6 @@ class NonSeedRootUB(CircularWithSeed):
         """Define the bin as circular free of seed or partially circular."""
         for cst in self.__csts:
             cst.RHS = 1
-
-
-@final
-class NumberOfRootVertices(Activate, Deactivate):
-    """Number of root vertices constraints."""
-
-    def __init__(
-        self,
-        m: gp.Model,
-        var: lp_vars.BinVariables,
-        network: net.Network,
-    ) -> None:
-        self.__cst = ccomp_cst.only_one_oriented_fragment_connects_the_source(
-            m,
-            var.root(),
-            network,
-        )
-
-    def constraints(self) -> Iterator[gp.Constr]:
-        """Get the constraint."""
-        yield self.__cst
-
-    def activate(self) -> None:
-        """Define the bin as active."""
-        self.__cst.RHS = 1
-
-    def deactivate(self) -> None:
-        """Define the bin as inactive."""
-        self.__cst.RHS = 0
 
 
 @final

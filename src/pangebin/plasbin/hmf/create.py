@@ -39,6 +39,7 @@ def plasbin_assembly(  # noqa: PLR0913
     config: cfg.Config,
     gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path,
+    debug: bool,  # noqa: FBT001
 ) -> results.RootReader:
     """Bin contigs of a standardized assembly graph.
 
@@ -78,6 +79,7 @@ def plasbin_assembly(  # noqa: PLR0913
             config.bin_properties(),
             config.model(),
             hmf_root_file_system.ccomp_file_system(ccomp_idx),
+            debug,
         )
         best_instances.add_connected_component(best_ccomp)
         _LOGGER.info(
@@ -153,6 +155,7 @@ def bin_ccomp(
     bin_properties: cfg.BinProperties,
     model_config: lp_cfg.Config,
     ccomp_fs_manager: fs.ConnectedComponent,
+    debug: bool,  # noqa: FBT001
 ) -> results.ConnectedComponent:
     """Bin DNA sequences of a GFA graph.
 
@@ -177,6 +180,7 @@ def bin_ccomp(
             network,
             bin_class_manager,
             ccomp_fs_manager,
+            debug,
         )
         if best_bin_class_instance is not None:
             best_instances.best_for_topology(
@@ -204,6 +208,7 @@ def search_best_bin_class_instance(
     network: net.Network,
     bin_class_manager: managers.BinClass,
     ccomp_fs_manager: fs.ConnectedComponent,
+    debug: bool,  # noqa: FBT001
 ) -> results.FeasibleInstance | None:
     """Search best bin class instance."""
     best_feasible_instance: results.FeasibleInstance | None = None
@@ -242,6 +247,7 @@ def search_best_bin_class_instance(
                 network,
                 bin_class_manager,
                 bin_class_fs_manager,
+                debug,
             )
 
             circ_progress.update(
@@ -264,8 +270,13 @@ def search_best_bin_class_instance(
                 best_multi_flow_objective = (
                     bin_class_manager.model().gurobi_model().ObjVal
                 )
-
-                bin_class_manager.set_objective_lb(best_multi_flow_objective)
+                # BUG Use of new set obj LB
+                # bin_class_manager.set_objective_lb(best_multi_flow_objective)
+                _LOGGER.debug("Use of new set obj LB")
+                bin_class_manager.set_objective_lb_2(
+                    best_multi_flow_objective,
+                    bin_class_manager.model().config(),
+                )
 
                 test_new_bin = (
                     bin_class_manager.stats().number_of_active_bins()
@@ -286,12 +297,18 @@ def _solve_instance(
     network: net.Network,
     bin_class_manager: managers.BinClass,
     bin_class_file_system: fs.BinClass,
+    debug: bool,  # noqa: FBT001
 ) -> results.FeasibleInstance | None:
     bin_class_file_system.dir().mkdir()
     _solve_mfb_model(bin_class_manager.model().gurobi_model(), bin_class_file_system)
 
     if bin_class_manager.model().gurobi_model().Status != gp.GRB.OPTIMAL:
         return None
+
+    if debug:
+        bin_class_manager.model().gurobi_model().write(
+            str(bin_class_file_system.milp_solution_path()),
+        )
 
     for k in range(bin_class_manager.stats().number_of_active_bins()):
         bin_file_system = bin_class_file_system.bin_file_system(k)

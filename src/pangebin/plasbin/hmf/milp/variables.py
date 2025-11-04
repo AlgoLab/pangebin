@@ -64,13 +64,13 @@ def _new_variables_for_one_bin(
     frag = cmn_lp_vars.SubFragments(
         network,
         model,
-        Domain.continuous(0, gp.GRB.INFINITY),
+        Domain.continuous(0, 1),
         variable_prefix,
     )
     sub_v = cmn_lp_vars.SubVertices(
         network,
         model,
-        Domain.continuous(0, gp.GRB.INFINITY),
+        Domain.continuous(0, 1),
         variable_prefix,
     )
     sub_arc = cmn_lp_vars.SubArcs(
@@ -110,7 +110,7 @@ def init_binning(
         cmn_lp_vars.SubFragments(
             network,
             model,
-            Domain.continuous(0, gp.GRB.INFINITY),
+            Domain.continuous(0, 1),
             "flow_union",
         ),
     )
