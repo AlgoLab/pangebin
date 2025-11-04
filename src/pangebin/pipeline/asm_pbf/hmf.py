@@ -60,7 +60,12 @@ def hmf(
     Path
         Path to the PlasBin-flow bin file.
     """
-    pblog.init_logger(_LOGGER, "Running pangebin classbin approach.", debug)
+    pblog.init_logger(
+        _LOGGER,
+        "Running pangebin classbin approach.",
+        debug,
+        log_file=outdir / "pangebin.log",
+    )
 
     std_gfa = cmn.prepare_graph(assembly_gfa, is_skesa, debug)
 
@@ -84,6 +89,7 @@ def hmf(
         hmf_config,
         gurobi_config,
         outdir,
+        debug,
     )
 
     _LOGGER.info(
