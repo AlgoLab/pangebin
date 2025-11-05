@@ -258,7 +258,7 @@ def search_best_bin_class_instance(
             # Infeasible because: no circular or not better
             if feasible_instance is None or (
                 best_multi_flow_objective is not None
-                # BUG TMP ROUND
+                # HACK round objective values to compare them
                 and round(bin_class_manager.model().gurobi_model().ObjVal, 4)
                 <= round(best_multi_flow_objective, 4)
             ):
@@ -270,7 +270,7 @@ def search_best_bin_class_instance(
                 best_multi_flow_objective = (
                     bin_class_manager.model().gurobi_model().ObjVal
                 )
-                # BUG Use of new set obj LB
+                # BUG Use of obj LB 2
                 # bin_class_manager.set_objective_lb(best_multi_flow_objective)
                 _LOGGER.debug("Use of new set obj LB")
                 bin_class_manager.set_objective_lb_2(
