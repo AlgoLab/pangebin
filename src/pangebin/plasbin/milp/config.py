@@ -72,6 +72,7 @@ class Gurobi(YAMLInterface):
 
 def configurate_global_gurobi(config: Gurobi) -> None:
     """Configure global Gurobi parameters."""
+    gp.setParam(gp.GRB.Param.LogToConsole, 0)
     mip_gap = config.mip_gap()
     if mip_gap is not None:
         gp.setParam(gp.GRB.Param.MIPGap, mip_gap)

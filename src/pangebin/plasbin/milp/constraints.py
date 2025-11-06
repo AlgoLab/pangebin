@@ -129,9 +129,6 @@ def active_arcs_imply_strict_positive_flow(
     flow_lower_bound: float,
 ) -> list[gp.Constr]:
     """Active arcs imply strict positive flow."""
-    # DOCU new required constraint for all the models(? see rmk below)
-    # FIXME add to models binlab and decomp?
-    # See if Pos flow csts was not sufficient before
     constraints: list[gp.Constr] = []
     invert_epsilon_f = 1 / flow_lower_bound
     constraints.extend(
@@ -1163,6 +1160,50 @@ def t_connected_orfrag_outgoing_arcs_ub(
     ), nb_succs
 
 
+def non_seed_source_arc_ub(
+    m: gp.Model,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
+    network: net.Network,
+    upper_bound: int,
+) -> list[gp.Constr]:
+    """Set non seed source arc upper bound."""
+    return list(
+        m.addConstrs(
+            (
+                sub_arcs_vars.s((network.SOURCE_VERTEX, orfrag)) <= upper_bound
+                for frag_id in filter(
+                    lambda fid: fid not in network.seeds(),
+                    network.fragment_ids(),
+                )
+                for orfrag in network.to_oriented(frag_id)
+            ),
+            name="non_seed_source_arc_ub",
+        ).values(),
+    )
+
+
+def non_seed_sink_arc_ub(
+    m: gp.Model,
+    sub_arcs_vars: cmn_lp_vars.SubArcs,
+    network: net.Network,
+    upper_bound: int,
+) -> list[gp.Constr]:
+    """Set non seed sink arc upper bound."""
+    return list(
+        m.addConstrs(
+            (
+                sub_arcs_vars.t((orfrag, network.SINK_VERTEX)) <= upper_bound
+                for frag_id in filter(
+                    lambda fid: fid not in network.seeds(),
+                    network.fragment_ids(),
+                )
+                for orfrag in network.to_oriented(frag_id)
+            ),
+            name="non_seed_sink_arc_ub",
+        ).values(),
+    )
+
+
 def cycle_before_out(
     m: gp.Model,
     sub_vertices_vars: cmn_lp_vars.SubVertices,
@@ -1185,8 +1226,7 @@ def cycle_before_out(
                     for out_link_arc in network.out_link_arcs(or_frag)
                 )
                 <= 0
-                for frag_id in network.fragment_ids()
-                for or_frag in network.to_oriented(frag_id)
+                for or_frag in network.oriented_fragments()
             ),
             name="cycle_before_out",
         ).values(),
@@ -1215,8 +1255,7 @@ def cycle_before_in(
                     for in_link_arc in network.in_link_arcs(or_frag)
                 )
                 <= 0
-                for frag_id in network.fragment_ids()
-                for or_frag in network.to_oriented(frag_id)
+                for or_frag in network.oriented_fragments()
             ),
             name="cycle_before_in",
         ).values(),

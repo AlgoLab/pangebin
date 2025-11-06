@@ -16,7 +16,7 @@ import typer
 import pangebin.gfa.header as gfa_header
 import pangebin.gfa.input_output as gfa_io
 import pangebin.panassembly.input_output as panassembly_io
-import pangebin.pblog as common_log
+from pangebin import pblog
 from pangebin.panassembly.create import pangenome_graph_into_panassembly_graph
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,10 +62,10 @@ def panassembly(
         Arguments.STANDARDIZED_UNICYCLER_GFA,
     ],
     outdir: Annotated[Path, IOOpts.OUTPUT_DIR] = panassembly_io.Config.DEFAULT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Produce a pangenome assembly from the original assemblers and the pangenome."""
-    common_log.init_logger(_LOGGER, "Producing pangenome assembly.", debug)
+    pblog.init_logger(_LOGGER, "Producing pangenome assembly.", debug)
 
     standardized_skesa_gfa = gfa_io.from_file(standardized_skesa_gfa_path)
     if not gfa_header.is_standardized(standardized_skesa_gfa):

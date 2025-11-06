@@ -11,7 +11,7 @@ from typing import Annotated
 
 import typer
 
-import pangebin.pblog as common_log
+from pangebin import pblog
 from pangebin.gc_content import create, items
 from pangebin.gc_content import input_output as io
 
@@ -68,10 +68,10 @@ def from_gfa(
         int,
         ScoresOptions.PSEUDO_COUNT,
     ] = create.DEFAULT_PSEUDO_COUNT,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Compute GC scores from GFA assembly graph."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Computing GC scores from GFA assembly graph.",
         debug,

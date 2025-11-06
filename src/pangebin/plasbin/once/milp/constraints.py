@@ -30,21 +30,25 @@ def set_mgclb_constraints(  # noqa: PLR0913
         network,
     )
     # XXX PAER TESTS
+    # DOCU needed if source arc involves all vertices (and not only the seeds)
     constraints.append(
         cmn_lp_cst.active_seeds_lower_bound(m, var.sub_frags(), network, 1),
     )
     # DOCU UB for number of source and sink arcs
+    # DOCU needed if source arc involves all vertices (and not only the seeds)
     constraints.append(
-        cmn_lp_cst.source_arcs_upper_bound(m, var.sub_arcs(), network, 1)
+        cmn_lp_cst.source_arcs_upper_bound(m, var.sub_arcs(), network, 1),
     )
     constraints.append(cmn_lp_cst.sink_arcs_upper_bound(m, var.sub_arcs(), network, 1))
 
+    # DOCU needed if source arc involves all vertices (and not only the seeds)
     # DOCU if source_arc, no other incoming link
     constraints += cmn_lp_cst.s_connected_orfrag_incoming_arcs_ub(
         m,
         var.sub_arcs(),
         network,
     )[0]
+    # DOCU needed if source arc involves all vertices (and not only the seeds)
     # DOCU if sink_arc, no other outgoing link
     constraints += cmn_lp_cst.t_connected_orfrag_outgoing_arcs_ub(
         m,
@@ -59,7 +63,7 @@ def set_mgclb_constraints(  # noqa: PLR0913
         network,
     )
 
-    # XXX PAER TESTS perhaps not necessary before thanks to f_a >= F_a
+    # DOCU modif vs decomp and binlab
     constraints += cmn_lp_cst.active_arcs_imply_strict_positive_flow(
         m,
         var.flows(),
@@ -96,6 +100,8 @@ def set_mgclb_constraints(  # noqa: PLR0913
     #
     # Connectivity
     #
+    # DOCU use of a beta rev
+
     constraints += ccomp_cst.arcs_in_tree_are_active(
         m,
         var.sub_arcs(),
@@ -103,8 +109,13 @@ def set_mgclb_constraints(  # noqa: PLR0913
         network,
     )
 
+    # DOCU needed if can consider circular bin
     # DOCU C: (opti) force each rev beta to be 0
-    constraints += ccomp_cst.beta_rev_upper_bound(m, var.tree_edges(), network)
+    beta_rev_up_csts = ccomp_cst.beta_rev_upper_bound(m, var.tree_edges(), network)
+    constraints += beta_rev_up_csts
+    if not circular:
+        for beta_rev_cst in beta_rev_up_csts:
+            beta_rev_cst.RHS = 1
 
     constraints += ccomp_cst.rev_link_arcs_in_tree_are_active(
         m,
@@ -132,6 +143,7 @@ def set_mgclb_constraints(  # noqa: PLR0913
         network,
     )
 
+    # DOCU needed if several source arcs
     constraints.append(
         ccomp_cst.only_one_oriented_fragment_connects_the_source(
             m,
@@ -139,18 +151,20 @@ def set_mgclb_constraints(  # noqa: PLR0913
             network,
         ),
     )
-    constraints += ccomp_cst.at_most_one_source_arc_in_tree(
+    # DOCU needed if several source arcs
+    constraints += ccomp_cst.only_root_source_arc_is_active_in_tree(
         m,
         var.tree_edges(),
         var.root(),
         network,
     )
+    # DOCU needed if several source arcs
     constraints += ccomp_cst.root_priority(m, var.root(), var.sub_arcs(), network)
     #
     # GC
     #
     constraints.append(
-        cmn_lp_cst.exactly_one_interval_is_active(m, var.gc(), intervals)
+        cmn_lp_cst.exactly_one_interval_is_active(m, var.gc(), intervals),
     )
     constraints += cmn_lp_cst.define_inflow_gc(
         m,
@@ -166,7 +180,7 @@ def set_mgclb_constraints(  # noqa: PLR0913
     #
     # DOCU MCF: + minimum flow value constraint
     constraints += cmn_lp_cst.total_flow_is_strictly_positive(m, var.flows(), min_flow)
-    # DOCU MCF: + min cumulatie len constraint
+    # DOCU MCF: + min cumulative len constraint
     constraints.append(
         cmn_lp_cst.minimum_cumulative_length(
             m,

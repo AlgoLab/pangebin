@@ -11,7 +11,7 @@ import typer
 
 import pangebin.gene_density.create as gd_create
 import pangebin.gene_density.input_output as gd_io
-import pangebin.pblog as common_log
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,10 +39,10 @@ def fasta(
     fasta_file: Annotated[Path, SequenceGeneDensityArguments.FASTA_FILE],
     gene_mapping_sam: Annotated[Path, SequenceGeneDensityArguments.GENE_MAPPING_SAM],
     output_file: Annotated[Path, SequenceGeneDensityArguments.OUTPUT_FILE],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Compute the gene densities from the mapping of genes against the sequences."""
-    common_log.init_logger(_LOGGER, "Computing sequence gene densities.", debug)
+    pblog.init_logger(_LOGGER, "Computing sequence gene densities.", debug)
     sequence_gene_densities, sequence_intervals = gd_create.sequence_gene_density(
         fasta_file,
         gene_mapping_sam,
@@ -79,10 +79,10 @@ def frag(
         FragmentGeneDensityArguments.GENE_MAPPING_TO_CONTIGS_SAM,
     ],
     output_file: Annotated[Path, FragmentGeneDensityArguments.OUTPUT_FILE],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Compute fragment gene densities from the mapping of genes against the contigs."""
-    common_log.init_logger(_LOGGER, "Computing fragment gene densities.", debug)
+    pblog.init_logger(_LOGGER, "Computing fragment gene densities.", debug)
     fragment_gene_densities, fragment_intervals = gd_create.fragment_gene_density(
         panassembly_gfa,
         gene_mapping_to_contigs_sam,

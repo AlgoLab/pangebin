@@ -225,7 +225,7 @@ def only_one_oriented_fragment_connects_the_source(
     )
 
 
-def at_most_one_source_arc_in_tree(
+def only_root_source_arc_is_active_in_tree(
     m: gp.Model,
     tree_vars: ccomp_var.TreeEdges,
     root_vars: ccomp_var.Root,
@@ -275,7 +275,7 @@ def beta_rev_upper_bound(
     Notes
     -----
     (Default) Refuse the use of beta_rev: set RHS to `0`.
-    Allow the use of beta_rev: set RHS to `1`.
+    Allow the use of beta_rev: set RHS to `|V|`.
     """
     return list(
         m.addConstrs(

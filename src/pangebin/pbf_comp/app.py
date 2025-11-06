@@ -11,12 +11,12 @@ from typing import Annotated
 
 import typer
 
-import pangebin.pbf_comp.input_output as comp_io
+import pangebin.pbf_comp.input_output as pbf_io
 import pangebin.pbf_comp.ops as comp_ops
-import pangebin.pblog as common_log
 import pangebin.plasbin.input_output as pb_io
 import pangebin.plasmidness.input_output as plm_io
 import pangebin.seed.input_output as seed_io
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,12 +45,12 @@ def plasmidness(
         Path,
         PlasmidnessArguments.PG_PLASMIDNESS_TSV,
     ],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Convert PlasBin-flow plasmidness file to PangeBin plasmidness TSV file."""
-    common_log.init_logger(_LOGGER, "Converting PlasBin-flow plasmidness file.", debug)
+    pblog.init_logger(_LOGGER, "Converting PlasBin-flow plasmidness file.", debug)
     with (
-        comp_io.PlmReader.open(pbf_plasmidness_file) as pbf_plasmidness_fin,
+        pbf_io.PlmReader.open(pbf_plasmidness_file) as pbf_plasmidness_fin,
         plm_io.Writer.open(
             pg_plasmidness_tsv,
         ) as pg_plasmidness_fout,
@@ -89,16 +89,16 @@ def seeds(
         Path,
         SeedArguments.PG_SEEDS_TSV,
     ],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Convert PlasBin-flow seed sequences file to PangeBin seed sequences TSV file."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Converting PlasBin-flow seed sequences file.",
         debug,
     )
     with (
-        comp_io.SeedReader.open(pbf_seeds_file) as pbf_seeds_fin,
+        pbf_io.SeedReader.open(pbf_seeds_file) as pbf_seeds_fin,
         seed_io.Writer.open(
             pg_seeds_tsv,
         ) as pg_seeds_fout,
@@ -135,16 +135,16 @@ def bins(
         Path,
         BinArguments.PBF_BIN_INFO_TSV,
     ],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Convert PangeBin-flow bins into PlasBin-flow bin info TSV file."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Converting PangeBin-flow bins into PlasBin-flow bin info TSV file.",
         debug,
     )
     io_manager = pb_io.Manager(pb_io.Config(output_directory=pg_bins_parent_dir))
-    with comp_io.BinsWriter.open(pbf_bin_info_tsv) as pbf_bin_info_fout:
+    with pbf_io.BinsWriter.open(pbf_bin_info_tsv) as pbf_bin_info_fout:
         for k in range(io_manager.number_of_bins()):
             pbf_bin_info_fout.write_bin_line(
                 comp_ops.pg_bin_dir_to_pbf_bininfo(io_manager, k),

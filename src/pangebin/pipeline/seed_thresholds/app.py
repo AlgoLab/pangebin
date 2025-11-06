@@ -19,12 +19,12 @@ import pangebin.database.input_output as db_io
 import pangebin.gene_density.app as gd_app
 import pangebin.ground_truth.app as gt_app
 import pangebin.mapping.app as mapping_app
-import pangebin.pblog as common_log
 import pangebin.pipeline.seed_thresholds.config as pipe_seed_thr_cfg
 import pangebin.seed.thresholds.app as seed_thr_app
 import pangebin.seed.thresholds.input_output as seed_thr_io
 import pangebin.seed.thresholds.items as seed_thr_items
 import pangebin.sra_tools as sra
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,10 +87,10 @@ def seed_thresholds(
         Path,
         IOOptions.OUTDIR,
     ] = seed_thr_io.Config.DEFAULT_OUTPUT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> seed_thr_io.Manager:
     """Obtain the seed threshold pairs from paired Illumina BioSamples."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Obtaining the seed threshold pairs from paired Illumina BioSamples.",
         debug,

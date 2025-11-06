@@ -299,7 +299,7 @@ def _set_constraints_for_one_bin(  # noqa: PLR0913
         )
     )
     constraints.append(nb_of_source_connected_orientfrag_cst)
-    constraints += ccomp_cst.at_most_one_source_arc_in_tree(
+    constraints += ccomp_cst.only_root_source_arc_is_active_in_tree(
         m,
         var.tree_edges(),
         var.root(),

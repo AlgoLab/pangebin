@@ -16,7 +16,6 @@ def coverage_score(
     obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> gurobipy.LinExpr:
     """Get linear expression for coverage score."""
-    # DOCU MCF: Tests on coverage score
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     max_frag_length = net.max_frag_length(network, frag_set_fn)
     return gurobipy.quicksum(
@@ -82,7 +81,6 @@ def plasmidness_score(
     """Get linear expression for plasmidness score."""
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     max_frag_length = net.max_frag_length(network, frag_set_fn)
-    # DOCU MPS: coeff in obj
     return gurobipy.quicksum(
         cmn_lp_objs.zeta_i(network, frag_id, max_frag_length)
         * network.plasmidness(frag_id)

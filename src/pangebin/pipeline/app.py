@@ -10,9 +10,9 @@ from typing import Annotated
 
 import typer
 
-import pangebin.pblog as common_log
 import pangebin.pipeline.asm_pbf.app as pipe_asm_pbf_app
 import pangebin.pipeline.seed_thresholds.app as pipe_seed_thr_app
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,9 +20,9 @@ APP = typer.Typer(rich_markup_mode="rich")
 
 
 @APP.command()
-def run(debug: Annotated[bool, common_log.OPT_DEBUG] = False) -> None:
+def run(debug: Annotated[bool, pblog.OPT_DEBUG] = False) -> None:
     """Run the main PangeBin pipeline."""
-    common_log.init_logger(_LOGGER, "Running pangebin pipeline.", debug)
+    pblog.init_logger(_LOGGER, "Running pangebin pipeline.", debug)
 
 
 CONFIG_APP = typer.Typer(

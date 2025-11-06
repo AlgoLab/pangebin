@@ -14,6 +14,9 @@
 >[!WARNING]
 >
 > * [ ] Clean `once` tmp internal experiments
+>   * Many things differ between once and decomp and binlab
+>     * [ ] Use same constraint structure as in decomp and binlab
+>     * [ ] Inspire from multi-flow to create a once-2 binning appraoch (hiearchizing the topology and seed constraints)
 > * [ ] Clean `classbin` tmp internal experiments
 
 ## Perspectives

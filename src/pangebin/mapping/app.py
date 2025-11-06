@@ -13,7 +13,7 @@ import typer
 
 import pangebin.mapping.filter as map_filter
 import pangebin.mapping.input_output as map_io
-import pangebin.pblog as common_log
+from pangebin import pblog
 from pangebin.mapping import create
 
 _LOGGER = logging.getLogger(__name__)
@@ -42,10 +42,10 @@ def blast(
     query_fasta_file: Annotated[Path, BlastArguments.QUERY_FASTA_FILE],
     subject_fasta_file: Annotated[Path, BlastArguments.SUBJECT_FASTA_FILE],
     out_mapping_file: Annotated[Path, BlastArguments.OUTPUT_FILE],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Map a query FASTA file to a subject FASTA file."""
-    common_log.init_logger(_LOGGER, "Mapping query to subject.", debug)
+    pblog.init_logger(_LOGGER, "Mapping query to subject.", debug)
     create.blast_map(query_fasta_file, subject_fasta_file, out_mapping_file)
     return out_mapping_file
 
@@ -133,10 +133,10 @@ def filter(  # noqa: A001
         FilterOptions.MIN_S_COVERAGE,
     ] = map_filter.Config.DEFAULT_MIN_S_COV,
     config_file: Annotated[Path | None, FilterOptions.CONFIG_FILE] = None,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Filter a SAM file."""
-    common_log.init_logger(_LOGGER, "Filtering SAM file.", debug)
+    pblog.init_logger(_LOGGER, "Filtering SAM file.", debug)
     config = (
         map_filter.Config.from_yaml(config_file)
         if config_file

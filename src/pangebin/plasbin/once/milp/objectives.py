@@ -9,11 +9,6 @@ import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.variables as lp_vars
 
 
-def frag_coeff(network: net.Network, frag_id: str) -> float:
-    """Get fragment coefficient."""
-    return net.length(network, frag_id)
-
-
 def coverage_score(
     network: net.Network,
     flow_vars: cmn_lp_vars.Flow,
@@ -23,7 +18,7 @@ def coverage_score(
     """Get linear expression for coverage score."""
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
-        frag_coeff(network, frag_id)
+        net.length(network, frag_id)
         * (
             flow_vars.incoming_forward_reverse(network, frag_id)
             - (
@@ -44,7 +39,7 @@ def coverage_penalty(
     """Get linear expression for coverage score."""
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
-        frag_coeff(network, frag_id)
+        net.length(network, frag_id)
         * (
             flow_vars.incoming_forward_reverse(network, frag_id)
             - network.coverage(frag_id) * frag_vars.frag(frag_id)
@@ -61,7 +56,7 @@ def plasmidness_score(
     """Get linear expression for coverage score."""
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
-        frag_coeff(network, frag_id)
+        net.length(network, frag_id)
         * network.plasmidness(frag_id)
         * flow_vars.incoming_forward_reverse(network, frag_id)
         for frag_id in frag_set_fn(network)
@@ -77,7 +72,7 @@ def gc_score(
     """Get linear expression for GC score."""
     frag_set_fn = cmn_lp_objs.ObjectiveFunctionDomain.to_fn(obj_fun_domain)
     return gp.quicksum(
-        frag_coeff(network, frag_id)
+        net.length(network, frag_id)
         * network.gc_score(frag_id)[b]
         * inflow_gc_vars.x(frag_id, interval)
         for b, interval in enumerate(intervals)
@@ -95,12 +90,9 @@ def set_mgclb_objective(
     """Set MGCLB objective."""
     m.setObjective(
         (
-            # HACK ONCE TESTS
             coverage_penalty(network, var.flows(), var.sub_frags(), obj_fun_domain)
-            # coverage_score(network, var.flows(), var.sub_frags(), obj_fun_domain)
             + plasmidness_score(network, var.flows(), obj_fun_domain)
-            # HACK ONCE TESTS
-            # + gc_score(network, intervals, var.inflow_gc(), obj_fun_domain)
+            + gc_score(network, intervals, var.inflow_gc(), obj_fun_domain)
         ),
         gp.GRB.MAXIMIZE,
     )

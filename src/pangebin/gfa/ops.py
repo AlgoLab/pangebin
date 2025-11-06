@@ -461,15 +461,21 @@ def connected_components(graph: gfapy.Gfa) -> list[gfapy.Gfa]:
     Warning
     -------
     If one sequence is null, it is replaced by a placeholder (*) is the resulting GFA.
+
+    Only links are considered (not containments)
     """
     if graph.version != "gfa1":
         raise NotImplementedError
 
     # Build naive nx graph
     nx_graph: nx.Graph = nx.Graph()
+    segment_line: GfaSegment
+    for segment_line in graph.segments:
+        nx_graph.add_node(segment_line.name)
+
     edge_line: GfaLink | GfaContainment
     for edge_line in graph.edges:
-        nx_graph.add_edge(edge_line.from_segment, edge_line.to_segment)
+        nx_graph.add_edge(edge_line.from_segment.name, edge_line.to_segment.name)
 
     # Get connected components on nx graph
     d_seg_cc: dict[str, int] = {}
@@ -484,15 +490,14 @@ def connected_components(graph: gfapy.Gfa) -> list[gfapy.Gfa]:
     ]
 
     # Segment lines
-    segment_line: GfaSegment
     for segment_line in graph.segments:
         if not segment_line.sequence:
             segment_line.sequence = gfapy.Placeholder()
         connected_graphs[d_seg_cc[segment_line.name]].add_line(str(segment_line))
 
-    # Link and containment lines
+    # Link
     for edge_line in graph.edges:
-        connected_graphs[d_seg_cc[edge_line.from_segment]].add_line(str(edge_line))
+        connected_graphs[d_seg_cc[edge_line.from_segment.name]].add_line(str(edge_line))
 
     # Path
     for path_line in graph.paths:

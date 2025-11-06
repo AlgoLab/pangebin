@@ -124,6 +124,8 @@ class TreeEdges:
         else:
             prefix_name += "_"
         self.__dir_tree_vars = TreeArcs(network, model, beta_domain, prefix_name)
+        # OPTIMIZE reverse symmetry for beta_rev?
+        # it can be not necessary to double the link arcs
         self.__beta_rev: dict[str, gp.Var] = dict(
             gen_vars(
                 model,

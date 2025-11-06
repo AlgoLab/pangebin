@@ -3,6 +3,7 @@
 from collections.abc import Iterable
 
 
+# REFACTOR repetition of SequenceNormCoverage
 class ContigMult:
     """PlasBin-flow contig multiplicity."""
 
