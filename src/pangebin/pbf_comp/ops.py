@@ -16,8 +16,15 @@ def pg_bin_dir_to_pbf_bininfo(
     bin_number: int,
 ) -> pbf_items.PBFBinInfo:
     """Convert PangeBin bin directory to PlasBin-flow bin info."""
+    # REFACTOR only valid for subset of pangebin approaches
     with bins_io.Reader.open(io_manager.bin_seq_normcov_path(bin_number)) as bin_fin:
-        seq_mults = [pbf_items.ContigMult(seq_id, mult) for seq_id, mult in bin_fin]
+        seq_mults = [
+            pbf_items.ContigMult(
+                seq_normcov.identifier(),
+                seq_normcov.normalized_coverage(),
+            )
+            for seq_normcov in bin_fin
+        ]
     bin_stats = bin_item.Stats.from_yaml(io_manager.bin_stats_path(bin_number))
     return pbf_items.PBFBinInfo(
         f"P{bin_number + 1}",

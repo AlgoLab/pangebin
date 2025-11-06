@@ -13,7 +13,7 @@ from rich import progress
 
 import pangebin.database.items as db_items
 import pangebin.entrez as pg_entrez
-import pangebin.pblog as common_log
+from pangebin import pblog
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -57,7 +57,7 @@ def illumina_exp_sra_ids_from_plasmid_accessions(
     for record in progress.track(
         records,
         description="Processing plasmid accessions...",
-        console=common_log.CONSOLE,
+        console=pblog.CONSOLE,
     ):
         genblank_primary_accession = str(record["GBSeq_primary-accession"])
 

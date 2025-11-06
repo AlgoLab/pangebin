@@ -6,7 +6,7 @@ import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.decomp.milp.models as lp_mod
 import pangebin.plasbin.decomp.milp.objectives as lp_obj
 import pangebin.plasbin.decomp.milp.variables as lp_vars
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 from pangebin.yaml_interface import YAMLInterface
 
@@ -46,7 +46,7 @@ class MCFStats:
 def mcf_stats_from_opt_vars(
     network: net.Network,
     mcf_vars: lp_vars.MaxCovFlow,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MCFStats:
     """Create MCF stats from optimal variables."""
     return MCFStats(
@@ -99,7 +99,7 @@ def mgc_stats_from_opt_vars(
     network: net.Network,
     intervals: gc_items.Intervals,
     mgc_vars: lp_vars.MaxGC,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MGCStats:
     """Create MGC stats from optimal variables."""
     return MGCStats(
@@ -160,7 +160,7 @@ def mps_stats_from_opt_vars(
     network: net.Network,
     intervals: gc_items.Intervals,
     mps_vars: lp_vars.MaxPlasmidScore,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MPSStats:
     """Create MPS stats from optimal variables."""
     return MPSStats(
@@ -203,7 +203,7 @@ def mrcf_stats_from_opt_vars(
     network: net.Network,
     intervals: gc_items.Intervals,
     mrcf_vars: lp_vars.MaxRefCovFlow,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MRCFStats:
     """Create MRCF stats from optimal variables."""
     return MRCFStats(

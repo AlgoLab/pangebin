@@ -12,10 +12,10 @@ from typing import Annotated
 import typer
 
 import pangebin.gfa.input_output as gfa_io
-import pangebin.pblog as common_log
 import pangebin.seed.create as seed_create
 import pangebin.seed.input_output as seed_io
 import pangebin.seed.thresholds.app as seed_thr_app
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,10 +40,10 @@ class FromGeneDensityArguments:
 def from_positive_gene_densities(
     gene_density_file: Annotated[Path, FromGeneDensityArguments.GENE_DENSITY_FILE],
     output_seed_tsv: Annotated[Path, FromGeneDensityArguments.OUTPUT_SEED_TSV],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Extract seed sequences with positive gene density."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Extracting seed sequences with positive gene density.",
         debug,
@@ -93,10 +93,10 @@ def from_contigs_to_fragment_seeds(
         Path,
         FromContigsToFragmentSeedsArguments.OUTPUT_SEED_TSV,
     ],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Extract seed fragments from seed contigs."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Extracting seed fragments from seed contigs.",
         debug,

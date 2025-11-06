@@ -14,9 +14,9 @@ import pangebin.plasbin.binlab.milp.input_output as lp_io
 import pangebin.plasbin.binlab.milp.models as lp_mod
 import pangebin.plasbin.binlab.milp.views as lp_views
 import pangebin.plasbin.bins.items as bins_items
-import pangebin.plasbin.config as pb_cfg
-import pangebin.plasbin.milp.config as pb_lp_cfg
-import pangebin.plasbin.milp.results as pb_lp_res
+import pangebin.plasbin.config as cmn_cfg
+import pangebin.plasbin.milp.config as cmn_lp_cfg
+import pangebin.plasbin.milp.results as cmn_lp_res
 import pangebin.plasbin.network as net
 from pangebin.pblog import CONSOLE
 
@@ -35,9 +35,9 @@ def plasbin_assembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     contig_gc_scores: Iterable[gc_items.SequenceGCScores],
     contig_plasmidness: Iterable[tuple[str, float]],
-    plasbin_config: pb_cfg.Binning,
+    plasbin_config: cmn_cfg.Binning,
     binlab_config: binlab_cfg.Binlab,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path = lp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[
@@ -86,9 +86,9 @@ def plasbin_panassembly(  # noqa: PLR0913
     gc_intervals: gc_items.Intervals,
     fragment_gc_scores: Iterable[gc_items.SequenceGCScores],
     fragment_plasmidness: Iterable[tuple[str, float]],
-    plasbin_config: pb_cfg.Binning,
+    plasbin_config: cmn_cfg.Binning,
     binlab_config: binlab_cfg.Binlab,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path = lp_io.Manager.DEFAULT_OUTPUT_DIR,
 ) -> Iterator[
     tuple[
@@ -134,9 +134,9 @@ def plasbin_panassembly(  # noqa: PLR0913
 def plasbin(  # noqa: PLR0913
     network: net.Network,
     gc_intervals: gc_items.Intervals,
-    plasbin_config: pb_cfg.Binning,
+    plasbin_config: cmn_cfg.Binning,
     binlab_config: binlab_cfg.Binlab,
-    gurobi_config: pb_lp_cfg.Gurobi,
+    gurobi_config: cmn_lp_cfg.Gurobi,
     output_directory: Path,
 ) -> Iterator[
     tuple[
@@ -164,7 +164,7 @@ def plasbin(  # noqa: PLR0913
     The GFA graph will mute.
     """
     gp.setParam(gp.GRB.Param.LogToConsole, 0)
-    pb_lp_cfg.configurate_global_gurobi(gurobi_config)
+    cmn_lp_cfg.configurate_global_gurobi(gurobi_config)
 
     io_manager = lp_io.Manager(output_directory)
 
@@ -186,10 +186,7 @@ def plasbin(  # noqa: PLR0913
             if result is not None:
                 milp_stats, milp_result_values, log_files = result
                 fragment_norm_coverages, norm_coverage = (
-                    pb_lp_res.fragment_norm_coverages(
-                        milp_result_values,
-                        plasbin_config.circular(),
-                    )
+                    cmn_lp_res.fragment_norm_coverages(milp_result_values)
                 )
                 yield (
                     bins_items.Stats(
@@ -202,7 +199,7 @@ def plasbin(  # noqa: PLR0913
                     milp_stats,
                     log_files,
                 )
-                pb_lp_res.update_network(
+                cmn_lp_res.update_network(
                     network,
                     milp_result_values,
                     plasbin_config.min_flow(),
@@ -225,11 +222,11 @@ def plasbin(  # noqa: PLR0913
 def _hierarchical_binning(  # noqa: PLR0913
     network: net.Network,
     gc_intervals: gc_items.Intervals,
-    plasbin_config: pb_cfg.Binning,
+    plasbin_config: cmn_cfg.Binning,
     binlab_config: binlab_cfg.Binlab,
     io_manager: lp_io.Manager,
     bin_number: int,
-) -> tuple[lp_views.StatsContainer, pb_lp_res.Pangebin, list[Path]] | None:
+) -> tuple[lp_views.StatsContainer, cmn_lp_res.Pangebin, list[Path]] | None:
     log_files: list[Path] = []
     #
     # MBS model
@@ -295,7 +292,7 @@ def _hierarchical_binning(  # noqa: PLR0913
         plasbin_config.obj_fun_domain(),
     )
 
-    milp_result_values = pb_lp_res.Pangebin.from_optimal_variables(
+    milp_result_values = cmn_lp_res.Pangebin.from_optimal_variables(
         network,
         gc_intervals,
         mls_vars.flow(),

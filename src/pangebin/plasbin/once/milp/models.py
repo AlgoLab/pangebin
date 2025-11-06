@@ -7,7 +7,7 @@ from enum import StrEnum
 import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 import pangebin.plasbin.once.milp.constraints as lp_cst
 import pangebin.plasbin.once.milp.objectives as lp_obj
@@ -26,7 +26,7 @@ def mgclb(  # noqa: PLR0913
     min_flow: float,
     min_cumulative_len: int,
     circular: bool,  # noqa: FBT001
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[gp.Model, lp_var.MaxGCLabelBinScore]:
     """Create MGCLB model."""
     m = gp.Model("Maximum GC Label-Binning Score")

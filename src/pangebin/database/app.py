@@ -14,7 +14,7 @@ import typer
 import pangebin.database.create as db_create
 import pangebin.database.input_output as db_io
 import pangebin.entrez as pg_entrez
-import pangebin.pblog as common_log
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -77,10 +77,10 @@ def create(
         Path | None,
         pg_entrez.AppOptions.CONFIG_FILE,
     ] = None,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Create plasmid database (biosamples, plasmids and paired Illumina SRA ids)."""
-    common_log.init_logger(_LOGGER, "Creating database.", debug)
+    pblog.init_logger(_LOGGER, "Creating database.", debug)
 
     io_manager = db_io.Manager(db_io.Config(output_directory=output_dir))
     io_manager.config().output_directory().mkdir(parents=True, exist_ok=True)

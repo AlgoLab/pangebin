@@ -8,7 +8,7 @@ import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.decomp.milp.constraints as lp_cst
 import pangebin.plasbin.decomp.milp.objectives as lp_obj
 import pangebin.plasbin.decomp.milp.variables as lp_var
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 
 
@@ -26,7 +26,7 @@ def mcf(
     min_flow: float,
     min_cumulative_len: int,
     circular: bool,  # noqa: FBT001
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[gp.Model, lp_var.MaxCovFlow]:
     """Create MCF model."""
     mcf_model = gp.Model("Maximum Coverage likelihood Flow")
@@ -46,7 +46,7 @@ def mcf(
 def mgc_from_mcf(  # noqa: PLR0913
     mcf_model: gp.Model,
     mcf_vars: lp_var.MaxCovFlow,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
     network: net.Network,
     intervals: gc_items.Intervals,
     gamma_mcf: float,
@@ -75,7 +75,7 @@ def mps_from_mgc(  # noqa: PLR0913
     network: net.Network,
     intervals: gc_items.Intervals,
     gamma_mgc: float,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[gp.Model, lp_var.MaxPlasmidScore]:
     """Create MPS model from MGC model."""
     previous_gc_score = mgc_model.ObjVal
@@ -99,7 +99,7 @@ def mrcf_from_mps(
     mps_model: gp.Model,
     mps_var: lp_var.MaxPlasmidScore,
     network: net.Network,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> tuple[gp.Model, lp_var.MaxRefCovFlow]:
     """Create MRCF model from MPS model."""
     # DOCU MPS' renamed to MRCF

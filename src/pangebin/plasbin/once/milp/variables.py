@@ -5,7 +5,8 @@ from __future__ import annotations
 import gurobipy as gp
 
 import pangebin.gc_content.items as gc_items
-import pangebin.plasbin.milp.variables as pb_lp_var
+import pangebin.plasbin.milp.connected_component.variables as ccomp_var
+import pangebin.plasbin.milp.variables as cmn_lp_vars
 import pangebin.plasbin.network as net
 from pangebin.plasbin.milp.variables import Domain
 
@@ -15,53 +16,59 @@ class MaxGCLabelBinScore:
 
     def __init__(  # noqa: PLR0913
         self,
-        frag: pb_lp_var.SubFragments,
-        sub_v: pb_lp_var.SubVertices,
-        sub_arc: pb_lp_var.SubArcs,
-        flow: pb_lp_var.Flow,
-        pos_flow: pb_lp_var.PositiveFlow,
-        ccomp: pb_lp_var.ConnectedComponent,
-        gc: pb_lp_var.GCIntervals,
-        inflow_gc: pb_lp_var.InflowGC,
+        frag: cmn_lp_vars.SubFragments,
+        sub_v: cmn_lp_vars.SubVertices,
+        sub_arc: cmn_lp_vars.SubArcs,
+        flow: cmn_lp_vars.Flow,
+        pos_flow: cmn_lp_vars.PositiveFlow,
+        tree_edges_vars: ccomp_var.TreeEdges,
+        root: ccomp_var.Root,
+        gc: cmn_lp_vars.GCIntervals,
+        inflow_gc: cmn_lp_vars.InflowGC,
     ) -> None:
         self.__frag = frag
         self.__sub_v = sub_v
         self.__sub_arc = sub_arc
         self.__flow = flow
         self.__pos_flow = pos_flow
-        self.__ccomp = ccomp
+        self.__tree_edges_vars = tree_edges_vars
+        self.__root = root
         self.__gc = gc
         self.__inflow_gc = inflow_gc
 
-    def frag(self) -> pb_lp_var.SubFragments:
+    def sub_frags(self) -> cmn_lp_vars.SubFragments:
         """Get fragment variables."""
         return self.__frag
 
-    def sub_v(self) -> pb_lp_var.SubVertices:
+    def sub_vertices(self) -> cmn_lp_vars.SubVertices:
         """Get subvertex variables."""
         return self.__sub_v
 
-    def sub_arc(self) -> pb_lp_var.SubArcs:
+    def sub_arcs(self) -> cmn_lp_vars.SubArcs:
         """Get subarc variables."""
         return self.__sub_arc
 
-    def flow(self) -> pb_lp_var.Flow:
+    def flows(self) -> cmn_lp_vars.Flow:
         """Get flow variables."""
         return self.__flow
 
-    def pos_flow(self) -> pb_lp_var.PositiveFlow:
+    def tree_edges(self) -> ccomp_var.TreeEdges:
+        """Get tree edges variables."""
+        return self.__tree_edges_vars
+
+    def root(self) -> ccomp_var.Root:
+        """Get root variables."""
+        return self.__root
+
+    def pos_flow(self) -> cmn_lp_vars.PositiveFlow:
         """Get positive flow variables."""
         return self.__pos_flow
 
-    def ccomp(self) -> pb_lp_var.ConnectedComponent:
-        """Get connected component variables."""
-        return self.__ccomp
-
-    def gc(self) -> pb_lp_var.GCIntervals:
+    def gc(self) -> cmn_lp_vars.GCIntervals:
         """Get GC variables."""
         return self.__gc
 
-    def inflow_gc(self) -> pb_lp_var.InflowGC:
+    def inflow_gc(self) -> cmn_lp_vars.InflowGC:
         """Get inflow GC variables."""
         return self.__inflow_gc
 
@@ -72,44 +79,44 @@ def init_mgclb(
     model: gp.Model,
 ) -> MaxGCLabelBinScore:
     """Create default MaxGCLabelBinScore variables."""
-    frag = pb_lp_var.SubFragments(
+    frag = cmn_lp_vars.SubFragments(
         network,
         model,
         Domain.continuous(0, gp.GRB.INFINITY),
     )
-    sub_v = pb_lp_var.SubVertices(
+    sub_v = cmn_lp_vars.SubVertices(
         network,
         model,
         Domain.continuous(0, gp.GRB.INFINITY),
     )
-    sub_arc = pb_lp_var.SubArcs(
+    sub_arc = cmn_lp_vars.SubArcs(
         network,
         model,
         Domain.binary(),
     )
-    flow = pb_lp_var.Flow(
+    flow = cmn_lp_vars.Flow(
         network,
         model,
         Domain.continuous(0, gp.GRB.INFINITY),
         Domain.continuous(0, gp.GRB.INFINITY),
     )
-    pos_flow = pb_lp_var.PositiveFlow(
+    pos_flow = cmn_lp_vars.PositiveFlow(
         network,
         model,
         Domain.continuous(0, gp.GRB.INFINITY),
     )
-    ccomp = pb_lp_var.ConnectedComponent(
+    tree_edges_vars = ccomp_var.TreeEdges(
         network,
         model,
-        Domain.continuous(-gp.GRB.INFINITY, gp.GRB.INFINITY),
-        Domain.continuous(-gp.GRB.INFINITY, 0),
+        Domain.continuous(0, network.number_of_vertices()),
     )
-    gc = pb_lp_var.GCIntervals(
+    root = ccomp_var.Root(network, model, Domain.binary())
+    gc = cmn_lp_vars.GCIntervals(
         gc_intervals,
         model,
         Domain.binary(),
     )
-    inflow_gc = pb_lp_var.InflowGC(
+    inflow_gc = cmn_lp_vars.InflowGC(
         network,
         gc_intervals,
         model,
@@ -121,7 +128,8 @@ def init_mgclb(
         sub_arc,
         flow,
         pos_flow,
-        ccomp,
+        tree_edges_vars,
+        root,
         gc,
         inflow_gc,
     )

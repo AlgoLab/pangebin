@@ -14,9 +14,9 @@ import typer
 import pangebin.assembly.items as asm_items
 import pangebin.gfa.input_output as gfa_io
 import pangebin.gfa.ops as gfa_ops
-import pangebin.pblog as common_log
 import pangebin.std_asm_graph.fasta as standardize_fasta
 import pangebin.std_asm_graph.input_output as standardize_io
+from pangebin import pblog
 from pangebin.std_asm_graph.config import Config
 from pangebin.std_asm_graph.ops import (
     standardize_assembly_graph,
@@ -81,10 +81,10 @@ def std_asm_graph(
     config_file: Annotated[Path | None, ConfigOpts.CONFIG_FILE] = None,
     # IO options
     outdir: Annotated[Path, IOOpts.OUTPUT_DIR] = standardize_io.Config.DEFAULT_DIR,
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> None:
     """Standardize GFA assembly graphs."""
-    common_log.init_logger(_LOGGER, "Standardizing GFA Assembly graphs.", debug)
+    pblog.init_logger(_LOGGER, "Standardizing GFA Assembly graphs.", debug)
 
     outdir.mkdir(parents=True, exist_ok=True)
 

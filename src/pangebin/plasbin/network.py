@@ -17,7 +17,7 @@ import pangebin.gfa.path as gfa_path
 import pangebin.gfa.segment as gfa_segment
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
 
 
 class SinkArcsDomain(StrEnum):
@@ -89,12 +89,14 @@ class Network:
         * Links from the source to seeds and from fragments to the sink
         """
         self.__gfa_graph: gfapy.Gfa = gfa_graph
-        self.__seeds = set(seeds)
+        self.__seeds = self.__seeds_in_graph(seeds)
         self.__coverages = dict(coverages)
+        # XXX GC scores are not verified as seeds
         self.__gc_scores = {
             frag_gc_score.sequence_id(): frag_gc_score.probability_scores()
             for frag_gc_score in gc_scores
         }
+        # XXX Plasmidness are not verified as seeds
         self.__plasmidness = dict(plasmidness)
         self.__sink_arc_gen_fn = (
             self.fragment_ids
@@ -107,6 +109,9 @@ class Network:
             else (lambda frag_id: frag_id in self.__seeds)
         )
 
+    def __seeds_in_graph(self, seeds: Iterable[str]) -> set[str]:
+        return {seed for seed in seeds if seed in self.__gfa_graph.segment_names}
+
     def number_of_fragments(self) -> int:
         """Get number of fragments."""
         return len(self.__gfa_graph.segment_names)
@@ -117,6 +122,15 @@ class Network:
         :math:`|V| = 2 x |Fragments| + 2`
         """
         return 2 * self.number_of_fragments() + 2
+
+    def ub_number_of_edges(self) -> int:
+        """Get upper bound of number of edges."""
+        # XXX not exactly the number of edges because of GFA representation of links
+        return (
+            2 * self.__gfa_graph.n_dovetails
+            + sum(1 for _ in self.source_connected_fragment_ids())
+            + sum(1 for _ in self.sink_connected_fragment_ids())
+        )
 
     def fragment_ids(self) -> Iterator[str]:
         """Get fragment ids."""
@@ -152,6 +166,8 @@ class Network:
 
     def is_source_connected(self, fragment_id: str) -> bool:
         """Check if the source goes into the corresponding oriented fragment."""
+        # XXX PAER TESTS (linked to bellow)
+        return True
         return fragment_id in self.__seeds
 
     def is_sink_connected(self, fragment_id: str) -> bool:
@@ -170,6 +186,12 @@ class Network:
         self,
     ) -> Iterator[tuple[str, gfa_segment.OrientedFragment]]:
         """Create source to seed arcs."""
+        # XXX PAER TESTS (linked to above)
+        return (
+            (self.SOURCE_VERTEX, fragment)
+            for frag_id in self.fragment_ids()
+            for fragment in self.to_oriented(frag_id)
+        )
         return (
             (self.SOURCE_VERTEX, frag)
             for seed in self.__seeds
@@ -184,11 +206,49 @@ class Network:
             if rev_link.predecessor() != link.predecessor():
                 yield rev_link
 
+    def in_link_arcs(
+        self,
+        oriented_fragment: gfa_segment.OrientedFragment,
+    ) -> Iterator[gfa_link.Link]:
+        """Get incoming link arc."""
+        return gfa_link.incoming_links(self.__gfa_graph, oriented_fragment)
+
+    def number_predecessors(
+        self,
+        oriented_fragment: gfa_segment.OrientedFragment,
+    ) -> int:
+        """Get number of predecessors."""
+        add = 1 if self.is_source_connected(oriented_fragment.identifier()) else 0
+        return (
+            sum(1 for _ in gfa_link.predecessors(self.__gfa_graph, oriented_fragment))
+            + add
+        )
+
+    def out_link_arcs(
+        self,
+        oriented_fragment: gfa_segment.OrientedFragment,
+    ) -> Iterator[gfa_link.Link]:
+        """Get outgoing link arc."""
+        return gfa_link.outgoing_links(self.__gfa_graph, oriented_fragment)
+
+    def number_successors(self, oriented_fragment: gfa_segment.OrientedFragment) -> int:
+        """Get number of successors."""
+        add = 1 if self.is_sink_connected(oriented_fragment.identifier()) else 0
+        return (
+            sum(1 for _ in gfa_link.successors(self.__gfa_graph, oriented_fragment))
+            + add
+        )
+
     def sink_arcs(
         self,
     ) -> Iterator[tuple[gfa_segment.OrientedFragment, str]]:
         """Create fragment to sink-arcs."""
-        return ((fragment, self.SINK_VERTEX) for fragment in self.oriented_fragments())
+        return (
+            (fragment, self.SINK_VERTEX)
+            for frag_id in self.fragment_ids()
+            for fragment in self.to_oriented(frag_id)
+            if self.is_sink_connected(frag_id)
+        )
 
     #
     # Attributes
@@ -285,9 +345,22 @@ class StrFormatter:
 
     @classmethod
     def arc_ids(cls, network: Network) -> Iterator[str]:
-        """Get iterator over source, arc and sink arc ids."""
+        """Get iterator over source, link and sink arcs ids."""
         return chain(
             (cls.s_arc(s_link) for s_link in network.source_arcs()),
             (cls.arc(arc) for arc in network.link_arcs()),
             (cls.t_arc(t_link) for t_link in network.sink_arcs()),
         )
+
+
+def length(network: Network, frag_id: str) -> int:
+    """Get fragment length."""
+    return gfa_segment.length(network.gfa_graph().segment(frag_id))
+
+
+def max_frag_length(
+    network: Network,
+    frag_set_fn: Callable[[Network], Iterable[str]],
+) -> int:
+    """Get maximum fragment length."""
+    return max(length(network, frag_id) for frag_id in frag_set_fn(network))

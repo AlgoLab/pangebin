@@ -12,9 +12,9 @@ from typing import Annotated
 import typer
 
 import pangebin.gfa.input_output as gfa_io
-import pangebin.pblog as common_log
 import pangebin.plasmidness.create as plm_create
 import pangebin.plasmidness.input_output as plm_io
+from pangebin import pblog
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,10 +59,10 @@ def from_contigs_to_fragment_plasmidness(
         Path,
         FromContigsToFragmentPlasmidnessArguments.OUTPUT_PLASMIDNESS_TSV,
     ],
-    debug: Annotated[bool, common_log.OPT_DEBUG] = False,
+    debug: Annotated[bool, pblog.OPT_DEBUG] = False,
 ) -> Path:
     """Get fragments plasmidness from contigs plasmidness."""
-    common_log.init_logger(
+    pblog.init_logger(
         _LOGGER,
         "Converting contigs plasmidness to fragments plasmidness.",
         debug,

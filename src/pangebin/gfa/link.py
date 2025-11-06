@@ -158,6 +158,40 @@ def gfa_links(gfa: gfapy.Gfa) -> Iterator[Link]:
         yield Link.from_link_line(link_line)
 
 
+def predecessors(
+    gfa: gfapy.Gfa,
+    oriented_fragment: OrientedFragment,
+) -> Iterator[OrientedFragment]:
+    """Iterate over all predecessors.
+
+    Yields
+    ------
+    OrientedFragment
+        Oriented predecessor
+    """
+    if oriented_fragment.is_forward():
+        return (
+            OrientedFragment.from_left_dovetail_line(
+                link_line,
+                oriented_fragment.identifier(),
+            )
+            for link_line in get_segment_line_by_name(
+                gfa,
+                oriented_fragment.identifier(),
+            ).dovetails_L
+        )
+    return (
+        OrientedFragment.from_right_dovetail_line(
+            link_line,
+            oriented_fragment.identifier(),
+        ).to_reverse()
+        for link_line in get_segment_line_by_name(
+            gfa,
+            oriented_fragment.identifier(),
+        ).dovetails_R
+    )
+
+
 def incoming_links(
     gfa: gfapy.Gfa,
     oriented_fragment: OrientedFragment,
@@ -171,32 +205,43 @@ def incoming_links(
     Link
         Link where the successor is the given oriented fragment
     """
+    return (
+        Link(predecessor, oriented_fragment)
+        for predecessor in predecessors(gfa, oriented_fragment)
+    )
+
+
+def successors(
+    gfa: gfapy.Gfa,
+    oriented_fragment: OrientedFragment,
+) -> Iterator[OrientedFragment]:
+    """Iterate over all successors.
+
+    Yields
+    ------
+    OrientedFragment
+        Oriented successor
+    """
     if oriented_fragment.is_forward():
         return (
-            Link(
-                OrientedFragment.from_left_dovetail_line(
-                    link_line,
-                    oriented_fragment.identifier(),
-                ),
-                oriented_fragment,
+            OrientedFragment.from_right_dovetail_line(
+                link_line,
+                oriented_fragment.identifier(),
             )
             for link_line in get_segment_line_by_name(
                 gfa,
                 oriented_fragment.identifier(),
-            ).dovetails_L
+            ).dovetails_R
         )
     return (
-        Link(
-            OrientedFragment.from_right_dovetail_line(
-                link_line,
-                oriented_fragment.identifier(),
-            ).to_reverse(),
-            oriented_fragment,
-        )
+        OrientedFragment.from_left_dovetail_line(
+            link_line,
+            oriented_fragment.identifier(),
+        ).to_reverse()
         for link_line in get_segment_line_by_name(
             gfa,
             oriented_fragment.identifier(),
-        ).dovetails_R
+        ).dovetails_L
     )
 
 
@@ -213,30 +258,7 @@ def outgoing_links(
     Link
         Link where the predecessor is the given oriented fragment
     """
-    if oriented_fragment.is_forward():
-        return (
-            Link(
-                oriented_fragment,
-                OrientedFragment.from_right_dovetail_line(
-                    link_line,
-                    oriented_fragment.identifier(),
-                ),
-            )
-            for link_line in get_segment_line_by_name(
-                gfa,
-                oriented_fragment.identifier(),
-            ).dovetails_R
-        )
     return (
-        Link(
-            oriented_fragment,
-            OrientedFragment.from_left_dovetail_line(
-                link_line,
-                oriented_fragment.identifier(),
-            ).to_reverse(),
-        )
-        for link_line in get_segment_line_by_name(
-            gfa,
-            oriented_fragment.identifier(),
-        ).dovetails_L
+        Link(oriented_fragment, successor)
+        for successor in successors(gfa, oriented_fragment)
     )

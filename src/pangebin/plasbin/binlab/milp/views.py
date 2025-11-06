@@ -6,7 +6,7 @@ import pangebin.gc_content.items as gc_items
 import pangebin.plasbin.binlab.milp.models as lp_mod
 import pangebin.plasbin.binlab.milp.objectives as lp_obj
 import pangebin.plasbin.binlab.milp.variables as lp_vars
-import pangebin.plasbin.milp.objectives as pb_lp_obj
+import pangebin.plasbin.milp.objectives as cmn_lp_objs
 import pangebin.plasbin.network as net
 from pangebin.yaml_interface import YAMLInterface
 
@@ -46,7 +46,7 @@ class MBSStats:
 def mbs_stats_from_opt_vars(
     network: net.Network,
     mbs_vars: lp_vars.MaxBinScore,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MBSStats:
     """Create MBS stats from optimal variables."""
     return MBSStats(
@@ -99,7 +99,7 @@ def mls_stats_from_opt_vars(
     network: net.Network,
     intervals: gc_items.Intervals,
     mls_vars: lp_vars.MaxLabScore,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MLSStats:
     """Create MLS stats from optimal variables."""
     return MLSStats(
@@ -136,7 +136,7 @@ def mrbs_stats_from_opt_vars(
     network: net.Network,
     intervals: gc_items.Intervals,
     mls_vars: lp_vars.MaxLabScore,
-    obj_fun_domain: pb_lp_obj.ObjectiveFunctionDomain,
+    obj_fun_domain: cmn_lp_objs.ObjectiveFunctionDomain,
 ) -> MRBSStats:
     """Create MLS stats from optimal variables."""
     return MRBSStats(

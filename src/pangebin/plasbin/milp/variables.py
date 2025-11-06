@@ -77,7 +77,7 @@ class SubVertices:
 
     Defines:
 
-    * x_i for all oriented fragment i
+    * `x_i` for all oriented fragment i
     """
 
     def __init__(
@@ -85,9 +85,19 @@ class SubVertices:
         network: net.Network,
         model: gp.Model,
         x_domain: Domain,
+        prefix_name: str | None = None,
     ) -> None:
+        if prefix_name is None:
+            prefix_name = ""
+        else:
+            prefix_name += "_"
         self.__x: dict[str, gp.Var] = dict(
-            gen_vars(model, x_domain, "x", map(str, network.oriented_fragments())),
+            gen_vars(
+                model,
+                x_domain,
+                f"{prefix_name}x",
+                map(str, network.oriented_fragments()),
+            ),
         )
 
     def x(self, fragment: gfa_segment.OrientedFragment) -> gp.Var:
@@ -100,7 +110,7 @@ class SubArcs:
 
     Defines:
 
-    * y_a for all link-arcs, source-arcs and sink-arcs a
+    * `y_a` for all link-arcs, source-arcs and sink-arcs a
     """
 
     def __init__(
@@ -108,9 +118,17 @@ class SubArcs:
         network: net.Network,
         model: gp.Model,
         y_domain: Domain,
+        prefix_name: str | None = None,
     ) -> None:
+        prefix_name = "" if prefix_name is None else prefix_name + "_"
+
         self.__y: dict[str, gp.Var] = dict(
-            gen_vars(model, y_domain, "y", net.StrFormatter.arc_ids(network)),
+            gen_vars(
+                model,
+                y_domain,
+                f"{prefix_name}y",
+                net.StrFormatter.arc_ids(network),
+            ),
         )
 
     def s(self, source_arc: tuple[str, gfa_segment.OrientedFragment]) -> gp.Var:
@@ -130,7 +148,7 @@ class SubArcs:
         network: net.Network,
         fragment: gfa_segment.OrientedFragment,
     ) -> gp.LinExpr:
-        """Get linear expression for incoming flow."""
+        """Get linear expression for incoming arcs."""
         in_y_arcs = chain(
             (
                 self.l(link)
@@ -144,14 +162,33 @@ class SubArcs:
             )
         return gp.quicksum(in_y_arcs)
 
+    def outgoing(
+        self,
+        network: net.Network,
+        fragment: gfa_segment.OrientedFragment,
+    ) -> gp.LinExpr:
+        """Get linear expression for incoming arcs."""
+        in_y_arcs = chain(
+            (
+                self.l(link)
+                for link in gfa_link.outgoing_links(network.gfa_graph(), fragment)
+            ),
+        )
+        if network.is_sink_connected(fragment.identifier()):
+            in_y_arcs = chain(
+                in_y_arcs,
+                iter((self.t((fragment, network.SINK_VERTEX)),)),
+            )
+        return gp.quicksum(in_y_arcs)
+
 
 class Flow:
     """Flow variables.
 
     Defines:
 
-    * f_a for all link-arcs, source-arcs and sink-arcs a
-    * F the total flow
+    * `f_a` for all link-arcs, source-arcs and sink-arcs a
+    * `F` the total flow
     """
 
     def __init__(
@@ -160,11 +197,18 @@ class Flow:
         model: gp.Model,
         f_domain: Domain,
         total_flow_domain: Domain,
+        prefix_name: str | None = None,
     ) -> None:
+        prefix_name = "" if prefix_name is None else prefix_name + "_"
         self.__f: dict[str, gp.Var] = dict(
-            gen_vars(model, f_domain, "f", net.StrFormatter.arc_ids(network)),
+            gen_vars(
+                model,
+                f_domain,
+                f"{prefix_name}f",
+                net.StrFormatter.arc_ids(network),
+            ),
         )
-        self.__total_flow = gen_var(model, total_flow_domain, "F")
+        self.__total_flow = gen_var(model, total_flow_domain, f"{prefix_name}F")
 
     def s(self, source_arc: tuple[str, gfa_segment.OrientedFragment]) -> gp.Var:
         """Get f_a variable, a in source-arcs."""
@@ -236,7 +280,7 @@ class PositiveFlow:
 
     Defines:
 
-    * F_a for all link-arcs, source-arcs and sink-arcs a
+    * `F_a` for all link-arcs, source-arcs and sink-arcs a
     """
 
     def __init__(
@@ -274,13 +318,14 @@ class PositiveFlow:
         return self.__pos_f[net.StrFormatter.t_arc(sink_arc)]
 
 
+# REFACTOR will be depreciated
 class ConnectedComponent:
     """Connected component variables.
 
     Defines:
 
-    * alpha the number of vertices in the connected component
-    * beta_uv is the depth of the subtree defined by root v
+    * `alpha` the number of vertices in the connected component
+    * `beta_uv` is the depth of the subtree defined by root v
       for all (u, v) in link, source and sink-arcs
     """
 
@@ -369,7 +414,7 @@ class SubFragments:
 
     Defines:
 
-    * frag_a for all fragments a
+    * `frag_i` for all fragments i
     """
 
     def __init__(
@@ -377,12 +422,15 @@ class SubFragments:
         network: net.Network,
         model: gp.Model,
         frag_domain: Domain,
+        prefix_name: str | None = None,
     ) -> None:
+        prefix_name = "" if prefix_name is None else prefix_name + "_"
+
         self.__frag: dict[str, gp.Var] = dict(
-            gen_vars(model, frag_domain, "frag", network.fragment_ids()),
+            gen_vars(model, frag_domain, f"{prefix_name}frag", network.fragment_ids()),
         )
 
-    def x(self, frag_id: str) -> gp.Var:
+    def frag(self, frag_id: str) -> gp.Var:
         """Get frag variable."""
         return self.__frag[frag_id]
 
@@ -392,7 +440,7 @@ class GCIntervals:
 
     Defines:
 
-    * gc_a for all intervals a
+    * `gc_b` for all intervals b
     """
 
     def __init__(
@@ -420,7 +468,7 @@ class FragmentGC:
 
     Defines:
 
-    * frag_gc_ib for all fragments i and intervals b
+    * `frag_gc_{ib}` for all fragments i and intervals b
     """
 
     def __init__(
@@ -455,7 +503,7 @@ class InflowGC:
 
     Defines:
 
-    * inflow_gc_ib for all fragments i and intervals b
+    * `inflow_gc_{ib}` for all fragments i and intervals b
     """
 
     def __init__(
@@ -483,3 +531,84 @@ class InflowGC:
 
     def __fmt_inflow_gc(self, frag_id: str, interval: tuple[float, float]) -> str:
         return f"{frag_id}_{gc_items.IntervalFormatter.to_str(interval)}"
+
+
+class SeedTreeArcs:
+    """Seed tree arcs variables.
+
+    Defines:
+
+    * `zeta_uv` is the number of anchors in the subtree root v
+      for all (u, v) in link, source and sink-arcs
+    """
+
+    def __init__(
+        self,
+        network: net.Network,
+        model: gp.Model,
+        zeta_domain: Domain,
+    ) -> None:
+        self.__zeta: dict[str, gp.Var] = dict(
+            gen_vars(
+                model,
+                zeta_domain,
+                "zeta",
+                net.StrFormatter.arc_ids(network),
+            ),
+        )
+
+    def zeta_s(
+        self,
+        source_arc: tuple[str, gfa_segment.OrientedFragment],
+    ) -> gp.Var:
+        """Get zeta_a variable, a in source-arcs."""
+        return self.__zeta[net.StrFormatter.s_arc(source_arc)]
+
+    def zeta(self, arc: gfa_link.Link) -> gp.Var:
+        """Get zeta_a variable, a in link-arcs."""
+        return self.__zeta[net.StrFormatter.arc(arc)]
+
+    def zeta_t(
+        self,
+        sink_arc: tuple[gfa_segment.OrientedFragment, str],
+    ) -> gp.Var:
+        """Get zeta_a variable, a in sink-arcs."""
+        return self.__zeta[net.StrFormatter.t_arc(sink_arc)]
+
+    def incoming_zeta(
+        self,
+        network: net.Network,
+        fragment: gfa_segment.OrientedFragment,
+    ) -> gp.LinExpr:
+        """Get linear expression for incoming zeta."""
+        in_zeta_arcs = chain(
+            (
+                self.zeta(link)
+                for link in gfa_link.incoming_links(network.gfa_graph(), fragment)
+            ),
+        )
+        if network.is_source_connected(fragment.identifier()):
+            in_zeta_arcs = chain(
+                in_zeta_arcs,
+                iter((self.zeta_s((network.SOURCE_VERTEX, fragment)),)),
+            )
+        return gp.quicksum(in_zeta_arcs)
+
+    def outgoing_zeta(
+        self,
+        network: net.Network,
+        fragment: gfa_segment.OrientedFragment,
+    ) -> gp.LinExpr:
+        """Get linear expression for outgoing zeta."""
+        out_zeta_arcs = chain(
+            (
+                self.zeta(link)
+                for link in gfa_link.outgoing_links(network.gfa_graph(), fragment)
+            ),
+        )
+        if network.is_sink_connected(fragment.identifier()):
+            out_zeta_arcs = chain(
+                out_zeta_arcs,
+                iter((self.zeta_t((fragment, network.SINK_VERTEX)),)),
+            )
+        return gp.quicksum(out_zeta_arcs)
