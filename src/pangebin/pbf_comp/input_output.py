@@ -2,18 +2,12 @@
 
 from __future__ import annotations
 
+import csv
 from contextlib import contextmanager
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 import pangebin.pbf_comp.items as pbf_items
-
-if TYPE_CHECKING:
-    import _csv
-    from collections.abc import Generator, Iterator
-    from pathlib import Path
-import csv
-from enum import StrEnum
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import _csv
