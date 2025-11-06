@@ -24,10 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -->
 
 <!-- next-header -->
-## [Unreleased] - yyyy-mm-dd
+## [0.3.0] - 2025-11-06
 
 ### Added
 
+* `pangebin asm-pbf hmf` command to bin assembly graph with PBf-HMF approach
 * `pangebin utils gfa ccomps` command + API to extract connected components in GFA v1
 * `pangebin utils gfa fix-unicycler` command to reverse the sign of the `ToOrient` links field.
 * `pangebin utils gfa rm-small-seq` command to remove small sequences in a GFA by preserving the walks.
